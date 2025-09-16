@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Upload, TrendingUp, FileText, Brain, BarChart3, Globe, Shield } from 'lucide-react';
 import { useLanguage } from '../App';
+import { mockStats } from '../mock/data/stats';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
@@ -58,12 +59,8 @@ const HomePage: React.FC = () => {
     }
   ];
 
-  const stats = [
-    { number: '10+', label: 'Documents Processed' },
-    { number: '500+', label: 'Questions Answered' },
-    { number: '2', label: 'Languages Supported' },
-    { number: '100%', label: 'WCAG Compliant' }
-  ];
+  // Use mock data instead of hardcoded data
+  const stats = mockStats;
 
   return (
     <div className="home-page">

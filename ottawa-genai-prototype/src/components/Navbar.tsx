@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, Upload, FileText, Settings, Globe } from 'lucide-react';
+import { Home, MessageSquare, Upload, FileText, Settings, Globe, Database } from 'lucide-react';
 import { useLanguage } from '../App';
 import './Navbar.css';
 
@@ -13,6 +13,7 @@ const Navbar: React.FC = () => {
     { path: '/chat', icon: MessageSquare, label: t('nav.chat') },
     { path: '/upload', icon: Upload, label: t('nav.upload') },
     { path: '/reports', icon: FileText, label: t('nav.reports') },
+    { path: '/mock-data', icon: Database, label: 'Mock Data' },
     { path: '/settings', icon: Settings, label: t('nav.settings') }
   ];
 

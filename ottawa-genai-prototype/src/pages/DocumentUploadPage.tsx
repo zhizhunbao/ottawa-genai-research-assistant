@@ -1,40 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { Upload, File, CheckCircle, AlertCircle, X, Eye } from 'lucide-react';
+import { Upload, X, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../App';
+import { mockUploadedFiles } from '../mock/data/files';
+import { UploadedFile } from '../mock/types';
 import './DocumentUploadPage.css';
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  status: 'uploading' | 'completed' | 'error';
-  progress: number;
-  uploadedAt: Date;
-}
 
 const DocumentUploadPage: React.FC = () => {
   const { t } = useLanguage();
-  const [files, setFiles] = useState<UploadedFile[]>([
-    {
-      id: '1',
-      name: 'Economic Development Q1 Report.pdf',
-      size: 2540000,
-      type: 'application/pdf',
-      status: 'completed',
-      progress: 100,
-      uploadedAt: new Date('2024-01-15')
-    },
-    {
-      id: '2', 
-      name: 'Small Business Survey Results.pdf',
-      size: 1870000,
-      type: 'application/pdf',
-      status: 'completed',
-      progress: 100,
-      uploadedAt: new Date('2024-01-10')
-    }
-  ]);
+  
+  // Use mock data instead of hardcoded data
+  const [files, setFiles] = useState<UploadedFile[]>(mockUploadedFiles);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -180,7 +155,7 @@ const DocumentUploadPage: React.FC = () => {
               .map(file => (
                 <div key={file.id} className="progress-item">
                   <div className="progress-info">
-                    <File size={16} />
+                    <FileText size={16} />
                     <span className="file-name">{file.name}</span>
                     <span className="progress-text">{file.progress}%</span>
                   </div>
@@ -204,7 +179,7 @@ const DocumentUploadPage: React.FC = () => {
 
           {files.length === 0 ? (
             <div className="empty-state">
-              <File size={48} className="empty-icon" />
+              <FileText size={48} className="empty-icon" />
               <h4>No documents uploaded yet</h4>
               <p>Upload PDF reports to get started with AI analysis</p>
             </div>
@@ -214,7 +189,7 @@ const DocumentUploadPage: React.FC = () => {
                 <div key={file.id} className="file-item">
                   <div className="file-info">
                     <div className="file-icon">
-                      <File size={24} />
+                      <FileText size={24} />
                     </div>
                     <div className="file-details">
                       <h4 className="file-name">{file.name}</h4>
@@ -236,7 +211,7 @@ const DocumentUploadPage: React.FC = () => {
                           className="action-btn preview-btn"
                           aria-label={`Preview ${file.name}`}
                         >
-                          <Eye size={16} />
+                          <Clock size={16} />
                         </button>
                       </>
                     )}

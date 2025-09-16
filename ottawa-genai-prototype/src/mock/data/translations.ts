@@ -1,24 +1,6 @@
-import React, { useState, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css';
+import { Translations } from '../types';
 
-// 导入页面组件
-import HomePage from './pages/HomePage';
-import ChatPage from './pages/ChatPage';
-import DocumentUploadPage from './pages/DocumentUploadPage';
-import ReportPage from './pages/ReportPage';
-import SettingsPage from './pages/SettingsPage';
-import MockDataManagePage from './pages/MockDataManagePage';
-import Navbar from './components/Navbar';
-
-// 语言上下文
-interface LanguageContextType {
-  language: 'en' | 'fr';
-  setLanguage: (lang: 'en' | 'fr') => void;
-  t: (key: string) => string;
-}
-
-const translations = {
+export const mockTranslations: Translations = {
   en: {
     'app.title': 'Ottawa GenAI Research Assistant',
     'nav.home': 'Home',
@@ -59,44 +41,4 @@ const translations = {
     'features.accessibility.title': 'Conforme à l\'Accessibilité',
     'features.accessibility.desc': 'Conforme WCAG 2.1 avec support de lecteur d\'écran'
   }
-};
-
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-
-export const useLanguage = () => {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
-};
-
-function App() {
-  const [language, setLanguage] = useState<'en' | 'fr'>('en');
-
-  const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations.en] || key;
-  };
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
-      <Router>
-        <div className="App">
-          <Navbar />
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/upload" element={<DocumentUploadPage />} />
-              <Route path="/reports" element={<ReportPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/mock-data" element={<MockDataManagePage />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </LanguageContext.Provider>
-  );
-}
-
-export default App;
+}; 

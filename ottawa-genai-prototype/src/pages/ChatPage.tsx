@@ -3,6 +3,8 @@ import { Send, Bot, User, BarChart3, Download, Copy, ThumbsUp, ThumbsDown } from
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '../App';
+import { mockInitialMessage } from '../mock/data/messages';
+import { mockChartData } from '../mock/data/charts';
 import './ChatPage.css';
 
 interface Message {
@@ -16,28 +18,16 @@ interface Message {
 
 const ChatPage: React.FC = () => {
   const { t } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: 'Hello! I\'m your Ottawa Economic Development AI Assistant. I can help you analyze economic data, answer questions about city reports, and generate insights. What would you like to know?',
-      timestamp: new Date()
-    }
-  ]);
+  
+  // Use mock data instead of hardcoded data
+  const [messages, setMessages] = useState<Message[]>([mockInitialMessage]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Mock data for charts
-  const economicData = [
-    { month: 'Jan', businesses: 120, growth: 5.2 },
-    { month: 'Feb', businesses: 125, growth: 6.1 },
-    { month: 'Mar', businesses: 135, growth: 7.8 },
-    { month: 'Apr', businesses: 142, growth: 8.3 },
-    { month: 'May', businesses: 156, growth: 9.1 },
-    { month: 'Jun', businesses: 168, growth: 10.2 }
-  ];
+  // Use mock chart data
+  const economicData = mockChartData.businessGrowth;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

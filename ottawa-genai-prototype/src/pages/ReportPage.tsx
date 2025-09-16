@@ -1,59 +1,20 @@
 import React, { useState } from 'react';
-import { FileText, Download, Share2, Calendar, TrendingUp, BarChart3, PieChart } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell } from 'recharts';
+import { Calendar, Download, FileText, TrendingUp, Users, Building2, Share2, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useLanguage } from '../App';
+import { mockReports } from '../mock/data/reports';
+import { mockChartData } from '../mock/data/charts';
+import { Report } from '../mock/types';
 import './ReportPage.css';
-
-interface Report {
-  id: string;
-  title: string;
-  generatedAt: Date;
-  type: 'analysis' | 'summary' | 'trend';
-  status: 'completed' | 'generating';
-}
 
 const ReportPage: React.FC = () => {
   const { t } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<string>('1');
 
-  const reports: Report[] = [
-    {
-      id: '1',
-      title: 'Q1 2024 Economic Development Summary',
-      generatedAt: new Date('2024-01-15'),
-      type: 'summary',
-      status: 'completed'
-    },
-    {
-      id: '2',
-      title: 'Small Business Growth Analysis',
-      generatedAt: new Date('2024-01-10'),
-      type: 'analysis',
-      status: 'completed'
-    },
-    {
-      id: '3',
-      title: 'Employment Trends Report',
-      generatedAt: new Date('2024-01-08'),
-      type: 'trend',
-      status: 'completed'
-    }
-  ];
-
-  // Mock data for charts
-  const businessData = [
-    { sector: 'Technology', growth: 22, businesses: 145 },
-    { sector: 'Healthcare', growth: 18, businesses: 98 },
-    { sector: 'Retail', growth: 12, businesses: 234 },
-    { sector: 'Manufacturing', growth: 8, businesses: 67 },
-    { sector: 'Services', growth: 15, businesses: 189 }
-  ];
-
-  const employmentData = [
-    { name: 'Full-time', value: 65, color: '#667eea' },
-    { name: 'Part-time', value: 25, color: '#10b981' },
-    { name: 'Contract', value: 10, color: '#f59e0b' }
-  ];
+  // Use mock data instead of hardcoded data
+  const reports = mockReports;
+  const businessData = mockChartData.sectorAnalysis;
+  const employmentData = mockChartData.employmentDistribution;
 
   const currentReport = reports.find(r => r.id === selectedReport);
 
@@ -194,14 +155,22 @@ const ReportPage: React.FC = () => {
                     <div className="chart-container">
                       <h3>Employment Distribution</h3>
                       <ResponsiveContainer width="100%" height={300}>
-                        <RechartsPieChart>
+                        <PieChart>
                           <Tooltip />
-                          <RechartsPieChart>
+                          <Pie
+                            data={employmentData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={150}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label
+                          >
                             {employmentData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
-                          </RechartsPieChart>
-                        </RechartsPieChart>
+                          </Pie>
+                        </PieChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
