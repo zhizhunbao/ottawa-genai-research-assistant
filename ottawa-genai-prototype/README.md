@@ -144,12 +144,17 @@ The prototype supports:
 
 ## 📊 Mock Data & Simulations
 
+**⚠️ Important: This is a High-Fidelity Prototype**
+
 This prototype includes:
 - **Simulated AI responses** for different question types
 - **Mock economic data** for charts and visualizations
 - **Sample PDF documents** in the upload system
 - **Generated reports** with realistic content
 - **Interactive animations** and state changes
+
+**Current Status**: Frontend prototype with full UI/UX demonstration
+**Next Phase**: AI backend integration (planned for Q4 2024)
 
 ## 🏗️ Project Structure
 
