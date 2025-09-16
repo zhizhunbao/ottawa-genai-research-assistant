@@ -1,4 +1,4 @@
-# 📄 Product Requirements Document (PRD)
+# Product Requirements Document (PRD)
 
 ## Project: Ottawa Economic Development Team GenAI Research Assistant
 
