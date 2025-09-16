@@ -1,14 +1,17 @@
 services:
   - type: web
-    name: ottawa-genai-research-assistant
-    env: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./build
+    name: ottawa-genai-prototype
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s build -l $PORT
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 18.17.0
       - key: NPM_VERSION
-        value: 9
+        value: 8.19.2
+      - key: CI
+        value: false
     headers:
       - path: /*
         name: X-Frame-Options
