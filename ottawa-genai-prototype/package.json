@@ -38,7 +38,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "CI=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build:prod": "NODE_ENV=production npm run build",
@@ -70,14 +70,14 @@
     "@types/recharts": "^1.8.29"
   },
   "engines": {
-    "node": ">=16.0.0",
+    "node": "18.x",
     "npm": ">=8.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ottawa-economic-development/genai-research-assistant-prototype"
+    "url": "https://github.com/zhizhunbao/ottawa-genai-research-assistant"
   },
   "bugs": {
-    "url": "https://github.com/ottawa-economic-development/genai-research-assistant-prototype/issues"
+    "url": "https://github.com/zhizhunbao/ottawa-genai-research-assistant/issues"
   }
 }
