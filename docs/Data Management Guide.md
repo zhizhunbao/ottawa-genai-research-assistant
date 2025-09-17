@@ -6,6 +6,7 @@ This guide provides detailed instructions on how to manage, configure, and switc
 
 - [Mock Data Overview](#mock-data-overview)
 - [Data Structure Details](#data-structure-details)
+- [User Authentication Data Management](#user-authentication-data-management)
 - [How to Switch Mock Data](#how-to-switch-mock-data)
 - [Custom Mock Data](#custom-mock-data)
 - [Data Update Strategies](#data-update-strategies)
@@ -209,7 +210,310 @@ export const mockTranslations: Translations = {
 };
 ```
 
-## 🔄 How to Switch Mock Data
+## 🔐 User Authentication Data Management
+
+### 📋 **User Data Infrastructure (Ready for Authentication)**
+
+The Ottawa GenAI Research Assistant already has a comprehensive user management system built into the backend, providing a solid foundation for implementing authentication.
+
+#### **Existing User Data Structure**
+
+**Location:** `backend/monk/users/users.json`
+
+```typescript
+interface User {
+  id: string;                              // Unique user identifier
+  username: string;                        // Login username
+  email: string;                          // User email address
+  role: 'researcher' | 'analyst' | 'admin'; // User role
+  status: 'active' | 'inactive' | 'suspended'; // Account status
+  created_at: string;                     // Account creation date
+  last_login?: string;                    // Last login timestamp
+  preferences: {                          // User preferences
+    language: 'en' | 'fr';               // Interface language
+    theme: 'light' | 'dark' | 'auto';    // Theme preference
+    notifications: boolean;               // Notification settings
+    default_topics: string[];            // Default research topics
+  };
+  metadata: {                             // User metadata
+    department?: string;                  // User department
+    access_level: 'standard' | 'advanced' | 'admin'; // Access level
+  };
+}
+```
+
+#### **Pre-configured Test Users**
+
+```json
+[
+  {
+    "id": "user_001",
+    "username": "john_researcher",
+    "email": "john@ottawa.ca",
+    "role": "researcher",
+    "status": "active",
+    "preferences": {
+      "language": "en",
+      "theme": "light",
+      "default_topics": ["economic", "business"]
+    },
+    "metadata": {
+      "department": "Economic Development",
+      "access_level": "standard"
+    }
+  },
+  {
+    "id": "user_002",
+    "username": "marie_analyst", 
+    "email": "marie@ottawa.ca",
+    "role": "analyst",
+    "status": "active",
+    "preferences": {
+      "language": "fr",
+      "theme": "dark",
+      "default_topics": ["business", "innovation"]
+    },
+    "metadata": {
+      "department": "Business Development",
+      "access_level": "advanced"
+    }
+  },
+  {
+    "id": "user_003",
+    "username": "admin_user",
+    "email": "admin@ottawa.ca",
+    "role": "admin", 
+    "status": "active",
+    "preferences": {
+      "language": "en",
+      "theme": "light",
+      "default_topics": ["all"]
+    },
+    "metadata": {
+      "department": "IT Services",
+      "access_level": "admin"
+    }
+  }
+]
+```
+
+### 🔑 **Authentication Data Management**
+
+#### **Session Management (To Be Implemented)**
+
+```typescript
+interface UserSession {
+  session_id: string;        // Unique session identifier
+  user_id: string;          // Associated user ID
+  username: string;         // User username for quick access
+  role: string;             // User role for authorization
+  created_at: Date;         // Session creation time
+  expires_at: Date;         // Session expiration time
+  last_activity: Date;      // Last activity timestamp
+  is_active: boolean;       // Session status
+}
+```
+
+#### **JWT Token Structure (Planned)**
+
+```typescript
+interface JWTPayload {
+  sub: string;              // Subject (user_id)
+  username: string;         // Username
+  role: string;             // User role
+  access_level: string;     // Access level
+  department?: string;      // User department
+  iat: number;              // Issued at
+  exp: number;              // Expiration time
+}
+```
+
+### 🚀 **Authentication Implementation Strategy**
+
+#### **Phase 1: Simple Username Authentication**
+
+**For rapid deployment, implement username-only authentication:**
+
+1. **Login Process:**
+   ```typescript
+   // User selects from dropdown of available users
+   const availableUsers = [
+     { username: 'john_researcher', display: 'John (Economic Development)' },
+     { username: 'marie_analyst', display: 'Marie (Business Development)' },
+     { username: 'admin_user', display: 'Admin (IT Services)' }
+   ];
+   ```
+
+2. **Session Creation:**
+   ```typescript
+   // Create session after user selection
+   const session = {
+     session_id: generateUUID(),
+     user_id: selectedUser.id,
+     username: selectedUser.username,
+     role: selectedUser.role,
+     created_at: new Date(),
+     expires_at: new Date(Date.now() + 3600000), // 1 hour
+     is_active: true
+   };
+   ```
+
+#### **Phase 2: Enhanced Security (Future)**
+
+**For production deployment, add password authentication:**
+
+```typescript
+interface UserCredentials {
+  username: string;
+  password_hash: string;    // bcrypt hashed password
+  salt: string;            // Password salt
+  password_changed_at: Date; // Last password change
+  failed_login_attempts: number; // Failed login counter
+  locked_until?: Date;     // Account lock expiration
+}
+```
+
+### 📊 **Role-Based Data Access**
+
+#### **Data Isolation by Role:**
+
+| Data Type | Researcher | Analyst | Admin |
+|-----------|------------|---------|-------|
+| **Own Chat History** | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write |
+| **Own Documents** | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write |
+| **Own Reports** | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write |
+| **Other Users' Data** | ❌ No Access | ❌ No Access | ✅ Read Only |
+| **System Settings** | ❌ No Access | ❌ No Access | ✅ Read/Write |
+| **User Management** | ❌ No Access | ❌ No Access | ✅ Full Access |
+
+#### **Data Structure with User Association:**
+
+```typescript
+// Chat messages with user context
+interface ChatMessage {
+  id: string;
+  user_id: string;          // Associated user
+  conversation_id: string;   // Conversation grouping
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  chart?: any;
+}
+
+// Documents with ownership
+interface Document {
+  id: string;
+  uploaded_by: string;      // User ID who uploaded
+  filename: string;
+  access_level: 'private' | 'department' | 'public';
+  // ... other fields
+}
+
+// Reports with creator tracking
+interface Report {
+  id: string;
+  created_by: string;       // User ID who created
+  title: string;
+  generated_at: Date;
+  access_level: 'private' | 'department' | 'public';
+  // ... other fields
+}
+```
+
+### 🔧 **Implementation Steps for Authentication**
+
+#### **Step 1: Update Backend User Service**
+
+```python
+# backend/app/api/auth.py (New file)
+from fastapi import APIRouter, HTTPException, Depends
+from app.services.auth_service import AuthService
+
+router = APIRouter()
+
+@router.post("/login")
+async def login(username: str):
+    # Simplified login for Phase 1
+    user = await auth_service.authenticate_user(username)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    # Create session and JWT token
+    token = await auth_service.create_token(user)
+    return {"access_token": token, "token_type": "bearer", "user": user}
+```
+
+#### **Step 2: Add Frontend Authentication Context**
+
+```typescript
+// frontend/src/contexts/AuthContext.tsx (New file)
+interface AuthContextType {
+  user: User | null;
+  login: (username: string) => Promise<void>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Authentication logic implementation
+  // ...
+};
+```
+
+#### **Step 3: Protect Routes**
+
+```typescript
+// frontend/src/components/ProtectedRoute.tsx (New file)
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredRole?: string;
+  requiredPermission?: string;
+}
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole,
+  requiredPermission
+}) => {
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (requiredRole && user?.role !== requiredRole) {
+    return <div>Access Denied</div>;
+  }
+  
+  return <>{children}</>;
+};
+```
+
+### 🛡️ **Security Best Practices**
+
+#### **Session Security:**
+- **Timeout Management:** 60-minute sessions with activity-based renewal
+- **Secure Storage:** HTTPOnly cookies for session tokens
+- **CSRF Protection:** Anti-CSRF tokens for state-changing operations
+- **Session Invalidation:** Proper logout and session cleanup
+
+#### **Data Protection:**
+- **User Isolation:** Users can only access their own data
+- **Role Validation:** Server-side role verification for all operations
+- **Audit Logging:** Log all authentication and authorization events
+- **Input Validation:** Sanitize all user inputs
+
+#### **Government Compliance:**
+- **Access Logging:** Track all user activities for audit purposes
+- **Data Retention:** Configurable retention policies for user data
+- **Privacy Protection:** No storage of sensitive personal information
+- **Security Headers:** Implement appropriate HTTP security headers
+
+## �� How to Switch Mock Data
 
 ### 1. Control through Environment Variables
 
