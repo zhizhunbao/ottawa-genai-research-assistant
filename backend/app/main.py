@@ -24,7 +24,9 @@ settings = get_settings()
 # Create FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description=("AI-powered research assistant for Ottawa Economic Development team"),
+    description=(
+        "AI-powered research assistant for Ottawa Economic " "Development team"
+    ),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -43,7 +45,9 @@ app.add_middleware(
 app.include_router(chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
 
 app.include_router(
-    documents.router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"]
+    documents.router,
+    prefix=f"{settings.API_V1_STR}/documents",
+    tags=["documents"],
 )
 
 app.include_router(
@@ -51,7 +55,9 @@ app.include_router(
 )
 
 app.include_router(
-    settings_router.router, prefix=f"{settings.API_V1_STR}/settings", tags=["settings"]
+    settings_router.router,
+    prefix=f"{settings.API_V1_STR}/settings",
+    tags=["settings"],
 )
 
 # Create upload directory if it doesn't exist
