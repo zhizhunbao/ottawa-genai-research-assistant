@@ -1,0 +1,53 @@
+[
+  {
+    "id": "report_001",
+    "title": "Q3 2024 Economic Summary",
+    "type": "economic_summary",
+    "language": "en",
+    "status": "published",
+    "created_at": "2024-09-01T10:00:00Z",
+    "updated_at": "2024-09-01T10:00:00Z",
+    "author": "Ottawa Economic Development Office",
+    "summary": "Comprehensive analysis of Ottawa's economic performance in Q3 2024",
+    "tags": ["economic", "quarterly", "summary"],
+    "metadata": {
+      "period": "Q3 2024",
+      "version": "1.0",
+      "pages": 15
+    }
+  },
+  {
+    "id": "report_002", 
+    "title": "Business Support Programs Impact Report",
+    "type": "program_impact",
+    "language": "en",
+    "status": "published",
+    "created_at": "2024-08-20T14:00:00Z",
+    "updated_at": "2024-08-20T14:00:00Z",
+    "author": "Ottawa Business Development",
+    "summary": "Analysis of business support program effectiveness and outcomes",
+    "tags": ["business", "support", "programs", "impact"],
+    "metadata": {
+      "period": "2024 YTD",
+      "version": "1.1",
+      "pages": 22
+    }
+  },
+  {
+    "id": "report_003",
+    "title": "Innovation Ecosystem Analysis",
+    "type": "innovation_analysis",
+    "language": "en", 
+    "status": "draft",
+    "created_at": "2024-09-10T09:00:00Z",
+    "updated_at": "2024-09-15T16:30:00Z",
+    "author": "Ottawa Innovation Office",
+    "summary": "Assessment of Ottawa's innovation ecosystem and competitive positioning",
+    "tags": ["innovation", "ecosystem", "analysis", "technology"],
+    "metadata": {
+      "period": "2024",
+      "version": "0.8",
+      "pages": 35
+    }
+  }
+] 

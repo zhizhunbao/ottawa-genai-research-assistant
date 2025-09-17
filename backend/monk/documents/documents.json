@@ -1,0 +1,59 @@
+[
+  {
+    "id": "doc_001",
+    "filename": "Q3_Economic_Report.pdf",
+    "title": "Q3 2024 Economic Development Report",
+    "description": "Quarterly economic analysis and business development statistics for Ottawa",
+    "file_path": "/documents/Q3_Economic_Report.pdf",
+    "file_size": 2048576,
+    "mime_type": "application/pdf",
+    "upload_date": "2024-09-01T10:00:00Z",
+    "last_modified": "2024-09-01T10:00:00Z",
+    "status": "processed",
+    "language": "en",
+    "tags": ["economic", "quarterly", "business", "statistics"],
+    "metadata": {
+      "pages": 45,
+      "author": "Ottawa Economic Development Office",
+      "version": "1.0"
+    }
+  },
+  {
+    "id": "doc_002",
+    "filename": "Business_Support_Programs.pdf",
+    "title": "Business Support Programs Guide 2024",
+    "description": "Comprehensive guide to business support programs available in Ottawa",
+    "file_path": "/documents/Business_Support_Programs.pdf",
+    "file_size": 1536000,
+    "mime_type": "application/pdf",
+    "upload_date": "2024-08-15T14:30:00Z",
+    "last_modified": "2024-08-15T14:30:00Z",
+    "status": "processed",
+    "language": "en",
+    "tags": ["business", "support", "programs", "funding"],
+    "metadata": {
+      "pages": 32,
+      "author": "Ottawa Business Development",
+      "version": "2.1"
+    }
+  },
+  {
+    "id": "doc_003",
+    "filename": "Innovation_Strategy_2024.pdf",
+    "title": "Ottawa Innovation Strategy 2024-2027",
+    "description": "Strategic plan for innovation and technology development in Ottawa",
+    "file_path": "/documents/Innovation_Strategy_2024.pdf",
+    "file_size": 3072000,
+    "mime_type": "application/pdf",
+    "upload_date": "2024-07-10T09:15:00Z",
+    "last_modified": "2024-07-10T09:15:00Z",
+    "status": "processed",
+    "language": "en",
+    "tags": ["innovation", "strategy", "technology", "development"],
+    "metadata": {
+      "pages": 68,
+      "author": "Ottawa Innovation Office",
+      "version": "1.0"
+    }
+  }
+] 

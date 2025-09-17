@@ -1,138 +1,62 @@
-# 渥太华GenAI研究助手原型
+# Python 环境测试项目
 
-> 🚀 **项目状态**: 已完成核心功能开发，编译无错误，正在运行中
+这是一个用于测试Python开发环境的示例项目，包含了常见的Python开发模式和最佳实践。
 
-一个专为渥太华市政府设计的生成式AI研究助手原型应用，提供智能文档分析、数据可视化和决策支持功能。
+## 功能特性
 
-## ✨ 核心功能
+- ✅ 基础Python类和模块系统
+- ✅ Pydantic数据模型和验证
+- ✅ FastAPI Web API
+- ✅ 数据处理示例
+- ✅ 单元测试
+- ✅ 代码格式化和检查
 
-### 🤖 智能对话助手
-- 多语言支持（英语/法语）
-- 基于上下文的智能对话
-- 预设常用问题模板
-- 实时消息流处理
+## 快速开始
 
-### 📊 数据可视化报告
-- 交互式图表展示
-- 多种报告类型（分析报告、趋势报告、摘要报告）
-- 实时数据更新
-- 支持导出功能
+### 1. 安装依赖
 
-### 📄 文档管理系统
-- 支持多种文件格式上传
-- 智能文档解析
-- 文档内容搜索
-- 批量文档处理
-
-### ⚙️ 系统设置
-- 用户偏好配置
-- 多语言切换
-- 主题定制
-- API配置管理
-
-### 🔧 Mock数据管理
-- 开发环境数据模拟
-- API响应配置
-- 测试数据生成
-- 调试功能
-
-## 🛠️ 技术栈
-
-- **前端框架**: React 18 + TypeScript
-- **UI组件**: Lucide React图标库
-- **数据可视化**: Recharts
-- **样式**: CSS Modules
-- **构建工具**: Create React App
-- **状态管理**: React Hooks
-
-## 🚀 快速开始
-
-### 环境要求
-- Node.js 16+
-- npm 或 yarn
-
-### 安装依赖
 ```bash
-npm install
+pip install -r requirements.txt
 ```
 
-### 启动开发服务器
+### 2. 运行测试
+
 ```bash
-npm start
+python test_environment.py
 ```
 
-应用将在 `http://localhost:3000` 启动
+### 3. 启动Web服务
 
-### 构建生产版本
 ```bash
-npm run build
+python -m uvicorn main:app --reload
 ```
 
-## 📁 项目结构
+访问 http://localhost:8000 查看API文档
 
-```
-src/
-├── components/          # 公共组件
-│   └── Navbar.tsx      # 导航栏组件
-├── pages/              # 页面组件
-│   ├── HomePage.tsx    # 首页
-│   ├── ChatPage.tsx    # 对话页面
-│   ├── ReportPage.tsx  # 报告页面
-│   ├── DocumentUploadPage.tsx  # 文档上传
-│   ├── SettingsPage.tsx        # 设置页面
-│   └── MockDataManagePage.tsx  # Mock数据管理
-├── mock/               # Mock数据和API
-│   ├── api/           # API模拟
-│   └── data/          # 测试数据
-├── services/          # 服务层
-├── config/            # 配置文件
-└── App.tsx           # 主应用组件
+### 4. 运行单元测试
+
+```bash
+pytest tests/
 ```
 
-## 🔧 最新更新
+## 项目结构
 
-### 版本 1.2.0 - 2024年9月
-- ✅ 修复所有TypeScript编译错误
-- ✅ 优化图表组件兼容性
-- ✅ 完善Mock数据API集成
-- ✅ 增强多语言支持
-- ✅ 改进用户界面体验
+```
+python-env-test/
+├── README.md              # 项目说明
+├── requirements.txt       # 依赖包
+├── main.py               # FastAPI应用入口
+├── test_environment.py   # 环境测试脚本
+├── models/               # 数据模型
+├── services/             # 业务逻辑
+├── utils/                # 工具函数
+└── tests/                # 测试文件
+```
 
-### 主要修复
-1. **ReportPage.tsx**: 修复BarChart组件图标冲突，使用BarChart3替代
-2. **PieChart组件**: 添加必需的dataKey属性
-3. **mockApi.ts**: 修复类型断言问题
-4. **语言切换**: 完善中英文双语支持
+## 测试内容
 
-## 🎯 功能特色
-
-### 政府场景优化
-- 专为政府决策制定设计
-- 支持政策分析和数据洞察
-- 多部门协作功能
-- 安全性和合规性考虑
-
-### 用户体验
-- 直观的界面设计
-- 响应式布局
-- 无障碍访问支持
-- 快速加载和流畅交互
-
-## 📞 支持
-
-如遇到问题或需要支持，请：
-1. 查看项目文档
-2. 检查已知问题列表
-3. 联系开发团队
-
-## 🔮 未来规划
-
-- [ ] 后端API集成
-- [ ] 用户认证系统
-- [ ] 高级数据分析功能
-- [ ] 移动端适配
-- [ ] 性能优化
-
----
-
-*本项目为渥太华市政府GenAI研究助手的原型版本，用于概念验证和功能演示。* 
+1. **导入测试** - 验证所有模块可以正确导入
+2. **类型检查** - 测试Pydantic模型和类型注解
+3. **API测试** - 验证FastAPI功能
+4. **数据处理** - 测试pandas和numpy
+5. **代码跳转** - 验证IDE代码导航功能 

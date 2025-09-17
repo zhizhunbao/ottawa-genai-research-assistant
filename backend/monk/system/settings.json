@@ -1,0 +1,51 @@
+{
+  "application": {
+    "name": "Ottawa GenAI Research Assistant",
+    "version": "1.0.0",
+    "environment": "development",
+    "debug": true
+  },
+  "languages": {
+    "supported": ["en", "fr"],
+    "default": "en",
+    "fallback": "en"
+  },
+  "themes": {
+    "supported": ["light", "dark", "auto"],
+    "default": "light"
+  },
+  "ai": {
+    "default_model": "gpt-4",
+    "temperature": 0.7,
+    "max_tokens": 2000,
+    "timeout": 30
+  },
+  "search": {
+    "max_results": 10,
+    "similarity_threshold": 0.7,
+    "chunk_size": 1000,
+    "chunk_overlap": 200
+  },
+  "uploads": {
+    "max_file_size": 10485760,
+    "allowed_types": ["pdf", "doc", "docx", "txt"],
+    "storage_path": "/documents/"
+  },
+  "security": {
+    "session_timeout": 3600,
+    "max_login_attempts": 5,
+    "password_min_length": 8
+  },
+  "notifications": {
+    "enabled": true,
+    "types": ["info", "warning", "error", "success"],
+    "retention_days": 30
+  },
+  "features": {
+    "document_upload": true,
+    "chat_history": true,
+    "export_reports": true,
+    "multilingual": true,
+    "vector_search": true
+  }
+} 

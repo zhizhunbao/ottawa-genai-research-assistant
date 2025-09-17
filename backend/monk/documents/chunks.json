@@ -1,0 +1,82 @@
+[
+  {
+    "id": "chunk_001",
+    "doc_id": "doc_001",
+    "chunk_index": 0,
+    "page_number": 5,
+    "content": "Ottawa's economy grew by 3.2% in Q3 2024, driven primarily by technology sector expansion and increased business registrations. The city recorded 1,247 new business registrations, representing a 15% increase compared to Q2 2024. Key growth sectors include artificial intelligence, clean technology, and digital health solutions.",
+    "embedding": null,
+    "metadata": {
+      "section": "Economic Overview",
+      "subsection": "Growth Metrics",
+      "word_count": 58,
+      "start_char": 1250,
+      "end_char": 1650
+    },
+    "created_at": "2024-09-01T10:00:00Z"
+  },
+  {
+    "id": "chunk_002",
+    "doc_id": "doc_001",
+    "chunk_index": 1,
+    "page_number": 12,
+    "content": "The technology sector continues to be Ottawa's largest economic driver, contributing $8.2 billion to the regional GDP. Major companies including Shopify, Nokia, and BlackBerry have announced expansion plans, creating an estimated 2,300 new jobs in Q3.",
+    "embedding": null,
+    "metadata": {
+      "section": "Sector Analysis",
+      "subsection": "Technology Sector",
+      "word_count": 42,
+      "start_char": 5200,
+      "end_char": 5550
+    },
+    "created_at": "2024-09-01T10:00:00Z"
+  },
+  {
+    "id": "chunk_003",
+    "doc_id": "doc_002",
+    "chunk_index": 0,
+    "page_number": 8,
+    "content": "The Small Business Development Fund provided $2.5M in funding to 45 local businesses in 2024. This program offers grants ranging from $10,000 to $100,000 for businesses with fewer than 50 employees. Priority is given to innovative startups, women-led businesses, and companies focusing on sustainable practices.",
+    "embedding": null,
+    "metadata": {
+      "section": "Funding Programs",
+      "subsection": "Small Business Development Fund",
+      "word_count": 52,
+      "start_char": 2100,
+      "end_char": 2480
+    },
+    "created_at": "2024-08-15T14:30:00Z"
+  },
+  {
+    "id": "chunk_004",
+    "doc_id": "doc_002",
+    "chunk_index": 1,
+    "page_number": 15,
+    "content": "The Ottawa Business Incubator Program supports early-stage companies with mentorship, office space, and access to funding networks. Since its launch in 2020, the program has supported 127 startups, with a combined valuation of $45M and 890 jobs created.",
+    "embedding": null,
+    "metadata": {
+      "section": "Support Programs",
+      "subsection": "Business Incubator",
+      "word_count": 42,
+      "start_char": 4800,
+      "end_char": 5120
+    },
+    "created_at": "2024-08-15T14:30:00Z"
+  },
+  {
+    "id": "chunk_005",
+    "doc_id": "doc_003",
+    "chunk_index": 0,
+    "page_number": 22,
+    "content": "Ottawa's Innovation Strategy focuses on four key pillars: talent development, research commercialization, ecosystem building, and international partnerships. The city aims to become a top-5 global innovation hub by 2027, with investments totaling $120M over the next three years.",
+    "embedding": null,
+    "metadata": {
+      "section": "Strategic Framework",
+      "subsection": "Innovation Pillars",
+      "word_count": 48,
+      "start_char": 8900,
+      "end_char": 9280
+    },
+    "created_at": "2024-07-10T09:15:00Z"
+  }
+] 
