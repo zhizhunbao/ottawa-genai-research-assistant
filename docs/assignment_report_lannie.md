@@ -1,0 +1,2 @@
+Hye Ran Yoo - Assignment Commit Test
+Develop a proof of concept for an internal research tool for EcDev using GenAI. The solution would allow staff to ask any question and generate reports/visuals related to data analysis and reporting from the PDFs uploaded or information posted on the ED site. The tool would respond to plain English questions and generate reports/visuals. The solution would be developed using information in the public domain (ED Update reports posted on ottawa.ca, for example) and would be a student-led project as part of the Citystudio program.
