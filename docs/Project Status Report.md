@@ -522,4 +522,20 @@ The project has successfully completed both frontend and backend development wit
 - Scalable JWT token-based session management
 - Ready for enterprise deployment and user onboarding
 
-**The authentication system provides a robust foundation for secure government AI applications while maintaining excellent user experience.** 🔐 
+**The authentication system provides a robust foundation for secure government AI applications while maintaining excellent user experience.** 🔐
+
+## 📚 Related Documentation
+
+### 🏠 Main Project
+- [📖 Main README](../README.md) - Project overview and quick start guide
+
+### 📋 English Documentation
+- [🏗️ System Architecture Guide](./System%20Architecture%20Guide.md) - Complete system architecture
+- [🗄️ Data Management Guide](./Data%20Management%20Guide.md) - Data management strategies and implementation
+- [📋 Product Requirements Document (PRD)](./Product%20Requirements%20Document%20(PRD).md) - Product requirements and specifications
+
+### 📋 Chinese Documentation | 中文文档
+- [🏗️ 系统架构指南](./系统架构指南.md) - 系统架构说明（中文版）
+- [🗄️ 数据管理指南](./数据管理指南.md) - 数据管理策略（中文版）
+- [📊 项目现状报告](./项目现状报告.md) - 项目状态报告（中文版）
+- [📋 产品需求文档（PRD）](./产品需求文档（PRD）.md) - 产品需求文档（中文版） 

@@ -1212,4 +1212,20 @@ export const dataService = new DataService();
 
 ---
 
-Through this guide, you can fully control Mock data behavior, create rich prototype experiences, and prepare for migration to real APIs. 
+Through this guide, you can fully control Mock data behavior, create rich prototype experiences, and prepare for migration to real APIs.
+
+## 📚 Related Documentation
+
+### 🏠 Main Project
+- [📖 Main README](../README.md) - Project overview and quick start guide
+
+### 📋 English Documentation
+- [🏗️ System Architecture Guide](./System%20Architecture%20Guide.md) - Complete system architecture
+- [📊 Project Status Report](./Project%20Status%20Report.md) - Current project status and progress
+- [📋 Product Requirements Document (PRD)](./Product%20Requirements%20Document%20(PRD).md) - Product requirements and specifications
+
+### 📋 Chinese Documentation | 中文文档
+- [🏗️ 系统架构指南](./系统架构指南.md) - 系统架构说明（中文版）
+- [🗄️ 数据管理指南](./数据管理指南.md) - 数据管理策略（中文版）
+- [📊 项目现状报告](./项目现状报告.md) - 项目状态报告（中文版）
+- [📋 产品需求文档（PRD）](./产品需求文档（PRD）.md) - 产品需求文档（中文版） 
