@@ -136,10 +136,10 @@ const translations = {
     'features.accessibility.desc': 'WCAG 2.1 compliant interface ensuring accessibility for all users',
     
     // Statistics
-    'stats.documents': 'Documents Processed',
-    'stats.queries': 'Queries Answered',
-    'stats.languages': 'Languages Supported',
-    'stats.accessibility': 'WCAG Compliant',
+    'stats.documents': 'Documents',
+    'stats.queries': 'Queries',
+    'stats.languages': 'Languages',
+    'stats.accessibility': 'Accessible',
     
     // Sections
     'sections.features': 'Key Features',
@@ -269,10 +269,10 @@ const translations = {
     'features.accessibility.desc': 'Interface conforme WCAG 2.1 garantissant l\'accessibilité pour tous les utilisateurs',
     
     // Statistics
-    'stats.documents': 'Documents Traités',
-    'stats.queries': 'Requêtes Répondues',
-    'stats.languages': 'Langues Supportées',
-    'stats.accessibility': 'Conforme WCAG',
+    'stats.documents': 'Documents',
+    'stats.queries': 'Requêtes',
+    'stats.languages': 'Langues',
+    'stats.accessibility': 'Accessible',
     
     // Sections
     'sections.features': 'Fonctionnalités Clés',

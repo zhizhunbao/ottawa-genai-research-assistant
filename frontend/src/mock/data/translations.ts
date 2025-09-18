@@ -40,7 +40,12 @@ export const mockTranslations: Translations = {
     'login.signingIn': 'Signing in...',
     'login.noAccount': "Don't have an account?",
     'login.signUp': 'Sign up',
-    'login.demoTitle': 'Demo Credentials'
+    'login.demoTitle': 'Demo Credentials',
+    // Statistics translations
+    'stats.documents': 'Documents Processed',
+    'stats.queries': 'Questions Answered',
+    'stats.languages': 'Languages Supported',
+    'stats.accessibility': 'WCAG Compliant'
   },
   fr: {
     'app.title': 'Assistant de Recherche GenAI d\'Ottawa',
@@ -81,6 +86,11 @@ export const mockTranslations: Translations = {
     'login.signingIn': 'Connexion en cours...',
     'login.noAccount': "Vous n'avez pas de compte?",
     'login.signUp': 'S\'inscrire',
-    'login.demoTitle': 'Identifiants de démonstration'
+    'login.demoTitle': 'Identifiants de démonstration',
+    // Statistics translations in French
+    'stats.documents': 'Documents Traités',
+    'stats.queries': 'Questions Répondues',
+    'stats.languages': 'Langues Supportées',
+    'stats.accessibility': 'Conforme WCAG'
   }
 }; 

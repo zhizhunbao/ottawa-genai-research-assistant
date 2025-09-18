@@ -42,17 +42,18 @@
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #004890, #0066cc);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 72, 144, 0.2);
 }
 
 .brand-text {
-  color: #1f2937;
-  font-weight: 600;
+  color: #004890;
+  font-weight: 700;
   font-size: 1.1rem;
 }
 
@@ -94,13 +95,13 @@
 }
 
 .navbar-link.active {
-  background-color: #e0e7ff;
-  color: #667eea;
+  background-color: rgba(0, 72, 144, 0.1);
+  color: #004890;
   font-weight: 600;
 }
 
 .navbar-link:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #004890;
   outline-offset: 2px;
 }
 
@@ -142,9 +143,9 @@
 }
 
 .language-button:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #004890;
   outline-offset: 2px;
-  border-color: #667eea;
+  border-color: #004890;
 }
 
 .language-button span {
@@ -257,19 +258,22 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #667eea;
+  background: linear-gradient(135deg, #004890, #0066cc);
   color: white;
   text-decoration: none;
-  border-radius: 6px;
-  font-weight: 500;
+  border-radius: 8px;
+  font-weight: 600;
   font-size: 0.875rem;
-  transition: all 0.2s ease;
-  border: 1px solid #667eea;
+  transition: all 0.3s ease;
+  border: 1px solid #004890;
+  box-shadow: 0 4px 12px rgba(0, 72, 144, 0.2);
 }
 
 .login-button:hover {
-  background: #5a67d8;
-  border-color: #5a67d8;
+  background: linear-gradient(135deg, #003366, #004890);
+  border-color: #003366;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 72, 144, 0.3);
 }
 
 .mobile-menu-button {

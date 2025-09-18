@@ -56,12 +56,7 @@ export const mockDataSets: Record<string, MockDataSet> = {
         uploadedAt: new Date()
       }
     ],
-    stats: [
-      { number: '25+', label: 'Documents Processed' },
-      { number: '750+', label: 'Questions Answered' },
-      { number: '2', label: 'Languages Supported' },
-      { number: '100%', label: 'WCAG Compliant' }
-    ],
+    stats: getMockStats((key: string) => key), // Use translation keys directly
     translations: mockTranslations,
     charts: mockChartData,
     responsePatterns: mockResponsePatterns
@@ -81,10 +76,10 @@ export const mockDataSets: Record<string, MockDataSet> = {
     ],
     files: [],
     stats: [
-      { number: '0', label: 'Documents Processed' },
-      { number: '0', label: 'Questions Answered' },
-      { number: '0', label: 'Languages Supported' },
-      { number: '0%', label: 'WCAG Compliant' }
+      { number: '0', label: 'stats.documents' },
+      { number: '0', label: 'stats.queries' },
+      { number: '0', label: 'stats.languages' },
+      { number: '0%', label: 'stats.accessibility' }
     ],
     translations: mockTranslations,
     charts: {},
