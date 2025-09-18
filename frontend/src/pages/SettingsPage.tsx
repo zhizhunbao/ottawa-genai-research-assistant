@@ -1,10 +1,10 @@
+import { Contrast, Eye, Globe, Monitor, Moon, Sun, Type } from 'lucide-react';
 import React, { useState } from 'react';
-import { Globe, Monitor, Sun, Moon, Volume2, Eye, Type, Contrast } from 'lucide-react';
 import { useLanguage } from '../App';
 import './SettingsPage.css';
 
 const SettingsPage: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('light');
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [highContrast, setHighContrast] = useState(false);
@@ -260,18 +260,18 @@ const SettingsPage: React.FC = () => {
             </div>
             
             <div className="help-links">
-              <a href="#" className="help-link">
+              <button type="button" className="help-link">
                 📖 User Guide
-              </a>
-              <a href="#" className="help-link">
+              </button>
+              <button type="button" className="help-link">
                 🔧 Accessibility Features Guide
-              </a>
-              <a href="#" className="help-link">
+              </button>
+              <button type="button" className="help-link">
                 💬 Contact Support
-              </a>
-              <a href="#" className="help-link">
+              </button>
+              <button type="button" className="help-link">
                 🐛 Report a Bug
-              </a>
+              </button>
             </div>
           </section>
 

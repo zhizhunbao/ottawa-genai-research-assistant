@@ -1,12 +1,9 @@
 import { AlertCircle, CheckCircle, Clock, FileText, Upload, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
-import { useLanguage } from '../App';
 import { mockUploadedFiles, UploadedFile } from '../mock';
 import './DocumentUploadPage.css';
 
 const DocumentUploadPage: React.FC = () => {
-  const { t } = useLanguage();
-  
   // Use mock data instead of hardcoded data
   const [files, setFiles] = useState<UploadedFile[]>(mockUploadedFiles);
   const [isDragOver, setIsDragOver] = useState(false);

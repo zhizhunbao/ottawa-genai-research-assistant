@@ -1,3 +1,11 @@
+import {
+    FileText,
+    Globe,
+    Home,
+    MessageSquare,
+    Settings,
+    Upload
+} from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../App';
@@ -32,109 +40,122 @@ const Navbar: React.FC = () => {
     return location.pathname === path;
   };
 
+  // 导航项配置
+  const navigationItems = [
+    {
+      path: '/',
+      icon: Home,
+      label: t('nav.home') || 'Home'
+    },
+    ...(isAuthenticated ? [
+      {
+        path: '/chat',
+        icon: MessageSquare,
+        label: t('nav.chat') || 'Chat'
+      },
+      {
+        path: '/upload',
+        icon: Upload,
+        label: t('nav.upload') || 'Upload Documents'
+      },
+      {
+        path: '/reports',
+        icon: FileText,
+        label: t('nav.reports') || 'Reports'
+      },
+      {
+        path: '/settings',
+        icon: Settings,
+        label: t('nav.settings') || 'Settings'
+      }
+    ] : [])
+  ];
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
+        {/* Brand/Logo */}
         <Link to="/" className="navbar-brand">
           <div className="brand-logo">
             <span className="logo-icon">🍁</span>
-            <span className="brand-text">CA GenAI Research</span>
+            <span className="brand-text">Ottawa GenAI Research</span>
           </div>
         </Link>
 
+        {/* Navigation Menu */}
         <div className="navbar-menu">
           <div className="navbar-links">
-            <Link 
-              to="/" 
-              className={`navbar-link ${isActive('/') ? 'active' : ''}`}
+            {navigationItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Link 
+                  key={item.path}
+                  to={item.path} 
+                  className={`navbar-link ${isActive(item.path) ? 'active' : ''}`}
+                >
+                  <IconComponent size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="navbar-actions">
+          {/* Language Toggle Button */}
+          <div className="language-selector">
+            <button
+              className="language-button"
+              onClick={handleLanguageToggle}
+              title={language === 'en' ? 'Switch to Français' : 'Switch to English'}
             >
-              {t('nav.home')}
-            </Link>
-            
-            {isAuthenticated && (
-              <>
-                <Link 
-                  to="/chat" 
-                  className={`navbar-link ${isActive('/chat') ? 'active' : ''}`}
-                >
-                  {t('nav.chat')}
-                </Link>
-                <Link 
-                  to="/upload" 
-                  className={`navbar-link ${isActive('/upload') ? 'active' : ''}`}
-                >
-                  {t('nav.upload')}
-                </Link>
-                <Link 
-                  to="/reports" 
-                  className={`navbar-link ${isActive('/reports') ? 'active' : ''}`}
-                >
-                  {t('nav.reports')}
-                </Link>
-                <Link 
-                  to="/settings" 
-                  className={`navbar-link ${isActive('/settings') ? 'active' : ''}`}
-                >
-                  {t('nav.settings')}
-                </Link>
-              </>
-            )}
+              <Globe size={16} />
+              <span>{language.toUpperCase()}</span>
+            </button>
           </div>
 
-          <div className="navbar-actions">
-            {/* Language Toggle Button */}
-            <div className="language-selector">
+          {/* User Menu */}
+          {isAuthenticated ? (
+            <div className="user-menu">
               <button
-                className="language-button"
-                onClick={handleLanguageToggle}
-                title={language === 'en' ? 'Switch to Français' : 'Switch to English'}
+                className="user-button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               >
-                {language === 'en' ? 'FR' : 'EN'}
-              </button>
-            </div>
-
-            {/* User Menu */}
-            {isAuthenticated ? (
-              <div className="user-menu">
-                <button
-                  className="user-button"
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                >
-                  {user?.picture ? (
-                    <img 
-                      src={user.picture} 
-                      alt={user.name} 
-                      className="user-avatar"
-                    />
-                  ) : (
-                    <div className="user-avatar-placeholder">
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                  )}
-                  <span className="user-name">{user?.name}</span>
-                </button>
-                {isProfileMenuOpen && (
-                  <div className="profile-menu">
-                    <div className="profile-info">
-                      <div className="profile-name">{user?.name}</div>
-                      <div className="profile-email">{user?.email}</div>
-                    </div>
-                    <div className="profile-menu-divider"></div>
-                    <button
-                      className="profile-menu-item"
-                      onClick={handleLogout}
-                    >
-                      {t('nav.logout')}
-                    </button>
+                {user?.picture ? (
+                  <img 
+                    src={user.picture} 
+                    alt={user.name} 
+                    className="user-avatar"
+                  />
+                ) : (
+                  <div className="user-avatar-placeholder">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 )}
-              </div>
-            ) : (
-              <Link to="/login" className="login-button">
-                {t('nav.login')}
-              </Link>
-            )}
-          </div>
+                <span className="user-name">{user?.name}</span>
+              </button>
+              {isProfileMenuOpen && (
+                <div className="profile-menu">
+                  <div className="profile-info">
+                    <div className="profile-name">{user?.name}</div>
+                    <div className="profile-email">{user?.email}</div>
+                  </div>
+                  <div className="profile-menu-divider"></div>
+                  <button
+                    className="profile-menu-item"
+                    onClick={handleLogout}
+                  >
+                    {t('nav.logout')}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/login" className="login-button">
+              {t('nav.login')}
+            </Link>
+          )}
         </div>
 
         {/* Mobile menu button */}

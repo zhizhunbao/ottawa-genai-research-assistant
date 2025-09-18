@@ -1,12 +1,10 @@
 import { BarChart3, Calendar, Download, FileText, Share2, TrendingUp } from 'lucide-react';
 import React, { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useLanguage } from '../App';
 import { mockChartData, mockReports } from '../mock';
 import './ReportPage.css';
 
 const ReportPage: React.FC = () => {
-  const { t } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<string>('1');
 
   // Use mock data instead of hardcoded data

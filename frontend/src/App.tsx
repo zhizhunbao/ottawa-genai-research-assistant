@@ -325,8 +325,13 @@ function App() {
     return translations[language][key as keyof typeof translations[typeof language]] || key;
   };
 
-  // 如果没有Google Client ID，使用一个占位符以避免错误
+  // Google OAuth Client ID validation and setup
   const googleClientId = GOOGLE_CLIENT_ID || 'placeholder-client-id';
+  
+  // Show warning if Client ID is not properly configured
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'your-google-client-id-here.apps.googleusercontent.com') {
+    console.warn('⚠️ Google OAuth is not properly configured. Please set a valid REACT_APP_GOOGLE_CLIENT_ID in your .env file.');
+  }
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>

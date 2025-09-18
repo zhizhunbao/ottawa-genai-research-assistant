@@ -2,8 +2,7 @@ import { Bot, Copy, Download, Send, ThumbsDown, ThumbsUp, User } from 'lucide-re
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useLanguage } from '../App';
-import { mockChartData, mockInitialMessage, simulateAIResponse } from '../mock';
+import { mockInitialMessage, simulateAIResponse } from '../mock';
 import { hybridApi } from '../services/hybridApi';
 import './ChatPage.css';
 
@@ -17,8 +16,6 @@ interface Message {
 }
 
 const ChatPage: React.FC = () => {
-  const { t } = useLanguage();
-  
   // Use mock data instead of hardcoded data
   const [messages, setMessages] = useState<Message[]>([mockInitialMessage]);
   const [inputValue, setInputValue] = useState('');
@@ -26,9 +23,6 @@ const ChatPage: React.FC = () => {
   const [conversationId] = useState<string>(`conv_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  // Use mock chart data as fallback
-  const economicData = mockChartData.businessGrowth;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

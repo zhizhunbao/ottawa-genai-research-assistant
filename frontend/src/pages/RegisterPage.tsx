@@ -1,13 +1,11 @@
 import { GoogleLogin } from '@react-oauth/google';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../App';
 import { useAuth } from '../contexts/AuthContext';
 import './LoginPage.css'; // Reuse login page styles
 
 const RegisterPage: React.FC = () => {
   const { login, isLoading } = useAuth();
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
