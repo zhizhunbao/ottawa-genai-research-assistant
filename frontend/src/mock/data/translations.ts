@@ -19,7 +19,28 @@ export const mockTranslations: Translations = {
     'features.reports.title': 'Report Generation',
     'features.reports.desc': 'Create structured reports with summaries and conclusions',
     'features.accessibility.title': 'Accessibility Compliant',
-    'features.accessibility.desc': 'WCAG 2.1 compliant with screen reader support'
+    'features.accessibility.desc': 'WCAG 2.1 compliant with screen reader support',
+    'home.features.title': 'Key Features',
+    'home.quickActions.title': 'Quick Actions',
+    'upload.title': 'Upload Documents',
+    'upload.description': 'Upload and analyze your documents with AI',
+    'reports.title': 'View Reports',
+    'reports.description': 'Browse generated reports and insights',
+    // Authentication translations
+    'login.title': 'Sign in to your account',
+    'login.subtitle': 'Access your research assistant',
+    'login.welcome': 'Welcome back',
+    'login.description': 'Enter your credentials to access your account',
+    'login.email': 'Email address',
+    'login.emailPlaceholder': 'Enter your email',
+    'login.password': 'Password',
+    'login.passwordPlaceholder': 'Enter your password',
+    'login.forgotPassword': 'Forgot your password?',
+    'login.signIn': 'Sign in',
+    'login.signingIn': 'Signing in...',
+    'login.noAccount': "Don't have an account?",
+    'login.signUp': 'Sign up',
+    'login.demoTitle': 'Demo Credentials'
   },
   fr: {
     'app.title': 'Assistant de Recherche GenAI d\'Ottawa',
@@ -39,6 +60,27 @@ export const mockTranslations: Translations = {
     'features.reports.title': 'Génération de Rapports',
     'features.reports.desc': 'Créez des rapports structurés avec résumés et conclusions',
     'features.accessibility.title': 'Conforme à l\'Accessibilité',
-    'features.accessibility.desc': 'Conforme WCAG 2.1 avec support de lecteur d\'écran'
+    'features.accessibility.desc': 'Conforme WCAG 2.1 avec support de lecteur d\'écran',
+    'home.features.title': 'Fonctionnalités Clés',
+    'home.quickActions.title': 'Actions Rapides',
+    'upload.title': 'Télécharger Documents',
+    'upload.description': 'Téléchargez et analysez vos documents avec l\'IA',
+    'reports.title': 'Voir les Rapports',
+    'reports.description': 'Parcourez les rapports générés et les insights',
+    // Authentication translations in French
+    'login.title': 'Connectez-vous à votre compte',
+    'login.subtitle': 'Accédez à votre assistant de recherche',
+    'login.welcome': 'Bon retour',
+    'login.description': 'Entrez vos identifiants pour accéder à votre compte',
+    'login.email': 'Adresse e-mail',
+    'login.emailPlaceholder': 'Entrez votre e-mail',
+    'login.password': 'Mot de passe',
+    'login.passwordPlaceholder': 'Entrez votre mot de passe',
+    'login.forgotPassword': 'Mot de passe oublié?',
+    'login.signIn': 'Se connecter',
+    'login.signingIn': 'Connexion en cours...',
+    'login.noAccount': "Vous n'avez pas de compte?",
+    'login.signUp': 'S\'inscrire',
+    'login.demoTitle': 'Identifiants de démonstration'
   }
 }; 

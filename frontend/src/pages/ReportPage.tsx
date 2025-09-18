@@ -1,10 +1,8 @@
+import { BarChart3, Calendar, Download, FileText, Share2, TrendingUp } from 'lucide-react';
 import React, { useState } from 'react';
-import { Calendar, Download, FileText, TrendingUp, Users, Building2, Share2, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useLanguage } from '../App';
-import { mockReports } from '../mock/data/reports';
-import { mockChartData } from '../mock/data/charts';
-import { Report } from '../mock/types';
+import { mockChartData, mockReports } from '../mock';
 import './ReportPage.css';
 
 const ReportPage: React.FC = () => {

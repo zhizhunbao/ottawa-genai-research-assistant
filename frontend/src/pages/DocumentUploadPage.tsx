@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, FileText, Upload, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import { useLanguage } from '../App';
-import { mockUploadedFiles } from '../mock/data/files';
-import { UploadedFile } from '../mock/types';
+import { mockUploadedFiles, UploadedFile } from '../mock';
 import './DocumentUploadPage.css';
 
 const DocumentUploadPage: React.FC = () => {

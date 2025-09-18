@@ -1,10 +1,10 @@
 // Mock Data Manager - 用于动态管理和切换Mock数据
-import { mockReports } from '../data/reports';
-import { mockUploadedFiles } from '../data/files';
-import { mockStats } from '../data/stats';
-import { mockTranslations } from '../data/translations';
 import { mockChartData } from '../data/charts';
+import { mockUploadedFiles } from '../data/files';
 import { mockResponsePatterns } from '../data/messages';
+import { mockReports } from '../data/reports';
+import { getMockStats } from '../data/stats';
+import { mockTranslations } from '../data/translations';
 
 // 数据集类型定义
 export interface MockDataSet {
@@ -25,7 +25,7 @@ export const mockDataSets: Record<string, MockDataSet> = {
     description: '演示用数据集 - 用于展示和演讲',
     reports: mockReports,
     files: mockUploadedFiles,
-    stats: mockStats,
+    stats: getMockStats((key: string) => key), // Use default key as fallback
     translations: mockTranslations,
     charts: mockChartData,
     responsePatterns: mockResponsePatterns
@@ -409,4 +409,4 @@ export const mockDataUtils = {
   
   // 获取统计信息
   getStats: () => mockDataManager.getDataSetStats()
-}; 
+};

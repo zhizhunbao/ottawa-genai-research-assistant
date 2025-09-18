@@ -2,19 +2,31 @@
 
 ## 📊 Frontend Architecture Overview
 
-This frontend application adopts a modern React architecture combined with TypeScript for type safety, supporting English-French bilingual functionality, and adhering to WCAG 2.1 accessibility standards. The architectural design emphasizes component reusability, state management, and user experience optimization.
+This frontend application adopts a modern React architecture combined with TypeScript for type safety, featuring **Google OAuth 2.0 authentication**, supporting English-French bilingual functionality, and adhering to WCAG 2.1 accessibility standards. The architectural design emphasizes component reusability, secure authentication, state management, and user experience optimization.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    User Interface Layer (React Components)      │
 │                    - Page Components (Pages)                    │
+│                    - Authentication Components (Auth)           │
 │                    - Reusable Components (Components)           │
+│                    - UI Components (UI Library)                 │
 │                    - Style System (CSS Modules)                 │
 └─────────────────────────┬───────────────────────────────────────┘
                           │ Props & Events
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
+│                    Authentication Layer                        │
+│                    - Google OAuth 2.0 Integration              │
+│                    - JWT Token Management                      │
+│                    - User Session Persistence                  │
+│                    - Protected Route Guards                    │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │ Auth State
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
 │                    State Management Layer (Context API)         │
+│                    - Authentication Context (AuthContext)       │
 │                    - Language Context (LanguageContext)         │
 │                    - Theme Context (ThemeContext)               │
 │                    - User State Management                      │
@@ -24,15 +36,18 @@ This frontend application adopts a modern React architecture combined with TypeS
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Service Layer                               │
 │                    - API Service (api.ts)                      │
-│                    - Hybrid API (hybridApi.ts)                 │
+│                    - Auth Service (authService.ts)             │
+│                    - Google Auth Config (googleAuth.ts)        │
 │                    - Data Transformation Processing            │
 └─────────────────────────┬───────────────────────────────────────┘
-                          │ HTTP Requests
+                          │ HTTP Requests + JWT Headers
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Backend Interface Layer (FastAPI)           │
+│                    - Authentication Endpoints (/auth/*)        │
+│                    - User Management Endpoints (/users/*)      │
 │                    - RESTful API Endpoints                     │
-│                    - Mock Data Interface                       │
+│                    - JWT Token Validation                      │
 │                    - Real-time Communication Support           │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -42,11 +57,21 @@ This frontend application adopts a modern React architecture combined with TypeS
 ```
 frontend/
 ├── public/               # Static assets directory
-│   ├── index.html       # HTML template
+│   ├── index.html       # HTML template with Google OAuth script
 │   ├── favicon.ico      # Website icon
 │   └── manifest.json    # PWA configuration
 ├── src/                 # Source code directory
 │   ├── components/      # Reusable components
+│   │   ├── auth/       # Authentication components
+│   │   │   ├── GoogleLoginButton.tsx  # Google OAuth login
+│   │   │   ├── GoogleLoginButton.css  # OAuth button styles
+│   │   │   ├── ProtectedRoute.tsx     # Route protection
+│   │   │   └── UserProfile.tsx        # User profile display
+│   │   ├── ui/         # UI component library
+│   │   │   ├── Button.tsx             # Reusable button
+│   │   │   ├── Input.tsx              # Form input
+│   │   │   ├── Modal.tsx              # Modal dialog
+│   │   │   └── LoadingSpinner.tsx     # Loading indicator
 │   │   ├── Navbar.tsx          # Navigation bar component
 │   │   └── Navbar.css          # Navigation bar styles
 │   ├── pages/          # Page components
@@ -55,22 +80,113 @@ frontend/
 │   │   ├── DocumentUploadPage.tsx  # Document upload page
 │   │   ├── ReportPage.tsx      # Report page
 │   │   ├── SettingsPage.tsx    # Settings page
-│   │   ├── MockDataManagePage.tsx  # Mock data management page
 │   │   └── *.css              # Corresponding style files
+│   ├── contexts/       # React Context providers
+│   │   ├── AuthContext.tsx    # Authentication state management
+│   │   ├── LanguageContext.tsx # Language/i18n management
+│   │   └── ThemeContext.tsx   # Theme management
 │   ├── services/       # Service layer
 │   │   ├── api.ts             # Standard API service
-│   │   └── hybridApi.ts       # Hybrid API service
+│   │   ├── authService.ts     # Authentication service
+│   │   └── mockApi.ts         # Mock data service (fallback)
 │   ├── config/         # Configuration files
-│   ├── mock/           # Mock data
+│   │   └── googleAuth.ts      # Google OAuth configuration
+│   ├── mock/           # Mock data (development/fallback)
+│   │   ├── data/             # Mock data sets
+│   │   └── api/              # Mock API implementations
 │   ├── App.tsx         # Root application component
 │   ├── App.css         # Global styles
 │   ├── index.tsx       # Application entry point
 │   └── index.css       # Base styles
 ├── docs/               # Project documentation
 ├── package.json        # Project configuration
-├── tsconfig.json       # TypeScript configuration
-├── Dockerfile         # Docker configuration
-└── README.md          # Project documentation
+└── .env.local         # Environment variables (Google Client ID)
+```
+
+## 🔐 Authentication Architecture
+
+### **Google OAuth 2.0 Flow**
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant G as Google OAuth
+    participant B as Backend API
+    
+    U->>F: Click "Login with Google"
+    F->>G: Redirect to Google OAuth
+    G->>U: Google login form
+    U->>G: Enter credentials
+    G->>F: Return OAuth token
+    F->>B: Send token to /auth/google
+    B->>G: Validate token
+    G->>B: Return user info
+    B->>F: Return JWT token
+    F->>F: Store JWT in localStorage
+    F->>U: Redirect to dashboard
+```
+
+### **JWT Token Management**
+
+```typescript
+// AuthContext.tsx - Authentication state management
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+// Token storage and validation
+const authService = {
+  setToken: (token: string) => localStorage.setItem('jwt_token', token),
+  getToken: () => localStorage.getItem('jwt_token'),
+  removeToken: () => localStorage.removeItem('jwt_token'),
+  isTokenValid: (token: string) => {
+    // JWT validation logic
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp > Date.now() / 1000;
+    } catch {
+      return false;
+    }
+  }
+};
+```
+
+### **Protected Routes Implementation**
+
+```typescript
+// ProtectedRoute.tsx
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// App.tsx route configuration
+<Routes>
+  <Route path="/login" element={<LoginPage />} />
+  <Route path="/" element={
+    <ProtectedRoute>
+      <HomePage />
+    </ProtectedRoute>
+  } />
+  <Route path="/chat" element={
+    <ProtectedRoute>
+      <ChatPage />
+    </ProtectedRoute>
+  } />
+</Routes>
 ```
 
 ## ⚛️ React Component Architecture

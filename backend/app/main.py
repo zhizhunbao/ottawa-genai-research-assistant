@@ -7,7 +7,7 @@ This is the entry point for the FastAPI backend server.
 import os
 
 # Import API routers
-from app.api import chat, documents, reports
+from app.api import auth, chat, documents, reports
 from app.api import settings as settings_router
 from app.core.config import get_settings
 from dotenv import load_dotenv
@@ -42,7 +42,17 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
+app.include_router(
+    auth.router,
+    prefix=f"{settings.API_V1_STR}/auth",
+    tags=["authentication"],
+)
+
+app.include_router(
+    chat.router,
+    prefix=f"{settings.API_V1_STR}/chat",
+    tags=["chat"],
+)
 
 app.include_router(
     documents.router,
@@ -95,6 +105,7 @@ async def api_v1_root():
         "message": "Ottawa GenAI Research Assistant API v1",
         "version": "1.0.0",
         "endpoints": {
+            "auth": f"{settings.API_V1_STR}/auth/",
             "chat": f"{settings.API_V1_STR}/chat/",
             "documents": f"{settings.API_V1_STR}/documents/",
             "reports": f"{settings.API_V1_STR}/reports/",

@@ -1,19 +1,207 @@
 # Data Management Guide
 
-This guide provides detailed instructions on how to manage, configure, and switch Mock data in the Ottawa GenAI Research Assistant prototype.
+This guide provides detailed instructions on how to manage, configure, and handle both Mock data and User Authentication data in the Ottawa GenAI Research Assistant application.
 
 ## 📚 Table of Contents
 
+- [User Authentication Data Management](#user-authentication-data-management)
 - [Mock Data Overview](#mock-data-overview)
 - [Data Structure Details](#data-structure-details)
-- [User Authentication Data Management](#user-authentication-data-management)
+- [Google OAuth Integration](#google-oauth-integration)
+- [JWT Token Management](#jwt-token-management)
+- [User Session Persistence](#user-session-persistence)
 - [How to Switch Mock Data](#how-to-switch-mock-data)
 - [Custom Mock Data](#custom-mock-data)
 - [Data Update Strategies](#data-update-strategies)
 - [Debugging and Testing](#debugging-and-testing)
 - [Migration to Backend API](#migration-to-backend-api)
 
-## 🎯 Mock Data Overview
+## 🔐 User Authentication Data Management
+
+The application now includes a comprehensive user authentication system with Google OAuth 2.0 integration and JWT token management.
+
+### 📁 Authentication File Structure
+```
+backend/
+├── app/
+│   ├── api/
+│   │   └── auth.py              # Authentication endpoints
+│   ├── core/
+│   │   └── auth.py              # JWT and auth utilities
+│   ├── services/
+│   │   └── auth_service.py      # Authentication business logic
+│   └── repositories/
+│       └── user_repository.py   # User data access layer
+└── monk/
+    └── users/
+        └── users.json           # User data storage
+
+frontend/
+├── src/
+│   ├── components/auth/
+│   │   ├── GoogleLoginButton.tsx  # Google OAuth component
+│   │   └── ProtectedRoute.tsx     # Route protection
+│   ├── contexts/
+│   │   └── AuthContext.tsx        # Authentication state
+│   ├── config/
+│   │   └── googleAuth.ts          # Google OAuth config
+│   └── services/
+│       └── authService.ts         # Frontend auth service
+└── .env.local                     # Environment variables
+```
+
+### 👤 User Data Structure
+
+```typescript
+interface User {
+  id: string;                    // UUID v4
+  email: string;                 // User email (from Google)
+  name: string;                  // Full name (from Google)
+  avatar_url?: string;           // Profile picture URL
+  google_id: string;             // Google account ID
+  role: 'user' | 'admin';        // User role
+  created_at: string;            // ISO datetime
+  updated_at: string;            // ISO datetime
+  last_login?: string;           // Last login timestamp
+  is_active: boolean;            // Account status
+}
+```
+
+### 🔑 JWT Token Structure
+
+```typescript
+interface JWTPayload {
+  sub: string;                   // User ID (subject)
+  email: string;                 // User email
+  name: string;                  // User name
+  exp: number;                   // Expiration timestamp
+  iat: number;                   // Issued at timestamp
+  iss: string;                   // Issuer (app name)
+}
+```
+
+### 🌐 Google OAuth Configuration
+
+```typescript
+// frontend/src/config/googleAuth.ts
+export const GOOGLE_CONFIG = {
+  clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID || '',
+  redirectUri: `${window.location.origin}/auth/callback`,
+  scope: 'openid email profile',
+  responseType: 'code',
+};
+
+// Environment variables setup
+// .env.local file:
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
+```
+
+### 🔄 Authentication Flow Management
+
+#### **1. Google OAuth Login Process**
+```typescript
+// GoogleLoginButton.tsx implementation
+const handleGoogleLogin = async (credentialResponse: any) => {
+  try {
+    // Send Google credential to backend
+    const response = await authService.googleLogin(credentialResponse.credential);
+    
+    // Extract JWT token and user info
+    const { token, user } = response.data;
+    
+    // Store token and update auth state
+    authService.setToken(token);
+    setAuthState({ user, token, isAuthenticated: true });
+    
+    // Redirect to dashboard
+    navigate('/dashboard');
+  } catch (error) {
+    console.error('Login failed:', error);
+  }
+};
+```
+
+#### **2. Backend Authentication Validation**
+```python
+# backend/app/api/auth.py
+@router.post("/google")
+async def google_auth(token_data: GoogleTokenRequest):
+    try:
+        # Validate Google token
+        user_info = await verify_google_token(token_data.credential)
+        
+        # Get or create user
+        user = await user_service.get_or_create_google_user(user_info)
+        
+        # Generate JWT token
+        jwt_token = create_jwt_token(user)
+        
+        return {"token": jwt_token, "user": user}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Authentication failed")
+```
+
+#### **3. JWT Token Validation**
+```python
+# backend/app/core/auth.py
+def verify_jwt_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+```
+
+### 💾 User Data Persistence
+
+#### **JSON-Based Storage (Current Implementation)**
+```json
+// backend/monk/users/users.json
+{
+  "users": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "avatar_url": "https://lh3.googleusercontent.com/...",
+      "google_id": "123456789012345678901",
+      "role": "user",
+      "created_at": "2025-09-18T10:30:00Z",
+      "updated_at": "2025-09-18T10:30:00Z",
+      "last_login": "2025-09-18T10:30:00Z",
+      "is_active": true
+    }
+  ]
+}
+```
+
+#### **User Management Operations**
+```python
+# backend/app/services/user_service.py
+class UserService:
+    async def get_or_create_google_user(self, google_user_info: dict) -> User:
+        # Check if user exists by Google ID
+        existing_user = await self.repository.get_by_google_id(google_user_info['sub'])
+        
+        if existing_user:
+            # Update last login
+            existing_user.last_login = datetime.utcnow()
+            return await self.repository.update(existing_user)
+        else:
+            # Create new user
+            new_user = User(
+                email=google_user_info['email'],
+                name=google_user_info['name'],
+                avatar_url=google_user_info.get('picture'),
+                google_id=google_user_info['sub'],
+                role='user'
+            )
+            return await self.repository.create(new_user)
+```
+
+## �� Mock Data Overview
 
 The Mock data layer is located in the `ottawa-genai-prototype/src/mock/` directory, providing a complete set of simulated data that supports all prototype functionality without requiring a real backend.
 

@@ -1,18 +1,18 @@
 // Mock API layer - This will be replaced with real API calls in production
-import { 
-  mockReports, 
-  mockBusinessData, 
-  mockEmploymentData
-} from '../data/reports';
 import { mockUploadedFiles } from '../data/files';
 import {
-  mockInitialMessage,
-  mockResponsePatterns,
-  mockEconomicData
+    mockEconomicData,
+    mockInitialMessage,
+    mockResponsePatterns
 } from '../data/messages';
-import { mockStats } from '../data/stats';
+import {
+    mockBusinessData,
+    mockEmploymentData,
+    mockReports
+} from '../data/reports';
+import { getMockStats } from '../data/stats';
 import { mockTranslations } from '../data/translations';
-import { Report, Message, UploadedFile, StatData, Translations } from '../types';
+import { Message, Report, StatData, Translations, UploadedFile } from '../types';
 
 // Simulate API delays
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -105,7 +105,9 @@ export const mockApi = {
   // Settings API
   async getStats(): Promise<StatData[]> {
     await delay(300);
-    return mockStats;
+    // Create a mock translation function for this context
+    const mockT = (key: string) => key;
+    return getMockStats(mockT);
   },
 
   async getTranslations(): Promise<Translations> {

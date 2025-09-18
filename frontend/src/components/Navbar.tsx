@@ -1,70 +1,154 @@
-import { FileText, Globe, Home, MessageSquare, Settings, Upload } from 'lucide-react';
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import './Navbar.css';
 
 const Navbar: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { path: '/', icon: Home, label: t('nav.home') },
-    { path: '/chat', icon: MessageSquare, label: t('nav.chat') },
-    { path: '/upload', icon: Upload, label: t('nav.upload') },
-    { path: '/reports', icon: FileText, label: t('nav.reports') },
-    { path: '/settings', icon: Settings, label: t('nav.settings') }
-  ];
+  const handleLanguageToggle = () => {
+    // 切换到另一种语言
+    const newLanguage = language === 'en' ? 'fr' : 'en';
+    setLanguage(newLanguage);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+      setIsProfileMenuOpen(false);
+    } catch (error) {
+      // 生产环境中应该使用适当的错误处理
+    }
+  };
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   return (
-    <nav className="navbar" role="navigation" aria-label="Main navigation">
+    <nav className="navbar">
       <div className="navbar-container">
-        {/* Logo and Title */}
-        <div className="navbar-brand">
-          <Link to="/" className="brand-link">
-            <div className="logo">
-              <span className="logo-text">GenAI</span>
-            </div>
-            <span className="brand-title">{t('app.title')}</span>
-          </Link>
-        </div>
+        <Link to="/" className="navbar-brand">
+          <div className="brand-logo">
+            <span className="logo-icon">🍁</span>
+            <span className="brand-text">CA GenAI Research</span>
+          </div>
+        </Link>
 
-        {/* Navigation Links */}
-        <ul className="navbar-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        <div className="navbar-menu">
+          <div className="navbar-links">
+            <Link 
+              to="/" 
+              className={`navbar-link ${isActive('/') ? 'active' : ''}`}
+            >
+              {t('nav.home')}
+            </Link>
             
-            return (
-              <li key={item.path} className="nav-item">
+            {isAuthenticated && (
+              <>
                 <Link 
-                  to={item.path} 
-                  className={`nav-link ${isActive ? 'active' : ''}`}
-                  aria-current={isActive ? 'page' : undefined}
+                  to="/chat" 
+                  className={`navbar-link ${isActive('/chat') ? 'active' : ''}`}
                 >
-                  <Icon size={20} aria-hidden="true" />
-                  <span className="nav-text">{item.label}</span>
+                  {t('nav.chat')}
                 </Link>
-              </li>
-            );
-          })}
-        </ul>
+                <Link 
+                  to="/upload" 
+                  className={`navbar-link ${isActive('/upload') ? 'active' : ''}`}
+                >
+                  {t('nav.upload')}
+                </Link>
+                <Link 
+                  to="/reports" 
+                  className={`navbar-link ${isActive('/reports') ? 'active' : ''}`}
+                >
+                  {t('nav.reports')}
+                </Link>
+                <Link 
+                  to="/settings" 
+                  className={`navbar-link ${isActive('/settings') ? 'active' : ''}`}
+                >
+                  {t('nav.settings')}
+                </Link>
+              </>
+            )}
+          </div>
 
-        {/* Language Toggle */}
-        <div className="navbar-actions">
-          <button
-            className="language-toggle"
-            onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
-            aria-label={`Switch to ${language === 'en' ? 'French' : 'English'}`}
-            title={`Switch to ${language === 'en' ? 'French' : 'English'}`}
-          >
-            <Globe size={20} aria-hidden="true" />
-            <span className="language-text">{language.toUpperCase()}</span>
-          </button>
+          <div className="navbar-actions">
+            {/* Language Toggle Button */}
+            <div className="language-selector">
+              <button
+                className="language-button"
+                onClick={handleLanguageToggle}
+                title={language === 'en' ? 'Switch to Français' : 'Switch to English'}
+              >
+                {language === 'en' ? 'FR' : 'EN'}
+              </button>
+            </div>
+
+            {/* User Menu */}
+            {isAuthenticated ? (
+              <div className="user-menu">
+                <button
+                  className="user-button"
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                >
+                  {user?.picture ? (
+                    <img 
+                      src={user.picture} 
+                      alt={user.name} 
+                      className="user-avatar"
+                    />
+                  ) : (
+                    <div className="user-avatar-placeholder">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <span className="user-name">{user?.name}</span>
+                </button>
+                {isProfileMenuOpen && (
+                  <div className="profile-menu">
+                    <div className="profile-info">
+                      <div className="profile-name">{user?.name}</div>
+                      <div className="profile-email">{user?.email}</div>
+                    </div>
+                    <div className="profile-menu-divider"></div>
+                    <button
+                      className="profile-menu-item"
+                      onClick={handleLogout}
+                    >
+                      {t('nav.logout')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link to="/login" className="login-button">
+                {t('nav.login')}
+              </Link>
+            )}
+          </div>
         </div>
+
+        {/* Mobile menu button */}
+        <button
+          className="mobile-menu-button"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
     </nav>
   );
 };
 
-export default Navbar; 
+export default Navbar;

@@ -22,6 +22,7 @@ Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 - 🤖 AI-powered chat interface
 - 📄 Document upload and analysis
 - 📊 Data visualization and charts
+- 🔐 Complete authentication system with login/register
 - 🌐 Bilingual support (English/French)
 - ♿ Accessibility compliant (WCAG 2.1)
 - 📱 Responsive design
@@ -60,6 +61,52 @@ REACT_APP_MOCK_DATA_SET=development   # Development data
 REACT_APP_MOCK_DATA_SET=testing       # Testing edge cases
 REACT_APP_MOCK_DATA_SET=showcase      # Best visual presentation
 ```
+
+## 🔐 Authentication System
+
+The app includes a complete authentication system with the following features:
+
+### Demo Users
+
+For demonstration purposes, you can use these pre-configured accounts:
+
+```bash
+# Admin User
+Email: admin@ottawa.ca
+Password: admin123
+
+# Regular User  
+Email: user@ottawa.ca
+Password: user123
+
+# Research User
+Email: researcher@ottawa.ca
+Password: researcher123
+```
+
+### Authentication Features
+
+- **Login/Register Forms**: Beautiful, responsive forms with validation
+- **User Management**: Complete user profile management
+- **Role-based Access**: Admin, user, and researcher roles
+- **Session Management**: Persistent login sessions with localStorage
+- **Mock Authentication**: Fully functional authentication without backend
+- **Security**: Password validation and error handling
+
+### Testing Authentication
+
+To test the authentication system:
+
+1. Navigate to `/auth-demo` route (or create a component using `AuthDemo`)
+2. Try logging in with the demo credentials above
+3. Test registration with new user data
+4. Observe user profile and session management
+
+The authentication system is built with:
+- **React Context** for state management
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Mock Service Layer** for realistic API simulation
 
 ## 🚢 Deployment
 
