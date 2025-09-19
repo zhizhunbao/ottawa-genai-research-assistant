@@ -27,7 +27,7 @@ services:
     healthCheckPath: /health
     
   # Frontend Static Site
-  - type: static
+  - type: web
     name: ottawa-genai-frontend
     env: static
     region: oregon
