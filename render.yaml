@@ -30,7 +30,7 @@ services:
   - type: web
     name: ottawa-genai-frontend
     env: static
-    plan: free
+    plan: starter
     buildCommand: |
       cd frontend &&
       npm install &&
