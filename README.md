@@ -10,11 +10,11 @@ A comprehensive AI-powered research assistant application designed for Ottawa Ci
 
 ## 🚀 Live Demo | 在线演示
 
-**[🌐 Access the live application](https://username.github.io/ottawa-genai-research-assistant)**
+**[🌐 Access the live application](https://ottawa-genai-frontend.onrender.com)**
 
-*Note: Replace `username` with your GitHub username in the URL above.*
+*Production deployment powered by Render platform.*
 
-*注意：请将上述 URL 中的 `username` 替换为您的 GitHub 用户名。*
+*生产环境由 Render 平台提供支持。*
 
 ## 🌟 Features | 功能特性
 
@@ -276,12 +276,14 @@ After starting the backend service, access API documentation at | 启动后端�
 - [🗄️ Data Management Guide](./docs/Data%20Management%20Guide.md) - Data management strategies
 - [📊 Project Status Report](./docs/Project%20Status%20Report.md) - Current project status
 - [📋 Product Requirements Document](./docs/Product%20Requirements%20Document%20(PRD).md) - Product requirements
+- [🚀 Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment guide
 
 ### Chinese Documentation | 中文文档
 - [📋 系统架构指南](./docs/系统架构指南.md) - 完整系统架构说明
 - [🗄️ 数据管理指南](./docs/数据管理指南.md) - 数据管理策略
 - [📊 项目现状报告](./docs/项目现状报告.md) - 当前项目状态
 - [📋 产品需求文档（PRD）](./docs/产品需求文档（PRD）.md) - 产品需求说明
+- [🚀 部署指南](./docs/DEPLOYMENT.md) - 生产环境部署指南
 
 ## 🧪 Development | 开发指南
 
@@ -328,7 +330,32 @@ REACT_APP_API_STRATEGY=real
 
 ## 🚢 Deployment | 部署
 
-### GitHub Pages Deployment | GitHub Pages 部署
+### 🎯 Production Deployment | 生产环境部署
+
+**推荐使用 Render 平台进行一键部署：**
+
+1. **快速部署** | Quick Deploy:
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push
+   ```
+
+2. **在 Render 控制台创建 Blueprint 服务**
+   - 前端服务: `ottawa-genai-frontend`
+   - 后端服务: `ottawa-genai-backend`
+   - 数据库: PostgreSQL
+
+3. **访问地址** | Live URLs:
+   - 🌐 **Frontend**: https://ottawa-genai-frontend.onrender.com
+   - 🔗 **Backend API**: https://ottawa-genai-backend.onrender.com
+   - 📚 **API Docs**: https://ottawa-genai-backend.onrender.com/docs
+
+📖 **完整部署指南**: [DEPLOYMENT.md](./docs/DEPLOYMENT.md) - 详细的部署步骤、环境配置和故障排查
+
+### 🛠️ Development Deployment | 开发环境部署
+
+### GitHub Pages (前端演示)
 
 **Quick Start** | 快速开始:
 
@@ -347,40 +374,14 @@ REACT_APP_API_STRATEGY=real
    git push origin main  # Triggers automatic deployment
    ```
 
-4. **Check deployment status** | 检查部署状态:
-   ```bash
-   cd frontend
-   npm run check-deployment
-   ```
-
-📖 **Detailed guide**: `docs/GitHub-Pages-Setup.md`
-
-### Production Configuration | 生产环境配置
-
-1. **Environment Variables** | 环境变量
-   - Set production API keys
-   - Configure production domains
-   - Set secure JWT secrets
-
-2. **Frontend Build** | 前端构建
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-3. **Backend Configuration** | 后端配置
-   - Configure production database
-   - Set up reverse proxy (nginx)
-   - Configure SSL certificates
-
 ### Docker Deployment | Docker部署
 
 ```bash
-# Build production images
-docker-compose -f docker-compose.prod.yml build
+# Build and start all services
+docker-compose up --build
 
-# Deploy to production
-docker-compose -f docker-compose.prod.yml up -d
+# Frontend: http://localhost:3000
+# Backend: http://localhost:8000
 ```
 
 ## 📈 Version Updates | 版本更新

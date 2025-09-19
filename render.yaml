@@ -1,0 +1,51 @@
+services:
+  # Backend API Service
+  - type: web
+    name: ottawa-genai-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: |
+      cd backend &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: DATABASE_URL
+        sync: false
+    healthCheckPath: /health
+    
+  # Frontend Static Site
+  - type: static
+    name: ottawa-genai-frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: |
+      cd frontend &&
+      npm install &&
+      npm run build
+    staticPublishPath: ./frontend/dist
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html 
