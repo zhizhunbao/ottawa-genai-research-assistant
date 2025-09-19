@@ -1,8 +1,14 @@
-# 基础依赖
-requests>=2.31.0
-pydantic>=2.0.0
+# 🚀 Ottawa GenAI Research Assistant - Python Dependencies
+
+# 核心Web框架
 fastapi>=0.104.0
-uvicorn>=0.24.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# HTTP客户端和工具
+requests>=2.31.0
+httpx>=0.25.0
 
 # 数据处理
 pandas>=2.0.0
@@ -12,26 +18,45 @@ numpy>=1.24.0
 PyPDF2>=3.0.0
 pdfplumber>=0.9.0
 
-# 认证和安全
+# 认证和安全 - 修复bcrypt版本兼容问题
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
 python-multipart>=0.0.6
+
+# 数据库
+sqlalchemy>=2.0.0
+alembic>=1.12.0
 
 # 环境配置
 python-dotenv>=1.0.0
-pydantic-settings>=2.0.0
+
+# 模板引擎
+jinja2>=3.1.0
+
+# 日志
+loguru>=0.7.0
+
+# CORS支持已内置在FastAPI中
+# python-cors>=1.0.0
 
 # 开发工具
 pytest>=7.4.0
 black>=23.0.0
 flake8>=6.0.0
 
-# 可选：Web相关
-httpx>=0.25.0
-jinja2>=3.1.0
+# Google OAuth支持
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.2.0
 
-# 可选：数据库
-sqlalchemy>=2.0.0
+# AI/ML相关（可选）
+openai>=1.0.0
+anthropic>=0.7.0
 
-# 日志
-loguru>=0.7.0 
+# 向量数据库（可选）
+chromadb>=0.4.0
+pinecone-client>=2.2.0
+
+# 文件处理
+aiofiles>=23.0.0 
