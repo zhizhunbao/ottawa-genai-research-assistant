@@ -214,17 +214,91 @@ async def google_login(google_data: GoogleLoginRequest):
 async def verify_google_token(token: str) -> dict:
     """Verify Google JWT token and extract user information."""
     try:
-        # Decode without verification for now
-        # (in production, should verify with Google's public keys)
-        decoded_token = jwt.decode(token, options={"verify_signature": False})
+        import time
 
-        # Extract user information
-        user_info = {
-            "google_id": decoded_token.get("sub"),
-            "email": decoded_token.get("email"),
-            "name": decoded_token.get("name"),
-            "picture": decoded_token.get("picture"),
-        }
+        from app.core.config import get_settings
+        from google.auth.transport import requests
+        from google.oauth2 import id_token
+
+        settings = get_settings()
+
+        # Verify token with Google's public keys if CLIENT_ID is configured
+        if settings.GOOGLE_CLIENT_ID:
+            try:
+                # Add clock skew tolerance (5 minutes)
+                # This helps with "Token used too early" errors
+                idinfo = id_token.verify_oauth2_token(
+                    token,
+                    requests.Request(),
+                    settings.GOOGLE_CLIENT_ID,
+                    clock_skew_in_seconds=300,  # 5 minutes tolerance
+                )
+
+                # Log token info for debugging (remove in production)
+                current_time = int(time.time())
+                iat = idinfo.get("iat", 0)
+                exp = idinfo.get("exp", 0)
+
+                print("🔍 Token verification debug:")
+                print(f"  Current time: {current_time}")
+                print(f"  Token issued at (iat): {iat}")
+                print(f"  Token expires at (exp): {exp}")
+                time_diff = current_time - iat
+                print(f"  Time difference (current - iat): {time_diff} seconds")
+
+                # Extract user information from verified token
+                user_info = {
+                    "google_id": idinfo.get("sub"),
+                    "email": idinfo.get("email"),
+                    "name": idinfo.get("name"),
+                    "picture": idinfo.get("picture"),
+                }
+
+                user_email = user_info.get("email")
+                print(f"✅ Token verified successfully for user: {user_email}")
+
+            except ValueError as e:
+                error_msg = str(e)
+                print(f"❌ Google token verification failed: {error_msg}")
+
+                # Provide more specific error messages
+                if "Token used too early" in error_msg:
+                    detail = (
+                        "Google token timing error. Please check your "
+                        "system clock is synchronized, or try logging "
+                        "in again."
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail=detail,
+                    )
+                elif "Token expired" in error_msg:
+                    detail = "Google token has expired. Please try logging " "in again."
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail=detail,
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail=f"Invalid Google token: {error_msg}",
+                    )
+        else:
+            warning_msg = (
+                "⚠️  Warning: GOOGLE_CLIENT_ID not configured, "
+                "using fallback verification"
+            )
+            print(warning_msg)
+            # Fallback: decode without verification (less secure)
+            # Note: This should only be used in development
+            decoded_token = jwt.decode(token, options={"verify_signature": False})
+
+            user_info = {
+                "google_id": decoded_token.get("sub"),
+                "email": decoded_token.get("email"),
+                "name": decoded_token.get("name"),
+                "picture": decoded_token.get("picture"),
+            }
 
         if not user_info["email"]:
             raise HTTPException(
@@ -240,6 +314,8 @@ async def verify_google_token(token: str) -> dict:
             detail="Invalid Google token format",
         )
     except Exception as e:
+        error_detail = f"❌ Unexpected error in Google token verification: {str(e)}"
+        print(error_detail)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error verifying Google token: {str(e)}",

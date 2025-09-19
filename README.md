@@ -140,14 +140,13 @@ cp frontend/.env.example frontend/.env.local
 Configure your API keys | 配置API密钥：
 
 ```bash
-# backend/.env
+# backend/.env (只需要这两个必需的配置)
 OPENAI_API_KEY=your_openai_api_key_here
 GOOGLE_CLIENT_ID=your_google_client_id_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 
-# frontend/.env.local
+# frontend/.env.local (只需要这两个必需的配置)
 REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
-REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
 ### 2. Backend Setup | 后端设置

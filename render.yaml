@@ -14,16 +14,20 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      # Essential API Keys (set these in Render Dashboard)
       - key: OPENAI_API_KEY
         sync: false
-      - key: ANTHROPIC_API_KEY
+      - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: GOOGLE_API_KEY
+      # Security
+      - key: SECRET_KEY
         sync: false
-      - key: CORS_ORIGINS
-        value: "*"
-      - key: DATABASE_URL
-        sync: false
+      # CORS (adjust for your frontend domain)
+      - key: ALLOWED_ORIGINS
+        value: '["https://ottawa-genai-frontend.onrender.com"]'
+      # Optional: Database (for production PostgreSQL)
+      # - key: DATABASE_URL
+      #   sync: false
     healthCheckPath: /health
     
   # Frontend Static Site
@@ -36,6 +40,12 @@ services:
       npm run build
     staticPublishPath: ./frontend/dist
     pullRequestPreviewsEnabled: false
+    envVars:
+      # Essential Configuration (set these in Render Dashboard)
+      - key: REACT_APP_GOOGLE_CLIENT_ID
+        sync: false
+      - key: REACT_APP_API_BASE_URL
+        value: https://ottawa-genai-backend.onrender.com/api/v1
     headers:
       - path: /*
         name: X-Frame-Options
