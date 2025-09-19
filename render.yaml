@@ -30,7 +30,6 @@ services:
   - type: web
     name: ottawa-genai-frontend
     env: static
-    region: oregon
     plan: free
     buildCommand: |
       cd frontend &&
