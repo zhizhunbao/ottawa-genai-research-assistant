@@ -86,11 +86,11 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 | Priority | Feature | Timeline | Dependencies |
 |----------|---------|----------|--------------|
-| **P0** | User Authentication | Oct 2024 | Security review |
-| **P0** | AI Chat Backend | Oct-Nov 2024 | Authentication |
-| **P1** | PDF Processing | Nov 2024 | AI backend |
-| **P1** | Report Export | Nov 2024 | PDF processing |
-| **P2** | Advanced Analytics | Dec 2024 | Full integration |
+| **P0** | User Authentication | ✅ Completed | Google OAuth 2.0 |
+| **P0** | AI Chat Backend | 🔄 In Progress | Authentication |
+| **P1** | PDF Processing | 📋 Planned | AI backend |
+| **P1** | Report Export | 📋 Planned | PDF processing |
+| **P2** | Advanced Analytics | 📋 Q2 2025 | Full integration |
 
 ---
 
@@ -171,16 +171,18 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 - **Sep 2024**: High-fidelity prototype delivery
 - **Sep 2024**: Accessibility and compliance validation
 - **Sep 2024**: Stakeholder feedback collection
+- **Jan 2025**: Google OAuth authentication system
 
-### **Upcoming** 🔄
-- **Oct 2024**: Authentication system development
-- **Oct-Nov 2024**: AI backend integration
-- **Nov 2024**: PDF processing implementation
-- **Dec 2024**: Complete system testing
+### **In Progress** 🔄
+- **Q1 2025**: AI backend integration and optimization
+
+### **Planned** 📋
+- **Q2 2025**: PDF processing implementation
+- **Q2 2025**: Complete system testing
 
 ### **Future** 📋
-- **Q1 2025**: Production deployment
-- **Q2 2025**: User training and rollout
+- **Q3 2025**: Production deployment
+- **Q4 2025**: User training and rollout
 
 ---
 
@@ -194,8 +196,8 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 ---
 
 **Document Version:** 2.0  
-**Last Updated:** September 18, 2024  
-**Next Review:** October 1, 2024
+**Last Updated:** January 19, 2025
+**Next Review:** February 1, 2025
 
 ## 📚 Related Documentation
 
