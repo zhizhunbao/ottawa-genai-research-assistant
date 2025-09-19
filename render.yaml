@@ -1,19 +1,13 @@
 services:
-  # Backend API Service
+  # Backend API Service (Docker)
   - type: web
     name: ottawa-genai-backend
-    env: python
+    env: docker
     region: oregon
     plan: free
-    buildCommand: |
-      cd backend &&
-      pip install -r requirements.txt
-    startCommand: |
-      cd backend &&
-      uvicorn main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       # Essential API Keys (set these in Render Dashboard)
       - key: OPENAI_API_KEY
         sync: false
@@ -31,20 +25,21 @@ services:
       # CORS (adjust for your frontend domain)
       - key: ALLOWED_ORIGINS
         value: '["https://ottawa-genai-frontend.onrender.com"]'
-      # Optional: Database (for production PostgreSQL)
-      # - key: DATABASE_URL
-      #   sync: false
+      # Environment
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
     healthCheckPath: /health
     
-  # Frontend Static Site
+  # Frontend (Docker)
   - type: web
     name: ottawa-genai-frontend
-    env: static
-    buildCommand: |
-      cd frontend &&
-      npm install &&
-      npm run build
-    staticPublishPath: ./frontend/dist
+    env: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
     pullRequestPreviewsEnabled: false
     envVars:
       # Essential Configuration (set these in Render Dashboard)
