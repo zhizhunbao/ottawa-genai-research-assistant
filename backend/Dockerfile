@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
-COPY backend/ .
+COPY . .
 
 # Create uploads directory
 RUN mkdir -p uploads
