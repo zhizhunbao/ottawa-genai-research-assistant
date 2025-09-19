@@ -66,14 +66,14 @@ class AuthService:
         return created_user
 
     async def authenticate_user(self, login_data: UserLogin) -> User:
-        """Authenticate user with username and password."""
+        """Authenticate user with email and password."""
 
-        # Find user by username
-        user = self.user_repo.find_by_username(login_data.username)
+        # Find user by email
+        user = self.user_repo.find_by_email(login_data.email)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
+                detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -89,7 +89,7 @@ class AuthService:
         if not verify_password(login_data.password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
+                detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -107,7 +107,7 @@ class AuthService:
         )
 
         access_token = create_access_token(
-            data={"sub": user.username, "user_id": user.id, "role": user.role},
+            data={"sub": user.email, "user_id": user.id, "role": user.role},
             expires_delta=access_token_expires,
         )
 
@@ -123,9 +123,9 @@ class AuthService:
         # Verify token
         payload = verify_token(token)
 
-        # Extract username from token
-        username: str = payload.get("sub")
-        if username is None:
+        # Extract email from token
+        email: str = payload.get("sub")
+        if email is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
@@ -133,7 +133,7 @@ class AuthService:
             )
 
         # Get user from database
-        user = self.user_repo.find_by_username(username)
+        user = self.user_repo.find_by_email(email)
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -159,3 +159,40 @@ class AuthService:
 
         # Create new token
         return await self.create_user_token(user)
+
+    async def get_or_create_google_user(self, google_info: dict) -> User:
+        """Get existing user or create new user from Google OAuth info."""
+
+        # Try to find existing user by email
+        existing_user = self.user_repo.find_by_email(google_info["email"])
+
+        if existing_user:
+            # Update last login
+            existing_user.last_login = datetime.utcnow()
+            self.user_repo.update(existing_user.id, existing_user)
+            return existing_user
+
+        # Create new user from Google info
+        # Generate username from email or name
+        username = google_info.get("name", "").replace(" ", "_").lower()
+        if not username or len(username) < 3:
+            username = google_info["email"].split("@")[0]
+
+        # Ensure username is unique
+        base_username = username
+        counter = 1
+        while self.user_repo.find_by_username(username):
+            username = f"{base_username}_{counter}"
+            counter += 1
+
+        # Create user data
+        user_data = UserCreate(
+            username=username,
+            email=google_info["email"],
+            password="google_oauth",  # Placeholder, won't be used
+            role="researcher",  # Default role for Google users
+        )
+
+        # Create and return new user
+        new_user = await self.register_user(user_data)
+        return new_user

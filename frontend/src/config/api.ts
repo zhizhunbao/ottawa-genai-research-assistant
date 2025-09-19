@@ -12,10 +12,7 @@ const getApiStrategy = (): ApiStrategy => {
   // Default strategy based on environment
   if (strategy) return strategy;
   
-  // Development: use hybrid (try real, fallback to mock)
-  if (process.env.NODE_ENV === 'development') return 'hybrid';
-  
-  // Production: use real API only
+  // Development and Production: use real API by default
   return 'real';
 };
 
@@ -43,7 +40,7 @@ export const config = {
   apiStrategy: API_STRATEGY,
   useMockApi: API_STRATEGY === 'mock',
   useHybridApi: API_STRATEGY === 'hybrid',
-  apiBaseUrl: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001',
+  apiBaseUrl: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1',
   fallbackToMock: process.env.REACT_APP_FALLBACK_TO_MOCK !== 'false',
   apiTimeout: parseInt(process.env.REACT_APP_API_TIMEOUT || '5000'),
   version: '1.0.0-prototype'

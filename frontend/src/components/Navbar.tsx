@@ -1,7 +1,6 @@
 import {
     FileText,
     Globe,
-    Home,
     MessageSquare,
     Settings,
     Upload
@@ -40,14 +39,13 @@ const Navbar: React.FC = () => {
     return location.pathname === path;
   };
 
-  // 导航项配置
+  // 检查是否在认证页面（登录/注册）
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  // 导航项配置 - 移除Homepage选项，让Logo承担回首页功能
   const navigationItems = [
-    {
-      path: '/',
-      icon: Home,
-      label: t('nav.home') || 'Home'
-    },
-    ...(isAuthenticated ? [
+    // 认证用户的功能选项 - 只有登录用户且不在认证页面时显示
+    ...(!isAuthPage && isAuthenticated ? [
       {
         path: '/chat',
         icon: MessageSquare,
@@ -122,24 +120,23 @@ const Navbar: React.FC = () => {
                 className="user-button"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               >
-                {user?.picture ? (
-                  <img 
-                    src={user.picture} 
-                    alt={user.name} 
-                    className="user-avatar"
-                  />
-                ) : (
-                  <div className="user-avatar-placeholder">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                <div className="user-avatar">
+                  {/* 使用用户名首字母作为头像 */}
+                  <div className="avatar-circle">
+                    {user?.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                )}
-                <span className="user-name">{user?.name}</span>
+                  <span className="user-name">{user?.username}</span>
+                </div>
               </button>
               {isProfileMenuOpen && (
-                <div className="profile-menu">
-                  <div className="profile-info">
-                    <div className="profile-name">{user?.name}</div>
-                    <div className="profile-email">{user?.email}</div>
+                <div className="dropdown-menu">
+                  <div className="dropdown-header">
+                    <div className="profile-avatar">
+                      <div className="avatar-circle">
+                        {user?.username?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div className="profile-name">{user?.username}</div>
+                    </div>
                   </div>
                   <div className="profile-menu-divider"></div>
                   <button
@@ -152,7 +149,7 @@ const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            <Link to="/login" className="login-button">
+                            <Link to="/login" className="navbar-login-button">
               {t('nav.login')}
             </Link>
           )}

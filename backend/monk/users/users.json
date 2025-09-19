@@ -3,7 +3,7 @@
     "id": "user_001",
     "username": "john_researcher",
     "email": "john@ottawa.ca",
-    "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBKYBJI1MKEwwK",
+    "hashed_password": "$2b$12$2EMCnHzINxBpV/2mpe6lu.40gYNTaRS1yPdNfvlEjHCNrYFHkpJaG",
     "role": "researcher",
     "status": "active",
     "created_at": "2024-08-01T09:00:00Z",
@@ -26,7 +26,7 @@
     "id": "user_002",
     "username": "marie_analyst",
     "email": "marie@ottawa.ca",
-    "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBKYBJI1MKEwwK",
+    "hashed_password": "$2b$12$2EMCnHzINxBpV/2mpe6lu.40gYNTaRS1yPdNfvlEjHCNrYFHkpJaG",
     "role": "analyst",
     "status": "active",
     "created_at": "2024-07-15T14:00:00Z",
@@ -49,7 +49,7 @@
     "id": "user_003",
     "username": "admin_user",
     "email": "admin@ottawa.ca",
-    "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBKYBJI1MKEwwK",
+    "hashed_password": "$2b$12$2EMCnHzINxBpV/2mpe6lu.40gYNTaRS1yPdNfvlEjHCNrYFHkpJaG",
     "role": "admin",
     "status": "active",
     "created_at": "2024-06-01T10:00:00Z",
@@ -68,15 +68,77 @@
     }
   },
   {
-    "id": "4c7cd95c-c5df-4983-a76b-b6940da0bb98",
-    "username": "newtest",
-    "email": "newtest@ottawa.ca",
-    "hashed_password": "$2b$12$AQS3Ogo0lVXVhmaQNFyDE.utfR/7Yn1nCzqTyGpquM6f2L4wx4CgK",
+    "id": "78701163-2a5e-415e-b618-93956ad5fe25",
+    "username": "demo",
+    "email": "demo@example.com",
+    "hashed_password": "$2b$12$XkPWvP2yFiXupvFbdFoZkOBND2L4iDEaOtaYLag.M3WV/QOzM.x/a",
     "role": "researcher",
     "status": "active",
-    "created_at": "2025-09-17T22:54:09.327672",
-    "last_login": "2025-09-17T22:54:18.560980",
+    "created_at": "2025-09-18T23:28:49.078679",
+    "last_login": "2025-09-18T23:35:28.594277",
+    "preferences": {
+      "language": "en",
+      "theme": "light",
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "department": null,
+      "access_level": "standard"
+    }
+  },
+  {
+    "id": "f8392097-c14e-46d4-b111-c991a6be007d",
+    "username": "demo_user",
+    "email": "402707192@qq.com",
+    "hashed_password": "$2b$12$56xNthLbyTFG0PtlNQFES.eMO/5KyEWMkb3AetuFeWn72mtW9pZRa",
+    "role": "researcher",
+    "status": "active",
+    "created_at": "2025-09-18T19:37:59.817293",
+    "last_login": "2025-09-19T01:20:50.922125",
     "preferences": "language='en' theme='light' notifications=True default_topics=[]",
     "metadata": "department=None access_level='standard'"
+  },
+  {
+    "id": "6a1827ac-6363-4066-abb4-32e00429b2aa",
+    "username": "admin_ottawa",
+    "email": "admin@ottawa.ca",
+    "hashed_password": "$2b$12$JOsylNezg7di.sqW40mow.NUCXCuCxHJndtbU29Hd6P.HOl5FecJm",
+    "role": "admin",
+    "status": "active",
+    "created_at": "2025-09-18T19:37:59.987034",
+    "last_login": null,
+    "preferences": {
+      "language": "en",
+      "theme": "light",
+      "notifications": true,
+      "default_topics": [
+        "all"
+      ]
+    },
+    "metadata": {
+      "department": "IT Services",
+      "access_level": "admin"
+    }
+  },
+  {
+    "id": "c3cf4876-5950-4169-8d1f-56f49a100af6",
+    "username": "peng_wang",
+    "email": "wangsansi9527@gmail.com",
+    "hashed_password": "$2b$12$SYb.lzGlbD32ON8zfrLDSuOq3xsrHNoy3s5/56G5ifV/WyLQsiqse",
+    "role": "researcher",
+    "status": "active",
+    "created_at": "2025-09-19T01:26:16.050993",
+    "last_login": null,
+    "preferences": {
+      "language": "en",
+      "theme": "light",
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "department": null,
+      "access_level": "standard"
+    }
   }
 ]

@@ -1,4 +1,3 @@
-import { GoogleLogin } from '@react-oauth/google';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,8 +49,8 @@ const RegisterPage: React.FC = () => {
     try {
       // Mock registration - automatically log in with demo credentials
       await login({
-        email: formData.email,
-        password: 'demo123' // Default demo password
+        email: 'demo@example.com',
+        password: 'demo123456' // Use the registered demo password
       });
       navigate('/');
     } catch (error: any) {
@@ -59,38 +58,17 @@ const RegisterPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSuccess = async (response: any) => {
-    try {
-      // Mock Google registration
-      await login({
-        email: 'demo@google.com',
-        password: 'demo123'
-      });
-      navigate('/');
-    } catch (error: any) {
-      setFormError(error.message || 'Google registration failed');
-    }
-  };
-
   return (
     <div className="login-page">
       <div className="login-container">
-        <div className="login-form">
-          <h2>Create Account</h2>
-          <p className="login-subtitle">Join our research community</p>
-
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setFormError('Google registration failed')}
-            text="signup_with"
-          />
-
-          <div className="divider">
-            <span>or</span>
+        <div className="login-form register-header-compact">
+          <div className="header-section">
+            <h2>Create Account</h2>
+            <p className="login-subtitle">Join our research community</p>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
+          <form onSubmit={handleSubmit} className="register-form">
+            <div className="form-group compact">
               <label htmlFor="name">Full Name</label>
               <input
                 type="text"
@@ -104,7 +82,7 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group compact">
               <label htmlFor="email">Email</label>
               <input
                 type="email"
@@ -118,7 +96,7 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group compact">
               <label htmlFor="password">Password</label>
               <input
                 type="password"
@@ -126,13 +104,13 @@ const RegisterPage: React.FC = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Create a password"
+                placeholder="Enter your password"
                 disabled={isLoading}
                 required
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group compact">
               <label htmlFor="confirmPassword">Confirm Password</label>
               <input
                 type="password"

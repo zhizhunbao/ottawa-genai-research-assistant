@@ -6,6 +6,5 @@ export * from './reports';
 export * from './stats';
 export * from './translations';
 
-// Authentication data
-export * from './auth';
+// Authentication data has been removed
 

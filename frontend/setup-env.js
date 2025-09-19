@@ -14,7 +14,7 @@ const envExampleContent = `# Google OAuth配置
 REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
 
 # API配置
-REACT_APP_API_BASE_URL=http://localhost:8000
+REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
 
 # 其他配置
 REACT_APP_ENV=development

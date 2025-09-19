@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from app.models.user import User, UserPreferences
+from app.models.user import User, UserMetadata, UserPreferences
 
 from .base import BaseRepository
 
@@ -29,6 +29,22 @@ class UserRepository(BaseRepository[User]):
             data["last_login"] = datetime.fromisoformat(
                 data["last_login"].replace("Z", "+00:00")
             )
+
+        # Handle preferences - ensure it's a dict or create default
+        preferences = data.get("preferences")
+        if isinstance(preferences, str):
+            # If it's a string, create default preferences
+            data["preferences"] = UserPreferences().model_dump()
+        elif not preferences:
+            data["preferences"] = UserPreferences().model_dump()
+
+        # Handle metadata - ensure it's a dict or create default
+        metadata = data.get("metadata")
+        if isinstance(metadata, str):
+            # If it's a string, create default metadata
+            data["metadata"] = UserMetadata().model_dump()
+        elif not metadata:
+            data["metadata"] = UserMetadata().model_dump()
 
         return User(**data)
 

@@ -179,30 +179,31 @@
 }
 
 .user-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.user-avatar-placeholder {
+.avatar-circle {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #e5e7eb;
+  background: linear-gradient(135deg, #004890, #0066cc);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   font-weight: 600;
   font-size: 12px;
-  color: #6b7280;
+  flex-shrink: 0;
 }
 
 .user-name {
   font-weight: 500;
+  white-space: nowrap;
 }
 
-.profile-menu {
+.dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -215,8 +216,14 @@
   border: 1px solid #e5e7eb;
 }
 
-.profile-info {
+.dropdown-header {
   margin-bottom: 0.75rem;
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .profile-name {
@@ -253,27 +260,49 @@
   color: #dc2626;
 }
 
-.login-button {
-  display: flex;
+.navbar-login-button {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #004890, #0066cc);
+  gap: 6px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #004890 0%, #0066cc 100%);
   color: white;
   text-decoration: none;
   border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
+  font-weight: 500;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
-  border: 1px solid #004890;
-  box-shadow: 0 4px 12px rgba(0, 72, 144, 0.2);
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 72, 144, 0.15);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
-.login-button:hover {
-  background: linear-gradient(135deg, #003366, #004890);
-  border-color: #003366;
+.navbar-login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.navbar-login-button:hover {
+  background: linear-gradient(135deg, #003366 0%, #004890 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 72, 144, 0.3);
+  box-shadow: 0 4px 18px rgba(0, 72, 144, 0.25);
+}
+
+.navbar-login-button:hover::before {
+  left: 100%;
+}
+
+.navbar-login-button:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 72, 144, 0.2);
 }
 
 .mobile-menu-button {
@@ -367,7 +396,7 @@
   .language-button,
   .navbar-brand,
   .user-button,
-  .login-button {
+  .navbar-login-button {
     transition: none;
   }
 }

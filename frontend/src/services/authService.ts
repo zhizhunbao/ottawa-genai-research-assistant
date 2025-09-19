@@ -2,17 +2,18 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 
 export interface User {
   id: string;
+  username: string;
   email: string;
-  name: string;
-  picture?: string;
-  created_at: string;
-  last_login: string;
+  role: string;
+  status: string;
+  last_login?: string;
 }
 
 export interface AuthResponse {
   user: User;
-  token: string;
-  refresh_token: string;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
 }
 
 export interface LoginRequest {
@@ -23,7 +24,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  name: string;
+  username: string;
+  role: string;
 }
 
 class AuthService {
@@ -31,95 +33,71 @@ class AuthService {
   private refreshToken: string | null = localStorage.getItem('refresh_token');
 
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    try {
-      // 🔄 Try real API first
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      const data = await response.json();
-      this.setTokens(data.token, data.refresh_token);
-      return data;
-    } catch (error) {
-      console.warn('Real API login failed, falling back to mock auth:', error);
-      
-      // 🔄 Fallback to mock authentication
-      return this.mockLogin(credentials);
-    }
-  }
-
-  private async mockLogin(credentials: LoginRequest): Promise<AuthResponse> {
-    // Mock users for demo
-    const mockUsers = [
-      {
-        email: '402707192@qq.com',
-        password: 'demo123',
-        user: {
-          id: '1',
-          email: '402707192@qq.com', 
-          name: 'Demo User',
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        }
-      },
-      {
-        email: 'admin@ottawa.ca',
-        password: 'admin123',
-        user: {
-          id: '2',
-          email: 'admin@ottawa.ca',
-          name: 'Ottawa Admin',
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        }
-      }
-    ];
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const mockUser = mockUsers.find(u => u.email === credentials.email && u.password === credentials.password);
+    console.log('🔐 Login attempt:', { 
+      url: `${API_BASE_URL}/auth/login`, 
+      credentials: { email: credentials.email, password: '***' }
+    });
     
-    if (!mockUser) {
-      throw new Error('Invalid email or password');
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      console.error('❌ Login failed:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        url: response.url
+      });
+      
+      const errorData = await response.json();
+      console.error('❌ Error details:', errorData);
+      throw new Error(errorData.detail || 'Login failed');
     }
 
-    const mockResponse: AuthResponse = {
-      user: mockUser.user,
-      token: 'mock_jwt_token_' + Date.now(),
-      refresh_token: 'mock_refresh_token_' + Date.now()
+    const data = await response.json();
+    console.log('✅ Login successful:', { 
+      status: response.status,
+      hasToken: !!data.access_token,
+      tokenType: data.token_type,
+      userData: data.user
+    });
+    
+    // Transform backend response to frontend format
+    const authResponse: AuthResponse = {
+      user: {
+        id: data.user?.id || 'unknown',
+        username: data.user?.username || '',
+        email: data.user?.email || credentials.email,
+        role: data.user?.role || 'user',
+        status: data.user?.status || 'active',
+        last_login: data.user?.last_login || new Date().toISOString()
+      },
+      access_token: data.access_token,
+      token_type: data.token_type || 'bearer',
+      expires_in: data.expires_in || 3600
     };
 
-    this.setTokens(mockResponse.token, mockResponse.refresh_token);
-    return mockResponse;
+    this.setTokens(authResponse.access_token, '');
+    return authResponse;
   }
 
   async logout(): Promise<void> {
     try {
-      // Try real API logout first
       if (this.token) {
         await fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.token}`,
           },
-          signal: AbortSignal.timeout(3000),
         });
       }
     } catch (error) {
-      console.warn('Real API logout failed, proceeding with local logout:', error);
+      console.warn('Logout API call failed:', error);
     } finally {
-      // Always clear local tokens
       this.clearTokens();
     }
   }
@@ -129,37 +107,78 @@ class AuthService {
       throw new Error('No authentication token');
     }
 
-    try {
-      // Try real API first
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-        },
-        signal: AbortSignal.timeout(5000),
-      });
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+    });
 
-      if (response.ok) {
-        return await response.json();
-      }
-    } catch (error) {
-      console.warn('Real API user fetch failed, using mock user:', error);
+    if (!response.ok) {
+      throw new Error('Failed to get user info');
     }
 
-    // Fallback to mock user data
+    const userData = await response.json();
+    
     return {
-      id: '1',
-      email: '402707192@qq.com',
-      name: 'Demo User',
-      created_at: new Date().toISOString(),
-      last_login: new Date().toISOString()
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role,
+      status: userData.status,
+      last_login: userData.last_login
     };
+  }
+
+  async googleLogin(googleResponse: any): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        credential: googleResponse.credential
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Google login failed');
+    }
+
+    const data = await response.json();
+    console.log('✅ Google login successful:', { 
+      status: response.status,
+      hasToken: !!data.access_token,
+      tokenType: data.token_type,
+      userData: data.user
+    });
+    
+    // Transform backend response to frontend format
+    const authResponse: AuthResponse = {
+      user: {
+        id: data.user?.id || 'unknown',
+        username: data.user?.username || '',
+        email: data.user?.email || '',
+        role: data.user?.role || 'user',
+        status: data.user?.status || 'active',
+        last_login: data.user?.last_login || new Date().toISOString()
+      },
+      access_token: data.access_token,
+      token_type: data.token_type || 'bearer',
+      expires_in: data.expires_in || 3600
+    };
+
+    this.setTokens(authResponse.access_token, '');
+    return authResponse;
   }
 
   private setTokens(token: string, refreshToken: string): void {
     this.token = token;
     this.refreshToken = refreshToken;
     localStorage.setItem('auth_token', token);
-    localStorage.setItem('refresh_token', refreshToken);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
   }
 
   private clearTokens(): void {

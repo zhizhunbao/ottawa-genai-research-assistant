@@ -59,28 +59,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(true);
       setError(null);
       
-      // 使用mock Google用户数据
-      const mockGoogleUser: User = {
-        id: 'google_' + Date.now(),
-        email: 'google.user@gmail.com',
-        name: 'Google Demo User',
-        picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      };
-
-      const mockAuthResponse: AuthResponse = {
-        user: mockGoogleUser,
-        token: 'mock_google_jwt_token_' + Date.now(),
-        refresh_token: 'mock_google_refresh_token_' + Date.now()
-      };
-
-      // 保存到localStorage
-      localStorage.setItem('auth_token', mockAuthResponse.token);
-      localStorage.setItem('refresh_token', mockAuthResponse.refresh_token);
-      
-      setUser(mockAuthResponse.user);
-      console.log('Google mock login successful:', mockGoogleUser);
+      // 使用真实的Google OAuth登录
+      const authResponse: AuthResponse = await authService.googleLogin(response);
+      setUser(authResponse.user);
     } catch (error: any) {
       setError(error.message || 'Google login failed');
       throw error;

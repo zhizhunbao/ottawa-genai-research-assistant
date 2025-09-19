@@ -1,13 +1,31 @@
 import { AlertCircle, CheckCircle, Clock, FileText, Upload, X } from 'lucide-react';
-import React, { useRef, useState } from 'react';
-import { mockUploadedFiles, UploadedFile } from '../mock';
+import React, { useEffect, useRef, useState } from 'react';
+import { api } from '../config/api';
+import { UploadedFile } from '../mock';
 import './DocumentUploadPage.css';
 
 const DocumentUploadPage: React.FC = () => {
-  // Use mock data instead of hardcoded data
-  const [files, setFiles] = useState<UploadedFile[]>(mockUploadedFiles);
+  // Load files from API with fallback
+  const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing files on component mount
+  useEffect(() => {
+    loadUploadedFiles();
+  }, []);
+
+  const loadUploadedFiles = async () => {
+    try {
+      const uploadedFiles = await api.getUploadedFiles();
+      setFiles(uploadedFiles);
+    } catch (error) {
+      console.error('Error loading files:', error);
+      // Fallback to empty array if API fails
+      setFiles([]);
+    }
+  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -40,10 +58,19 @@ const DocumentUploadPage: React.FC = () => {
     processFiles(selectedFiles);
   };
 
-  const processFiles = (fileList: File[]) => {
-    const newFiles: UploadedFile[] = fileList
-      .filter(file => file.type === 'application/pdf')
-      .map(file => ({
+  const processFiles = async (fileList: File[]) => {
+    const pdfFiles = fileList.filter(file => file.type === 'application/pdf');
+    
+    if (pdfFiles.length === 0) {
+      alert('Please select PDF files only.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Process each file
+    for (const file of pdfFiles) {
+      const tempFile: UploadedFile = {
         id: Date.now().toString() + Math.random(),
         name: file.name,
         size: file.size,
@@ -51,14 +78,30 @@ const DocumentUploadPage: React.FC = () => {
         status: 'uploading' as const,
         progress: 0,
         uploadedAt: new Date()
-      }));
+      };
 
-    setFiles(prev => [...prev, ...newFiles]);
+      // Add to UI immediately
+      setFiles(prev => [...prev, tempFile]);
 
-    // Simulate upload process
-    newFiles.forEach(file => {
-      simulateUpload(file.id);
-    });
+      try {
+        // Try to upload via API
+        const uploadedFile = await api.uploadFile(file);
+        
+        // Update the file status to completed
+        setFiles(prev => prev.map(f => 
+          f.id === tempFile.id 
+            ? { ...uploadedFile, status: 'completed' as const, progress: 100 }
+            : f
+        ));
+      } catch (error) {
+        console.error('Upload failed:', error);
+        
+        // Fallback to simulation if API fails
+        simulateUpload(tempFile.id);
+      }
+    }
+
+    setIsLoading(false);
   };
 
   const simulateUpload = (fileId: string) => {
@@ -85,8 +128,15 @@ const DocumentUploadPage: React.FC = () => {
     }, 200);
   };
 
-  const removeFile = (fileId: string) => {
-    setFiles(prev => prev.filter(file => file.id !== fileId));
+  const removeFile = async (fileId: string) => {
+    try {
+      await api.deleteFile(fileId);
+      setFiles(prev => prev.filter(file => file.id !== fileId));
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      // Still remove from UI even if API call fails
+      setFiles(prev => prev.filter(file => file.id !== fileId));
+    }
   };
 
   const openFilePicker = () => {
@@ -114,11 +164,11 @@ const DocumentUploadPage: React.FC = () => {
 
         {/* Upload Zone */}
         <div 
-          className={`upload-zone ${isDragOver ? 'drag-over' : ''}`}
+          className={`upload-zone ${isDragOver ? 'drag-over' : ''} ${isLoading ? 'uploading' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={openFilePicker}
+          onClick={isLoading ? undefined : openFilePicker}
           role="button"
           tabIndex={0}
           aria-label="Upload documents"
@@ -134,10 +184,10 @@ const DocumentUploadPage: React.FC = () => {
           
           <div className="upload-content">
             <Upload size={48} className="upload-icon" />
-            <h3>Drop PDF files here or click to browse</h3>
+            <h3>{isLoading ? 'Uploading files...' : 'Drop PDF files here or click to browse'}</h3>
             <p>Supported format: PDF documents only</p>
-            <button className="upload-btn">
-              Choose Files
+            <button className="upload-btn" disabled={isLoading}>
+              {isLoading ? 'Uploading...' : 'Choose Files'}
             </button>
           </div>
         </div>

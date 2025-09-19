@@ -2,7 +2,6 @@
 // This layer will be replaced with real database connections in production
 
 export * from './data/aiResponses';
-export * from './data/auth';
 export * from './data/charts';
 export * from './data/features';
 export * from './data/files';
@@ -22,6 +21,5 @@ export * from './config';
 export * from './api/mockApi';
 
 // Utils and services
-export * from './services/authService';
 export * from './utils/dataManager';
 

@@ -1,8 +1,32 @@
 // Real API Service Layer - Production Implementation
-import { Report, Message, UploadedFile, StatData, Translations } from '../mock/types';
+import { Message, Report, StatData, Translations, UploadedFile } from '../mock/types';
 
 // Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+// Backend response types
+interface BackendDocumentInfo {
+  id: string;
+  filename: string;
+  size: number;
+  upload_date: string;
+  processed: boolean;
+  page_count?: number;
+  language?: string;
+}
+
+interface BackendDocumentList {
+  documents: BackendDocumentInfo[];
+  total: number;
+}
+
+interface BackendUploadResponse {
+  id: string;
+  filename: string;
+  size: number;
+  message: string;
+  processing_status: string;
+}
 
 // HTTP client utility
 class ApiClient {
@@ -95,17 +119,39 @@ export const realApi = {
     return apiClient.get<Message[]>(`/chat/conversations/${conversationId}`);
   },
 
-  // File Upload API
+  // Document Upload API
   uploadFile: async (file: File): Promise<UploadedFile> => {
-    return apiClient.upload<UploadedFile>('/files/upload', file);
+    const response = await apiClient.upload<BackendUploadResponse>('/documents/upload', file);
+    
+    // Transform backend format to frontend format
+    return {
+      id: response.id,
+      name: response.filename,
+      size: response.size,
+      type: file.type,
+      status: response.processing_status === 'completed' ? 'completed' as const : 'uploading' as const,
+      progress: response.processing_status === 'completed' ? 100 : 50,
+      uploadedAt: new Date()
+    };
   },
 
   getUploadedFiles: async (): Promise<UploadedFile[]> => {
-    return apiClient.get<UploadedFile[]>('/files');
+    const response = await apiClient.get<BackendDocumentList>('/documents/list');
+    
+    // Transform backend format to frontend format
+    return response.documents.map(doc => ({
+      id: doc.id,
+      name: doc.filename,
+      size: doc.size,
+      type: 'application/pdf',
+      status: doc.processed ? 'completed' as const : 'uploading' as const,
+      progress: doc.processed ? 100 : 0,
+      uploadedAt: new Date(doc.upload_date)
+    }));
   },
 
   deleteFile: async (fileId: string): Promise<void> => {
-    const url = `${API_BASE_URL}/files/${fileId}`;
+    const url = `${API_BASE_URL}/documents/${fileId}`;
     await fetch(url, { method: 'DELETE' });
   },
 

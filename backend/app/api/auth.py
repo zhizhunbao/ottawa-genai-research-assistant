@@ -4,10 +4,19 @@
 Handles user authentication operations like login, register, and user info.
 """
 
-from app.models.user import Token, User, UserCreate, UserLogin, UserSummary
+import jwt
+from app.models.user import (
+    AuthResponse,
+    Token,
+    User,
+    UserCreate,
+    UserLogin,
+    UserSummary,
+)
 from app.services.auth_service import AuthService
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
 
 # Create router
 router = APIRouter()
@@ -48,15 +57,15 @@ async def register(user_data: UserCreate):
         )
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=AuthResponse)
 async def login(login_data: UserLogin):
     """
-    Authenticate user and return access token.
+    Authenticate user and return access token with user info.
 
-    - **username**: User's username
+    - **email**: User's email address
     - **password**: User's password
 
-    Returns JWT access token for authenticated requests.
+    Returns JWT access token and user information.
     """
     try:
         # Authenticate user
@@ -65,7 +74,20 @@ async def login(login_data: UserLogin):
         # Create access token
         token = await auth_service.create_user_token(user)
 
-        return token
+        # Return both token and user info
+        return AuthResponse(
+            access_token=token.access_token,
+            token_type=token.token_type,
+            expires_in=token.expires_in,
+            user=UserSummary(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                role=user.role,
+                status=user.status,
+                last_login=user.last_login,
+            ),
+        )
 
     except HTTPException:
         raise
@@ -140,6 +162,88 @@ async def logout():
     by removing the token. This endpoint exists for API completeness.
     """
     return {"message": "Successfully logged out"}
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str  # Google JWT token
+
+
+@router.post("/google", response_model=AuthResponse)
+async def google_login(google_data: GoogleLoginRequest):
+    """
+    Authenticate user with Google OAuth token.
+
+    - **credential**: Google JWT token from frontend
+
+    Returns JWT access token and user information.
+    """
+    try:
+        # Verify Google token and extract user info
+        user_info = await verify_google_token(google_data.credential)
+
+        # Get or create user from Google info
+        user = await auth_service.get_or_create_google_user(user_info)
+
+        # Create access token
+        token = await auth_service.create_user_token(user)
+
+        # Return both token and user info
+        return AuthResponse(
+            access_token=token.access_token,
+            token_type=token.token_type,
+            expires_in=token.expires_in,
+            user=UserSummary(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                role=user.role,
+                status=user.status,
+                last_login=user.last_login,
+            ),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Google login: {str(e)}",
+        )
+
+
+async def verify_google_token(token: str) -> dict:
+    """Verify Google JWT token and extract user information."""
+    try:
+        # Decode without verification for now
+        # (in production, should verify with Google's public keys)
+        decoded_token = jwt.decode(token, options={"verify_signature": False})
+
+        # Extract user information
+        user_info = {
+            "google_id": decoded_token.get("sub"),
+            "email": decoded_token.get("email"),
+            "name": decoded_token.get("name"),
+            "picture": decoded_token.get("picture"),
+        }
+
+        if not user_info["email"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Google token: missing email",
+            )
+
+        return user_info
+
+    except jwt.DecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Google token format",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error verifying Google token: {str(e)}",
+        )
 
 
 # Dependency for protected routes

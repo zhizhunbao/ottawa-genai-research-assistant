@@ -8,7 +8,8 @@ A comprehensive AI-powered research assistant application designed for Ottawa Ci
 
 ### ✅ Core Features | 核心功能
 - 🤖 **AI-Powered Chat** | AI智能对话 - OpenAI GPT-4 integration
-- 🔐 **Google OAuth 2.0** | 谷歌身份验证 - Secure authentication
+- 🔐 **Google OAuth 2.0** | 谷歌身份验证 - Secure authentication with JWT token verification
+- 👤 **Intelligent User Management** | 智能用户管理 - Auto-create users from Google accounts with smart username generation
 - 📄 **Document Management** | 文档管理 - Upload, analyze, and manage documents
 - 📊 **Report Generation** | 报告生成 - Automated research reports
 - 🌐 **Bilingual Support** | 双语支持 - English/French (EN/FR)
@@ -183,18 +184,20 @@ docker-compose up --build
 
 1. Visit [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing one
-3. Enable Google Identity Services API
+3. Enable **Google Identity Services API**
 4. Go to "Credentials" page
 5. Click "Create Credentials" → "OAuth 2.0 Client ID"
 6. Select "Web application"
 7. Add authorized JavaScript origins:
    - `http://localhost:3000` (development)
    - Your production domain
-8. Copy the generated Client ID
+8. Add authorized redirect URIs (if needed):
+   - `http://localhost:3000/auth/callback`
+9. Copy the generated **Client ID** and **Client Secret**
 
 ### 2. Application Configuration | 应用配置
 
-Add your Google Client ID to environment files | 将Google客户端ID添加到环境文件：
+Add your Google OAuth credentials to environment files | 将Google OAuth凭据添加到环境文件：
 
 ```bash
 # frontend/.env.local
@@ -202,7 +205,29 @@ REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
 
 # backend/.env
 GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 ```
+
+### 3. How Google OAuth Works | Google OAuth工作原理
+
+1. **Frontend Authentication** | 前端认证
+   - User clicks "Sign in with Google" button
+   - Google Identity Services popup appears
+   - User selects Google account and grants permissions
+   - Google returns JWT credential token
+
+2. **Backend Verification** | 后端验证
+   - Frontend sends JWT token to `/api/v1/auth/google`
+   - Backend decodes JWT and extracts user information
+   - System checks if user exists by email
+   - If new user: creates account with smart username generation
+   - If existing user: updates last login timestamp
+   - Returns application JWT token for authenticated sessions
+
+3. **Smart Username Generation** | 智能用户名生成
+   - Primary: Uses Google display name (e.g., "John Doe" → "john_doe")
+   - Fallback: Uses email prefix if name unavailable
+   - Uniqueness: Adds numeric suffix if username exists (e.g., "john_doe_1")
 
 ## 📊 API Documentation | API文档
 
@@ -215,20 +240,21 @@ After starting the backend service, access API documentation at | 启动后端�
 
 ```
 🔐 Authentication | 身份验证
-  POST   /api/auth/login          # User login
-  POST   /api/auth/logout         # User logout
-  GET    /api/auth/me             # Get current user
+  POST   /api/v1/auth/login       # User login
+  POST   /api/v1/auth/google      # Google OAuth login
+  POST   /api/v1/auth/logout      # User logout
+  GET    /api/v1/auth/me          # Get current user
 
 💬 Chat Interface | 聊天界面
-  POST   /api/chat/message        # Send chat message
-  GET    /api/chat/history        # Get chat history
-  DELETE /api/chat/{id}           # Delete conversation
+  POST   /api/v1/chat/message     # Send chat message
+  GET    /api/v1/chat/history     # Get chat history
+  DELETE /api/v1/chat/{id}        # Delete conversation
 
 📄 Document Management | 文档管理
-  POST   /api/documents/upload    # Upload document
-  GET    /api/documents           # List documents
-  GET    /api/documents/{id}      # Get document
-  DELETE /api/documents/{id}      # Delete document
+  POST   /api/v1/documents/upload # Upload document
+  GET    /api/v1/documents        # List documents
+  GET    /api/v1/documents/{id}   # Get document
+  DELETE /api/v1/documents/{id}   # Delete document
 ```
 
 ## 📚 Documentation | 项目文档
@@ -317,6 +343,29 @@ docker-compose -f docker-compose.prod.yml build
 # Deploy to production
 docker-compose -f docker-compose.prod.yml up -d
 ```
+
+## 📈 Version Updates | 版本更新
+
+### v1.2.0 (Latest) - Google OAuth Integration | Google OAuth集成
+- ✅ **Real Google OAuth 2.0 Login** | 真实Google OAuth 2.0登录
+- ✅ **JWT Token Verification** | JWT令牌验证  
+- ✅ **Smart User Creation** | 智能用户创建
+- ✅ **Username Generation Algorithm** | 用户名生成算法
+- ✅ **Automatic Account Linking** | 自动账户关联
+- ✅ **Enhanced Security** | 增强安全性
+
+### v1.1.0 - Core Features | 核心功能
+- ✅ AI-powered chat interface
+- ✅ Document management system
+- ✅ Report generation capabilities
+- ✅ Bilingual support (EN/FR)
+- ✅ Responsive design
+
+### v1.0.0 - Initial Release | 初始版本
+- ✅ Basic authentication system
+- ✅ FastAPI backend architecture
+- ✅ React frontend framework
+- ✅ Mock API integration
 
 ## 🤝 Contributing | 贡献指南
 

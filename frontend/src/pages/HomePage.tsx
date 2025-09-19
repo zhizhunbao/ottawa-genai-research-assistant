@@ -1,10 +1,10 @@
 import {
-  ArrowRight,
-  BarChart3,
-  Brain,
-  FileText,
-  MessageSquare,
-  Upload
+    ArrowRight,
+    BarChart3,
+    Brain,
+    FileText,
+    MessageSquare,
+    Upload
 } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
