@@ -15,7 +15,7 @@
     "wcag",
     "bilingual"
   ],
-  "homepage": "https://username.github.io/ottawa-genai-research-assistant",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "@react-oauth/google": "0.12.2",
