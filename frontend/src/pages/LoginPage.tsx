@@ -1,13 +1,11 @@
 import { GoogleLogin } from '@react-oauth/google';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../App';
 import { useAuth } from '../contexts/AuthContext';
 import './LoginPage.css';
 
 const LoginPage: React.FC = () => {
   const { login, googleLogin, isLoading, error } = useAuth();
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '402707192@qq.com',

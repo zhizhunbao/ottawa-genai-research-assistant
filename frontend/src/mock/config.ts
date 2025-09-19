@@ -3,7 +3,7 @@
 
 export const MOCK_CONFIG = {
   // 当前使用的数据集
-  currentDataSet: 'demo', // 'demo' | 'development' | 'testing' | 'showcase'
+  currentDataSet: 'demo', // 'demo'
   
   // API模拟延迟时间 (毫秒)
   apiDelay: {
@@ -51,24 +51,6 @@ export const DATA_SET_DESCRIPTIONS = {
     description: '演示用数据集 - 用于展示和演讲',
     recommended: 'presentations',
     features: ['完整功能展示', '美观的视觉效果', '真实的数据场景']
-  },
-  development: {
-    name: 'Development Data',
-    description: '开发用数据集 - 包含更多测试数据',
-    recommended: 'development',
-    features: ['大量测试数据', '边界情况测试', '性能测试数据']
-  },
-  testing: {
-    name: 'Testing Data',
-    description: '测试用数据集 - 包含边界情况',
-    recommended: 'testing',
-    features: ['错误状态测试', '空数据测试', '异常情况模拟']
-  },
-  showcase: {
-    name: 'Showcase Data',
-    description: '展示用数据集 - 最佳视觉效果',
-    recommended: 'demos',
-    features: ['最佳视觉效果', '高质量数据', '专业展示']
   }
 };
 

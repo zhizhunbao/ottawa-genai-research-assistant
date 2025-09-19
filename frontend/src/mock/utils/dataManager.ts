@@ -29,155 +29,6 @@ export const mockDataSets: Record<string, MockDataSet> = {
     translations: mockTranslations,
     charts: mockChartData,
     responsePatterns: mockResponsePatterns
-  },
-  
-  development: {
-    name: 'Development Data',
-    description: '开发用数据集 - 包含更多测试数据',
-    reports: [
-      ...mockReports,
-      {
-        id: '4',
-        title: 'Development Test Report',
-        generatedAt: new Date('2024-02-01'),
-        type: 'analysis',
-        status: 'processing'
-      }
-    ],
-    files: [
-      ...mockUploadedFiles,
-      {
-        id: '3',
-        name: 'Test Document.pdf',
-        size: 1500000,
-        type: 'application/pdf',
-        status: 'uploading',
-        progress: 75,
-        uploadedAt: new Date()
-      }
-    ],
-    stats: getMockStats((key: string) => key), // Use translation keys directly
-    translations: mockTranslations,
-    charts: mockChartData,
-    responsePatterns: mockResponsePatterns
-  },
-  
-  testing: {
-    name: 'Testing Data',
-    description: '测试用数据集 - 包含边界情况',
-    reports: [
-      {
-        id: '1',
-        title: 'Empty Report',
-        generatedAt: new Date(),
-        type: 'summary',
-        status: 'error'
-      }
-    ],
-    files: [],
-    stats: [
-      { number: '0', label: 'stats.documents' },
-      { number: '0', label: 'stats.queries' },
-      { number: '0', label: 'stats.languages' },
-      { number: '0%', label: 'stats.accessibility' }
-    ],
-    translations: mockTranslations,
-    charts: {},
-    responsePatterns: {
-      default: {
-        content: 'Testing mode - Limited functionality available',
-        hasChart: false
-      }
-    }
-  },
-  
-  showcase: {
-    name: 'Showcase Data',
-    description: '展示用数据集 - 最佳视觉效果',
-    reports: [
-      {
-        id: '1',
-        title: '2024 Annual Economic Growth Report',
-        generatedAt: new Date('2024-01-15'),
-        type: 'analysis',
-        status: 'completed'
-      },
-      {
-        id: '2',
-        title: 'Innovation Hub Impact Analysis',
-        generatedAt: new Date('2024-01-10'),
-        type: 'trend',
-        status: 'completed'
-      },
-      {
-        id: '3',
-        title: 'Digital Transformation Initiative',
-        generatedAt: new Date('2024-01-05'),
-        type: 'summary',
-        status: 'completed'
-      }
-    ],
-    files: [
-      {
-        id: '1',
-        name: 'Annual Economic Report 2024.pdf',
-        size: 4200000,
-        type: 'application/pdf',
-        status: 'completed',
-        progress: 100,
-        uploadedAt: new Date('2024-01-15')
-      },
-      {
-        id: '2',
-        name: 'Innovation Strategy Document.pdf',
-        size: 3100000,
-        type: 'application/pdf',
-        status: 'completed',
-        progress: 100,
-        uploadedAt: new Date('2024-01-10')
-      }
-    ],
-    stats: [
-      { number: '50+', label: 'Documents Processed' },
-      { number: '2,500+', label: 'Questions Answered' },
-      { number: '3', label: 'Languages Supported' },
-      { number: '100%', label: 'WCAG Compliant' }
-    ],
-    translations: mockTranslations,
-    charts: {
-      ...mockChartData,
-      showcaseGrowth: [
-        { month: 'Jan', businesses: 180, growth: 8.5 },
-        { month: 'Feb', businesses: 195, growth: 9.2 },
-        { month: 'Mar', businesses: 212, growth: 10.1 },
-        { month: 'Apr', businesses: 235, growth: 11.3 },
-        { month: 'May', businesses: 258, growth: 12.8 },
-        { month: 'Jun', businesses: 285, growth: 14.2 }
-      ]
-    },
-    responsePatterns: {
-      ...mockResponsePatterns,
-      innovation: {
-        content: `## 创新生态系统分析
-
-### 核心指标:
-- **创新企业**: 285家 (+14.2%)
-- **研发投资**: $125M (+18.5%)
-- **专利申请**: 450件 (+22.1%)
-
-### 重点领域:
-- 人工智能和机器学习
-- 清洁技术和可持续发展
-- 数字健康解决方案
-
-### 政策建议:
-1. 增加创新孵化器支持
-2. 扩大税收优惠政策
-3. 加强产学研合作`,
-        hasChart: true,
-        chart: 'showcaseGrowth'
-      }
-    }
   }
 };
 
@@ -202,29 +53,14 @@ export class MockDataManager {
 
   // 切换数据集
   switchDataSet(dataSetName: string): boolean {
-    if (!mockDataSets[dataSetName]) {
-      console.warn(`Data set '${dataSetName}' not found`);
-      return false;
+    if (mockDataSets[dataSetName]) {
+      this.currentDataSet = dataSetName;
+      this.storeDataSet(dataSetName);
+      this.notifyListeners();
+      return true;
     }
-
-    this.currentDataSet = dataSetName;
-    this.storeDataSet(dataSetName);
-    this.notifyListeners();
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Switched to data set: ${dataSetName}`);
-    }
-    
-    return true;
-  }
-
-  // 获取所有可用数据集
-  getAvailableDataSets(): Array<{ key: string; name: string; description: string }> {
-    return Object.entries(mockDataSets).map(([key, dataSet]) => ({
-      key,
-      name: dataSet.name,
-      description: dataSet.description
-    }));
+    console.warn(`数据集 "${dataSetName}" 不存在`);
+    return false;
   }
 
   // 添加监听器
@@ -237,18 +73,18 @@ export class MockDataManager {
     this.listeners = this.listeners.filter(listener => listener !== callback);
   }
 
-  // 通知所有监听器
+  // 通知监听器
   private notifyListeners(): void {
     this.listeners.forEach(listener => {
       try {
         listener(this.currentDataSet);
       } catch (error) {
-        console.error('Error in data set listener:', error);
+        console.error('监听器执行错误:', error);
       }
     });
   }
 
-  // 从环境变量或本地存储获取数据集
+  // 获取存储的数据集
   private getStoredDataSet(): string {
     // 首先检查环境变量
     const envDataSet = process.env.REACT_APP_MOCK_DATA_SET;
@@ -285,41 +121,44 @@ export class MockDataManager {
     const issues: string[] = [];
     const data = this.getCurrentData();
 
-    // 检查报告数据
     if (!Array.isArray(data.reports)) {
       issues.push('Reports data is not an array');
     }
 
-    // 检查文件数据
     if (!Array.isArray(data.files)) {
       issues.push('Files data is not an array');
     }
 
-    // 检查统计数据
     if (!Array.isArray(data.stats)) {
       issues.push('Stats data is not an array');
     }
 
-    // 检查翻译数据
     if (!data.translations || typeof data.translations !== 'object') {
       issues.push('Translations data is invalid');
+    }
+
+    if (!data.charts || typeof data.charts !== 'object') {
+      issues.push('Charts data is invalid');
+    }
+
+    if (!data.responsePatterns || typeof data.responsePatterns !== 'object') {
+      issues.push('Response patterns data is invalid');
     }
 
     return issues;
   }
 
   // 导出当前数据集
-  exportCurrentDataSet(): string {
-    const data = this.getCurrentData();
-    return JSON.stringify({
-      ...data,
-      exportedAt: new Date().toISOString(),
-      version: '1.0.0'
-    }, null, 2);
+  exportCurrentDataSet(): any {
+    return {
+      dataSet: this.currentDataSet,
+      data: this.getCurrentData(),
+      exportedAt: new Date().toISOString()
+    };
   }
 
   // 获取数据集统计信息
-  getDataSetStats(): Record<string, any> {
+  getDataSetStats(): any {
     const data = this.getCurrentData();
     return {
       dataSet: this.currentDataSet,
@@ -336,26 +175,18 @@ export class MockDataManager {
 // 创建全局实例
 export const mockDataManager = new MockDataManager();
 
-// 开发者工具 (仅开发模式)
+// 开发模式下的调试工具
 if (process.env.NODE_ENV === 'development') {
-  // 添加到全局对象方便调试
+  // 将管理器暴露到全局作用域
   (window as any).mockDataManager = mockDataManager;
   
-  // 添加快捷键切换数据集
+  // 添加键盘快捷键
   const handleKeyPress = (event: KeyboardEvent) => {
-    if (event.ctrlKey || event.metaKey) {
+    if ((event.ctrlKey || event.metaKey) && event.key >= '1' && event.key <= '4') {
+      event.preventDefault();
       switch (event.key) {
         case '1':
           mockDataManager.switchDataSet('demo');
-          break;
-        case '2':
-          mockDataManager.switchDataSet('development');
-          break;
-        case '3':
-          mockDataManager.switchDataSet('testing');
-          break;
-        case '4':
-          mockDataManager.switchDataSet('showcase');
           break;
       }
     }
@@ -369,9 +200,6 @@ if (process.env.NODE_ENV === 'development') {
 
 快捷键:
 - Ctrl/Cmd + 1: Demo 数据集
-- Ctrl/Cmd + 2: Development 数据集  
-- Ctrl/Cmd + 3: Testing 数据集
-- Ctrl/Cmd + 4: Showcase 数据集
 
 全局对象:
 - window.mockDataManager: 数据管理器实例
@@ -384,9 +212,6 @@ if (process.env.NODE_ENV === 'development') {
 export const mockDataUtils = {
   // 快速切换到特定数据集
   switchToDemo: () => mockDataManager.switchDataSet('demo'),
-  switchToDevelopment: () => mockDataManager.switchDataSet('development'),
-  switchToTesting: () => mockDataManager.switchDataSet('testing'),
-  switchToShowcase: () => mockDataManager.switchDataSet('showcase'),
   
   // 获取当前数据
   getCurrentReports: () => mockDataManager.getCurrentData().reports,

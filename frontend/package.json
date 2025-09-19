@@ -15,7 +15,7 @@
     "wcag",
     "bilingual"
   ],
-  "homepage": ".",
+  "homepage": "https://username.github.io/ottawa-genai-research-assistant",
   "private": true,
   "dependencies": {
     "@react-oauth/google": "0.12.2",
@@ -40,15 +40,16 @@
   "scripts": {
     "preinstall": "node --version && npm --version",
     "start": "react-scripts start",
-    "build": "CI=false react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:prod": "NODE_ENV=production npm run build",
+    "build:prod": "npm run build",
     "serve": "npx serve -s build -l 3000",
     "analyze": "npx source-map-explorer 'build/static/js/*.js'",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write src/**/*.{ts,tsx,css}",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "check-deployment": "node check-deployment.js"
   },
   "eslintConfig": {
     "extends": [

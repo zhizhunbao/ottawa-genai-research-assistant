@@ -1,8 +1,20 @@
 # 🏛️ Ottawa GenAI Research Assistant | 渥太华生成式AI研究助手
 
+[![CI Pipeline](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/ci.yml)
+[![Deploy to GitHub Pages](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/deploy-github-pages.yml/badge.svg)](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/deploy-github-pages.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen)](https://username.github.io/ottawa-genai-research-assistant)
+
 A comprehensive AI-powered research assistant application designed for Ottawa City government, featuring intelligent research capabilities, document analysis, and bilingual support.
 
 基于AI的综合研究助手应用，专为渥太华市政府设计，具备智能研究功能、文档分析和双语支持。
+
+## 🚀 Live Demo | 在线演示
+
+**[🌐 Access the live application](https://username.github.io/ottawa-genai-research-assistant)**
+
+*Note: Replace `username` with your GitHub username in the URL above.*
+
+*注意：请将上述 URL 中的 `username` 替换为您的 GitHub 用户名。*
 
 ## 🌟 Features | 功能特性
 
@@ -315,6 +327,33 @@ REACT_APP_API_STRATEGY=real
 ```
 
 ## 🚢 Deployment | 部署
+
+### GitHub Pages Deployment | GitHub Pages 部署
+
+**Quick Start** | 快速开始:
+
+1. **Configure homepage** | 配置主页:
+   ```bash
+   # Update frontend/package.json
+   "homepage": "https://YOUR_USERNAME.github.io/ottawa-genai-research-assistant"
+   ```
+
+2. **Enable GitHub Pages** | 启用 GitHub Pages:
+   - Go to repository **Settings** > **Pages**
+   - Set Source to **GitHub Actions**
+
+3. **Deploy** | 部署:
+   ```bash
+   git push origin main  # Triggers automatic deployment
+   ```
+
+4. **Check deployment status** | 检查部署状态:
+   ```bash
+   cd frontend
+   npm run check-deployment
+   ```
+
+📖 **Detailed guide**: `docs/GitHub-Pages-Setup.md`
 
 ### Production Configuration | 生产环境配置
 
