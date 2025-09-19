@@ -46,4 +46,10 @@ services:
       - key: REACT_APP_GOOGLE_CLIENT_ID
         sync: false
       - key: REACT_APP_API_BASE_URL
-        value: https://ottawa-genai-backend.onrender.com/api/v1 
+        value: "https://ottawa-genai-backend.onrender.com/api/v1"
+      - key: REACT_APP_API_STRATEGY
+        value: "real"
+      - key: REACT_APP_FALLBACK_TO_MOCK
+        value: "false"
+      - key: REACT_APP_API_TIMEOUT
+        value: "10000" 
