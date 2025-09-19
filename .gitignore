@@ -84,8 +84,12 @@ docs/_build/
 *.joblib
 *.h5
 *.pb
-models/
+# models/  # Commented out to allow Python model modules
 *.onnx
+# Only ignore AI model files in specific directories
+ai_models/
+ml_models/
+trained_models/
 
 # 📋 uploads directory contents (but keep the directory)
 backend/uploads/*
