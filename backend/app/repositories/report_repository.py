@@ -1,8 +1,14 @@
 """Report repository."""
 
-from datetime import datetime
+
+
+
+
+
+from datetime import datetime, timezone
 from typing import Any
 
+from app.core.data_paths import monk_paths
 from app.models.report import Report
 
 from .base import BaseRepository
@@ -11,12 +17,14 @@ from .base import BaseRepository
 class ReportRepository(BaseRepository[Report]):
     """Repository for report data operations."""
 
-    def __init__(self, data_file: str = "backend/monk/reports/reports.json"):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("reports")
         super().__init__(data_file)
 
     def _to_dict(self, report: Report) -> dict[str, Any]:
         """Convert Report model to dictionary."""
-        return report.dict()
+        return report.model_dump()
 
     def _from_dict(self, data: dict[str, Any]) -> Report:
         """Convert dictionary to Report model."""
@@ -84,5 +92,5 @@ class ReportRepository(BaseRepository[Report]):
 
     def update_status(self, report_id: str, status: str) -> Report | None:
         """Update report status."""
-        updates = {"status": status, "updated_at": datetime.utcnow().isoformat()}
+        updates = {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
         return self.update(report_id, updates)

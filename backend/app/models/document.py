@@ -36,6 +36,9 @@ class Document(BaseModel):
     )
     language: str = Field(default="en", pattern="^(en|fr)$")
     tags: list[str] = Field(default_factory=list)
+    content: str = Field(default="")  # 文档内容
+    chunks: list[str] = Field(default_factory=list)  # 文档块列表
+    vector_id: str | None = Field(default=None)  # 向量ID
     metadata: DocumentMetadata = Field(default_factory=DocumentMetadata)
 
 

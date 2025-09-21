@@ -45,8 +45,12 @@ class Settings(BaseSettings):
 
     # File Upload
     MAX_FILE_SIZE_MB: int = Field(default=50)
-    UPLOAD_DIR: str = Field(default="./backend/uploads")
+    UPLOAD_DIR: str = Field(default="./uploads")
     ALLOWED_FILE_TYPES: list[str] = Field(default=["pdf"])
+    
+    # Data Storage - All data must be stored in monk/ directory
+    MONK_DATA_DIR: str = Field(default="monk")
+    ENFORCE_MONK_CONSTRAINT: bool = Field(default=True)
 
     # AI Model Settings
     DEFAULT_AI_MODEL: str = Field(default="gpt-3.5-turbo")

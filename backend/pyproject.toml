@@ -51,6 +51,7 @@ select = [
     "T20", # flake8-print
     "SIM", # flake8-simplify
     "RUF", # ruff-specific rules
+    "DTZ", # flake8-datetimez (timezone-aware datetime)
 ]
 ignore = [
     "E501",   # line too long, handled by formatter

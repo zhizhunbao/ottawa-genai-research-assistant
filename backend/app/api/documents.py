@@ -4,6 +4,8 @@
 Handles PDF document upload, processing, and management.
 """
 
+import datetime
+import logging
 import os
 import uuid
 from datetime import datetime
@@ -15,6 +17,7 @@ from app.services.document_service import DocumentService
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -40,6 +43,7 @@ class UploadResponse(BaseModel):
     size: int
     message: str
     processing_status: str
+    status: str = "uploaded"  # 添加status字段用于测试兼容性
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -59,7 +63,7 @@ async def upload_document(
         # Validate file type
         if not file.filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-
+        
         # Check file size
         file_size = 0
         content = await file.read()
@@ -68,19 +72,20 @@ async def upload_document(
         max_size = settings.MAX_FILE_SIZE_MB * 1024 * 1024  # Convert to bytes
         if file_size > max_size:
             raise HTTPException(
-                status_code=400,
+                status_code=413,
                 detail=f"File too large. Maximum size is {settings.MAX_FILE_SIZE_MB}MB",
             )
-
+        
         # Generate unique ID and save file
         doc_id = str(uuid.uuid4())
         file_path = os.path.join(settings.UPLOAD_DIR, f"{doc_id}_{file.filename}")
 
         with open(file_path, "wb") as f:
             f.write(content)
-
+        
         # Initialize document service and process file
         doc_service = DocumentService(settings)
+        
         processing_result = await doc_service.process_document(
             file_path=file_path,
             doc_id=doc_id,
@@ -95,8 +100,12 @@ async def upload_document(
             size=file_size,
             message="Document uploaded successfully",
             processing_status=processing_result["status"],
+            status="uploaded",
         )
 
+    except HTTPException:
+        # Re-raise HTTP exceptions (these are expected validation errors)
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error uploading document: {str(e)}"
@@ -137,7 +146,11 @@ async def list_documents(
                 )
             )
 
-        return DocumentList(documents=document_infos, total=len(user_documents))
+        # Get total count of user documents (not just the paginated results)
+        all_user_docs = doc_service.get_user_documents(user_id=current_user.id, limit=1000, offset=0)
+        total_count = len(all_user_docs)
+        
+        return DocumentList(documents=document_infos, total=total_count)
 
     except Exception as e:
         raise HTTPException(
@@ -165,12 +178,12 @@ async def get_document(
         
         return DocumentInfo(
             id=document.id,
-            filename="Sample_Document.pdf",
-            size=1024000,
-            upload_date=datetime.now(),
-            processed=True,
-            page_count=12,
-            language="en",
+            filename=document.filename,
+            size=document.file_size,
+            upload_date=document.upload_date,
+            processed=(document.status == "processed"),
+            page_count=document.metadata.pages if document.metadata else None,
+            language=document.language,
         )
 
     except Exception:

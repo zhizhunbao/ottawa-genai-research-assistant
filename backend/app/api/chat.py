@@ -5,7 +5,7 @@ Handles natural language conversation with AI assistant.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.api.auth import get_current_user
 from app.core.config import get_settings
@@ -13,6 +13,7 @@ from app.models.chat import Conversation, Message
 from app.models.user import User
 from app.repositories.chat_repository import (ConversationRepository,
                                               MessageRepository)
+from app.repositories.document_repository import DocumentRepository
 from app.services.chat_service import ChatService
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -80,8 +81,8 @@ async def send_message(
                     else request.message
                 ),
                 language=request.language or "en",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             conversation_repo.create(conversation)
         else:
@@ -89,7 +90,7 @@ async def send_message(
             conversation_id = user_conversations[0].id
             # Update the conversation's updated_at timestamp
             conversation_repo.update(
-                conversation_id, {"updated_at": datetime.utcnow().isoformat()}
+                conversation_id, {"updated_at": datetime.now(timezone.utc).isoformat()}
             )
 
         # Save user message
@@ -98,7 +99,7 @@ async def send_message(
             conversation_id=conversation_id,
             role="user",
             content=request.message,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
         message_repo.create(user_message)
 
@@ -108,7 +109,7 @@ async def send_message(
             conversation_id=conversation_id,
             role="assistant",
             content=response["text"],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
         assistant_message.metadata.sources = response.get("sources", [])
         message_repo.create(assistant_message)
@@ -117,7 +118,7 @@ async def send_message(
             id=assistant_message.id,
             response=response["text"],
             language=request.language or "en",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             sources=response.get("sources", []),
             charts=response.get("charts"),
         )
@@ -218,7 +219,6 @@ async def get_suggestions(current_user: User = Depends(get_current_user)):
     """
     try:
         # Generate dynamic suggestions based on available documents
-        from app.repositories.document_repository import DocumentRepository
         
         doc_repo = DocumentRepository()
         documents = doc_repo.find_all()

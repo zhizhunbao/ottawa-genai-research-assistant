@@ -1,17 +1,23 @@
 """Chat repository for JSON file storage."""
 
-from datetime import datetime
+
+
+
+
+
+from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Any
-
+from app.core.data_paths import monk_paths
 from app.models.chat import Conversation, Message
-
 from .base import BaseRepository
-
 
 class ConversationRepository(BaseRepository[Conversation]):
     """Repository for conversation data operations."""
 
-    def __init__(self, data_file: str = "backend/monk/chats/conversations.json"):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("conversations")
         super().__init__(data_file)
 
     def _to_dict(self, conversation: Conversation) -> dict[str, Any]:
@@ -63,7 +69,7 @@ class ConversationRepository(BaseRepository[Conversation]):
         """Update conversation title."""
         updates = {
             "title": title,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         return self.update(conversation_id, updates)
 
@@ -71,7 +77,7 @@ class ConversationRepository(BaseRepository[Conversation]):
         """Update conversation status."""
         updates = {
             "status": status,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         return self.update(conversation_id, updates)
 
@@ -90,7 +96,9 @@ class ConversationRepository(BaseRepository[Conversation]):
 class MessageRepository(BaseRepository[Message]):
     """Repository for message data operations."""
 
-    def __init__(self, data_file: str = "backend/monk/chats/messages.json"):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("messages")
         super().__init__(data_file)
 
     def _to_dict(self, message: Message) -> dict[str, Any]:

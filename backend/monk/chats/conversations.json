@@ -37,5 +37,18 @@
       "topic": "business",
       "message_count": 3
     }
+  },
+  {
+    "id": "c6545294-53e6-4a70-b63f-122799bce791",
+    "user_id": "test-user-123",
+    "title": "Explain this document",
+    "language": "en",
+    "created_at": "2025-09-21T19:37:31.116990+00:00",
+    "updated_at": "2025-09-21T19:37:31.326524+00:00",
+    "status": "active",
+    "metadata": {
+      "topic": null,
+      "message_count": 0
+    }
   }
-] 
+]

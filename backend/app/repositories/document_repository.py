@@ -1,8 +1,14 @@
 """Document repository."""
 
-from datetime import datetime
+
+
+
+
+
+from datetime import datetime, timezone
 from typing import Any
 
+from app.core.data_paths import monk_paths
 from app.models.document import Document, DocumentChunk
 
 from .base import BaseRepository
@@ -11,14 +17,14 @@ from .base import BaseRepository
 class DocumentRepository(BaseRepository[Document]):
     """Repository for document data operations."""
 
-    def __init__(
-        self, data_file: str = "backend/monk/documents/documents.json"
-    ):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("documents")
         super().__init__(data_file)
 
     def _to_dict(self, document: Document) -> dict[str, Any]:
         """Convert Document model to dictionary."""
-        return document.dict()
+        return document.model_dump()
 
     def _from_dict(self, data: dict[str, Any]) -> Document:
         """Convert dictionary to Document model."""
@@ -31,6 +37,10 @@ class DocumentRepository(BaseRepository[Document]):
             data["last_modified"] = datetime.fromisoformat(
                 data["last_modified"].replace("Z", "+00:00")
             )
+
+        # Handle missing user_id field for backward compatibility
+        if "user_id" not in data:
+            data["user_id"] = "system"  # Default user_id for existing documents
 
         return Document(**data)
 
@@ -87,7 +97,7 @@ class DocumentRepository(BaseRepository[Document]):
         """Update document status."""
         updates = {
             "status": status,
-            "last_modified": datetime.utcnow().isoformat(),
+            "last_modified": datetime.now(timezone.utc).isoformat(),
         }
         return self.update(doc_id, updates)
 
@@ -95,12 +105,14 @@ class DocumentRepository(BaseRepository[Document]):
 class DocumentChunkRepository(BaseRepository[DocumentChunk]):
     """Repository for document chunk data operations."""
 
-    def __init__(self, data_file: str = "backend/monk/documents/chunks.json"):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("chunks")
         super().__init__(data_file)
 
     def _to_dict(self, chunk: DocumentChunk) -> dict[str, Any]:
         """Convert DocumentChunk model to dictionary."""
-        return chunk.dict()
+        return chunk.model_dump()
 
     def _from_dict(self, data: dict[str, Any]) -> DocumentChunk:
         """Convert dictionary to DocumentChunk model."""

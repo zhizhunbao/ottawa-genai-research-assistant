@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Any
 
+from app.core.data_paths import monk_paths
 from app.models.user import User, UserMetadata, UserPreferences
 
 from .base import BaseRepository
@@ -11,7 +12,9 @@ from .base import BaseRepository
 class UserRepository(BaseRepository[User]):
     """Repository for user data operations."""
 
-    def __init__(self, data_file: str = "backend/monk/users/users.json"):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("users")
         super().__init__(data_file)
 
     def _to_dict(self, user: User) -> dict[str, Any]:
@@ -37,6 +40,11 @@ class UserRepository(BaseRepository[User]):
             data["preferences"] = UserPreferences().model_dump()
         elif not preferences:
             data["preferences"] = UserPreferences().model_dump()
+        elif isinstance(preferences, dict):
+            # Merge existing preferences with defaults for any missing fields
+            default_prefs = UserPreferences().model_dump()
+            merged_prefs = {**default_prefs, **preferences}
+            data["preferences"] = merged_prefs
 
         # Handle metadata - ensure it's a dict or create default
         metadata = data.get("metadata")
@@ -91,3 +99,18 @@ class UserRepository(BaseRepository[User]):
     ) -> User | None:
         """Update user preferences."""
         return self.update(user_id, {"preferences": preferences.model_dump()})
+
+    def update(self, user_id: str, updates) -> User | None:
+        """Update user with UserUpdate object or dict."""
+        # If updates is a UserUpdate object, convert to dict and exclude None values
+        if hasattr(updates, 'model_dump'):
+            update_dict = updates.model_dump(exclude_none=True)
+        else:
+            update_dict = updates
+            
+        # Convert any Pydantic models to dicts
+        for key, value in update_dict.items():
+            if hasattr(value, 'model_dump'):
+                update_dict[key] = value.model_dump()
+                
+        return super().update(user_id, update_dict)

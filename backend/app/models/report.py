@@ -22,6 +22,7 @@ class Report(BaseModel):
     id: str
     user_id: str | None = None  # Optional for backward compatibility
     title: str
+    query: str = ""  # The original query/topic that generated this report
     description: str = ""
     content: str = ""
     type: str = Field(

@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Generic, TypeVar
 
+from app.core.data_constraints import data_validator
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -15,6 +16,9 @@ class BaseRepository(ABC, Generic[T]):
 
     def __init__(self, data_file: str):
         """Initialize repository with data file path."""
+        # 验证数据文件路径是否符合monk目录约束
+        data_validator.validate_repository_init(data_file)
+        
         self.data_file = Path(data_file)
         self.data_file.parent.mkdir(parents=True, exist_ok=True)
 

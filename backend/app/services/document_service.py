@@ -5,10 +5,13 @@ Handles PDF document processing, text extraction, and vector storage.
 Now properly uses the Repository layer for data persistence.
 """
 
+import hashlib
 import logging
+import math
 import os
-from datetime import datetime
-from typing import Any
+import random
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Union
 
 import pdfplumber
 import PyPDF2
@@ -77,8 +80,8 @@ class DocumentService:
                 file_path=file_path,
                 file_size=file_size,
                 mime_type="application/pdf",
-                upload_date=datetime.utcnow(),
-                last_modified=datetime.utcnow(),
+                upload_date=datetime.now(timezone.utc),
+                last_modified=datetime.now(timezone.utc),
                 status="processed",
                 language=language,
                 content=extracted_text,
@@ -102,7 +105,7 @@ class DocumentService:
                     if len(extracted_text) > 500
                     else extracted_text
                 ),
-                "processed_at": datetime.utcnow().isoformat(),
+                "processed_at": datetime.now(timezone.utc).isoformat(),
                 "file_size": file_size,
             }
 
@@ -112,6 +115,7 @@ class DocumentService:
             # Create failed document record
             failed_document = Document(
                 id=doc_id,
+                user_id=user_id,  # 添加缺失的user_id字段
                 filename=filename,
                 title=filename,
                 description=f"Failed to process: {str(e)}",
@@ -120,8 +124,8 @@ class DocumentService:
                     os.path.getsize(file_path) if os.path.exists(file_path) else 0
                 ),
                 mime_type="application/pdf",
-                upload_date=datetime.utcnow(),
-                last_modified=datetime.utcnow(),
+                upload_date=datetime.now(timezone.utc),
+                last_modified=datetime.now(timezone.utc),
                 status="error",
                 language=language or "unknown",
                 content="",
@@ -138,7 +142,7 @@ class DocumentService:
                 "doc_id": doc_id,
                 "filename": filename,
                 "error": str(e),
-                "processed_at": datetime.utcnow().isoformat(),
+                "processed_at": datetime.now(timezone.utc).isoformat(),
             }
 
     async def _extract_text_from_pdf(self, file_path: str) -> str:
@@ -241,8 +245,6 @@ class DocumentService:
     async def _generate_embeddings(self, chunks: list[str]) -> list[list[float]]:
         """Generate embeddings for text chunks using a simple hash-based approach."""
 
-        import hashlib
-        import math
 
         embeddings = []
         for chunk in chunks:
@@ -295,7 +297,6 @@ class DocumentService:
             except Exception as e:
                 logger.error(f"Error generating embedding for chunk: {e}")
                 # Fallback to deterministic random embedding based on chunk content
-                import random
                 random.seed(hash(chunk))  # Deterministic seed
                 fallback_embedding = [random.random() for _ in range(384)]
                 embeddings.append(fallback_embedding)
@@ -399,7 +400,6 @@ class DocumentService:
     ) -> float:
         """Calculate cosine similarity between two vectors."""
         try:
-            import math
 
             # Calculate dot product
             dot_product = sum(a * b for a, b in zip(vec1, vec2))
@@ -450,7 +450,7 @@ class DocumentService:
 
         try:
             # Get document info first
-            document = self.document_repo.get_by_id(doc_id)
+            document = self.document_repo.find_by_id(doc_id)
             if not document:
                 return False
 
@@ -549,7 +549,7 @@ class DocumentService:
                 return False
 
             document.status = status
-            document.last_modified = datetime.utcnow()
+            document.last_modified = datetime.now(timezone.utc)
 
             updated_doc = self.document_repo.update(doc_id, document)
             return updated_doc is not None
@@ -614,7 +614,7 @@ class DocumentService:
         try:
             # Get all documents for the user
             all_user_docs = []
-            all_docs = self.document_repo.list_all()
+            all_docs = self.document_repo.find_all()
 
             # Filter by user_id
             for doc in all_docs:
@@ -626,3 +626,27 @@ class DocumentService:
 
         except Exception as e:
             raise Exception(f"Error getting user documents: {str(e)}")
+
+    def get_document_by_id(self, doc_id: str, user_id: str) -> Document | None:
+        """
+        Get a specific document by ID, ensuring it belongs to the user.
+        
+        Args:
+            doc_id: Document identifier
+            user_id: User identifier
+            
+        Returns:
+            Document if found and belongs to user, None otherwise
+        """
+        try:
+            # Get document from repository
+            document = self.document_repo.find_by_id(doc_id)
+            
+            # Check if document exists and belongs to the user
+            if document and document.user_id == user_id:
+                return document
+            
+            return None
+            
+        except Exception as e:
+            raise Exception(f"Error getting document by ID: {str(e)}")

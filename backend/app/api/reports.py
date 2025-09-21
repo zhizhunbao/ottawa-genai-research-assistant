@@ -4,16 +4,21 @@
 Handles automated report generation with visualizations.
 """
 
+import json
+import os
 import uuid
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Literal
 
 from app.api.auth import get_current_user
 from app.core.config import get_settings
 from app.models.user import User
+from app.repositories.document_repository import DocumentRepository
+from app.repositories.report_repository import ReportRepository
 from app.services.report_service import ReportService
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, field_validator
 
 router = APIRouter()
 
@@ -21,10 +26,17 @@ router = APIRouter()
 # Request/Response Models
 class ReportRequest(BaseModel):
     query: str
-    language: str | None = "en"
+    language: Literal["en", "fr"] = "en"
     include_charts: bool = True
-    format: str | None = "html"  # html, pdf, word
+    format: Literal["html", "pdf", "word"] = "html"
     document_ids: list[str] | None = None
+
+    @field_validator('query')
+    @classmethod
+    def validate_query(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Query cannot be empty')
+        return v.strip()
 
 
 class ReportSection(BaseModel):
@@ -42,6 +54,7 @@ class ReportResponse(BaseModel):
     language: str
     sources: list[str]
     format: str
+    status: str
 
 
 class ReportList(BaseModel):
@@ -65,6 +78,33 @@ async def generate_report(
     - **document_ids**: Specific documents to use (optional)
     """
     try:
+        # Validate document IDs if provided
+        if request.document_ids:
+            try:
+                doc_repo = DocumentRepository()
+                for doc_id in request.document_ids:
+                    document = doc_repo.find_by_id(doc_id)
+                    if not document:
+                        raise HTTPException(
+                            status_code=404, 
+                            detail=f"Document not found: {doc_id}"
+                        )
+                    # Check ownership (safely handle cases where user_id might not exist)
+                    if hasattr(document, 'user_id') and document.user_id != current_user.id:
+                        raise HTTPException(
+                            status_code=404,
+                            detail=f"Document not found: {doc_id}"
+                        )
+            except HTTPException:
+                # Re-raise HTTP exceptions
+                raise
+            except Exception as e:
+                # Log validation error and raise 400
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Error validating document IDs: {str(e)}"
+                )
+
         report_service = ReportService(settings)
 
         # Generate the report
@@ -100,18 +140,52 @@ async def generate_report(
         ]
 
         report_id = str(uuid.uuid4())
+        generated_at = datetime.now(timezone.utc)
+        
+        # Save the report to repository
+        from app.models.report import Report
+
+        # Create the report model
+        report = Report(
+            id=report_id,
+            user_id=current_user.id,
+            title=report_data.get("title", f"Report: {request.query}"),
+            query=request.query,  # Save the original query
+            description=f"Automated report generated for query: {request.query}",
+            summary=report_data.get("brief_summary", ""),
+            language=request.language or "en",
+            status="published",  # Use valid status from model
+            type="custom",  # Use valid type from model
+            created_at=generated_at,
+            updated_at=generated_at,
+            author=current_user.username if hasattr(current_user, 'username') else current_user.id,
+            format=request.format or "html",
+            sources=report_data.get("sources", []),
+            content=json.dumps({
+                "sections": [section.model_dump() for section in sections],
+                "sources": report_data.get("sources", [])
+            })
+        )
+        
+        # Save through repository
+        report_repo = ReportRepository()
+        report_repo.create(report)
 
         return ReportResponse(
             id=report_id,
             title=report_data.get("title", f"Report: {request.query}"),
             summary=report_data.get("brief_summary", ""),
             sections=sections,
-            generated_at=datetime.now(),
+            generated_at=generated_at,
             language=request.language or "en",
             sources=report_data.get("sources", []),
             format=request.format or "html",
+            status="completed",
         )
 
+    except HTTPException:
+        # Re-raise HTTP exceptions (validation errors, not found, etc.)
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error generating report: {str(e)}"
@@ -122,17 +196,20 @@ async def generate_report(
 async def list_reports(
     limit: int = 20,
     offset: int = 0,
+    language: str | None = None,
+    format: str | None = None,
     current_user: User = Depends(get_current_user),
     settings=Depends(get_settings),
 ):
     """
-    Get list of generated reports.
+    Get list of generated reports with optional filtering.
 
     - **limit**: Maximum number of reports to return
     - **offset**: Number of reports to skip (for pagination)
+    - **language**: Filter by language (en/fr)
+    - **format**: Filter by format (html/pdf/word)
     """
     try:
-        from app.repositories.report_repository import ReportRepository
         
         report_repo = ReportRepository()
         
@@ -143,9 +220,17 @@ async def list_reports(
         for report in all_reports:
             # Filter by user if the report has user_id field
             if hasattr(report, 'user_id') and report.user_id == current_user.id:
+                # Apply language filter
+                if language and report.language != language:
+                    continue
+                # Apply format filter
+                if format and getattr(report, 'format', 'html') != format:
+                    continue
+                    
                 user_reports.append({
                     "id": report.id,
                     "title": report.title,
+                    "query": getattr(report, 'query', ''),  # Include query field
                     "summary": report.summary[:200] + "..." if len(report.summary) > 200 else report.summary,
                     "generated_at": report.created_at.isoformat(),
                     "language": report.language,
@@ -153,10 +238,18 @@ async def list_reports(
                     "status": report.status,
                 })
             elif not hasattr(report, 'user_id'):
+                # Apply language filter
+                if language and report.language != language:
+                    continue
+                # Apply format filter
+                if format and getattr(report, 'format', 'html') != format:
+                    continue
+                    
                 # If no user_id field, include all reports (for backward compatibility)
                 user_reports.append({
                     "id": report.id,
                     "title": report.title,
+                    "query": getattr(report, 'query', ''),  # Include query field
                     "summary": report.summary[:200] + "..." if len(report.summary) > 200 else report.summary,
                     "generated_at": report.created_at.isoformat(),
                     "language": report.language,
@@ -193,7 +286,6 @@ async def get_report(
     - **report_id**: Unique report identifier
     """
     try:
-        from app.repositories.report_repository import ReportRepository
         
         report_repo = ReportRepository()
         report = report_repo.find_by_id(report_id)
@@ -211,7 +303,6 @@ async def get_report(
         # Parse content if it's structured
         if hasattr(report, 'content') and report.content:
             try:
-                import json
                 content_data = json.loads(report.content) if isinstance(report.content, str) else report.content
                 
                 if isinstance(content_data, dict) and 'sections' in content_data:
@@ -263,6 +354,7 @@ async def get_report(
             language=report.language,
             sources=getattr(report, 'sources', []) or ["Local Data Repository"],
             format=getattr(report, 'format', 'html'),
+            status=getattr(report, 'status', 'completed'),
         )
 
     except HTTPException:
@@ -285,7 +377,6 @@ async def delete_report(
     - **report_id**: Unique report identifier
     """
     try:
-        from app.repositories.report_repository import ReportRepository
         
         report_repo = ReportRepository()
         report = report_repo.find_by_id(report_id)
@@ -327,8 +418,6 @@ async def export_report(
     - **format**: Export format (pdf/word/html)
     """
     try:
-        from app.repositories.report_repository import ReportRepository
-        from app.services.report_service import ReportService
         
         report_repo = ReportRepository()
         report = report_repo.find_by_id(report_id)
@@ -382,11 +471,7 @@ async def download_report(
     - **format**: File format to download
     """
     try:
-        import os
 
-        from app.repositories.report_repository import ReportRepository
-        from app.services.report_service import ReportService
-        from fastapi.responses import FileResponse
         
         report_repo = ReportRepository()
         report = report_repo.find_by_id(report_id)

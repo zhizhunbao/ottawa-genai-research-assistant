@@ -4,13 +4,16 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.core.data_paths import monk_paths
 from app.models.system import SystemSettings
 
 
 class SystemRepository:
     """Repository for system settings operations."""
 
-    def __init__(self, data_file: str = "backend/monk/system/settings.json"):
+    def __init__(self, data_file: str | None = None):
+        if data_file is None:
+            data_file = monk_paths.get_data_file_path("system_settings")
         self.data_file = Path(data_file)
         self.data_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -18,13 +21,13 @@ class SystemRepository:
         """Load settings from JSON file."""
         if not self.data_file.exists():
             # Return default settings if file doesn't exist
-            return SystemSettings().dict()
+            return SystemSettings().model_dump()
 
         try:
             with open(self.data_file, encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
-            return SystemSettings().dict()
+            return SystemSettings().model_dump()
 
     def _save_settings(self, settings: dict[str, Any]) -> None:
         """Save settings to JSON file."""
@@ -38,7 +41,7 @@ class SystemRepository:
 
     def update_settings(self, settings: SystemSettings) -> SystemSettings:
         """Update system settings."""
-        self._save_settings(settings.dict())
+        self._save_settings(settings.model_dump())
         return settings
 
     def update_partial_settings(
@@ -68,22 +71,22 @@ class SystemRepository:
     def get_language_config(self) -> dict[str, Any]:
         """Get language configuration."""
         settings = self.get_settings()
-        return settings.languages.dict()
+        return settings.languages.model_dump()
 
     def get_ai_config(self) -> dict[str, Any]:
         """Get AI configuration."""
         settings = self.get_settings()
-        return settings.ai.dict()
+        return settings.ai.model_dump()
 
     def get_search_config(self) -> dict[str, Any]:
         """Get search configuration."""
         settings = self.get_settings()
-        return settings.search.dict()
+        return settings.search.model_dump()
 
     def get_feature_flags(self) -> dict[str, bool]:
         """Get feature flags."""
         settings = self.get_settings()
-        return settings.features.dict()
+        return settings.features.model_dump()
 
     def update_feature_flag(
         self, feature: str, enabled: bool

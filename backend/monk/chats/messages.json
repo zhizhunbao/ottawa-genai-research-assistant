@@ -18,7 +18,9 @@
     "timestamp": "2024-09-15T10:30:15Z",
     "metadata": {
       "language": "en",
-      "sources": ["doc_001"],
+      "sources": [
+        "doc_001"
+      ],
       "confidence": 0.92
     }
   },
@@ -41,7 +43,9 @@
     "timestamp": "2024-09-15T10:32:20Z",
     "metadata": {
       "language": "en",
-      "sources": ["doc_001"],
+      "sources": [
+        "doc_001"
+      ],
       "confidence": 0.89
     }
   },
@@ -64,8 +68,66 @@
     "timestamp": "2024-09-14T14:20:25Z",
     "metadata": {
       "language": "en",
-      "sources": ["doc_002"],
+      "sources": [
+        "doc_002"
+      ],
       "confidence": 0.94
     }
+  },
+  {
+    "id": "0b6c2d8b-0be8-43ef-89ef-934afba64805",
+    "conversation_id": "c6545294-53e6-4a70-b63f-122799bce791",
+    "role": "user",
+    "content": "Explain this document",
+    "timestamp": "2025-09-21T19:37:31.117556+00:00",
+    "metadata": {
+      "language": null,
+      "intent": null,
+      "sources": null,
+      "confidence": null
+    }
+  },
+  {
+    "id": "6fa83648-d3d9-40de-b5c0-cbade4f6fad5",
+    "conversation_id": "c6545294-53e6-4a70-b63f-122799bce791",
+    "role": "assistant",
+    "content": "This document discusses AI applications...",
+    "timestamp": "2025-09-21T19:37:31.118494+00:00",
+    "metadata": {
+      "language": null,
+      "intent": null,
+      "sources": [
+        "Test Source"
+      ],
+      "confidence": null
+    }
+  },
+  {
+    "id": "5ea03fdd-7fc1-4de1-b7ad-89c988f65d70",
+    "conversation_id": "c6545294-53e6-4a70-b63f-122799bce791",
+    "role": "user",
+    "content": "Qu'est-ce que l'intelligence artificielle?",
+    "timestamp": "2025-09-21T19:37:31.327054+00:00",
+    "metadata": {
+      "language": null,
+      "intent": null,
+      "sources": null,
+      "confidence": null
+    }
+  },
+  {
+    "id": "5ac7a2f5-f8a0-4299-89ec-c1162666330f",
+    "conversation_id": "c6545294-53e6-4a70-b63f-122799bce791",
+    "role": "assistant",
+    "content": "L'IA est une branche de l'informatique...",
+    "timestamp": "2025-09-21T19:37:31.332997+00:00",
+    "metadata": {
+      "language": null,
+      "intent": null,
+      "sources": [
+        "Test Source"
+      ],
+      "confidence": null
+    }
   }
-] 
+]

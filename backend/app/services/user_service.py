@@ -6,7 +6,7 @@ This demonstrates the correct Service → Repository → monk/ architecture.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.config import get_settings
 from app.models.user import User, UserMetadata, UserPreferences
@@ -42,7 +42,7 @@ class UserService:
             hashed_password=hashed_password,
             role=role,
             status="active",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             last_login=None,
             preferences=UserPreferences(),
             metadata=UserMetadata(),
@@ -84,7 +84,7 @@ class UserService:
 
     async def update_last_login(self, user_id: str) -> User | None:
         """Update user's last login time."""
-        return await self.update_user(user_id, last_login=datetime.utcnow())
+        return await self.update_user(user_id, last_login=datetime.now(timezone.utc))
 
     async def deactivate_user(self, user_id: str) -> bool:
         """Deactivate a user."""

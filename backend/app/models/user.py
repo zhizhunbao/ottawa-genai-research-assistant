@@ -9,8 +9,11 @@ class UserPreferences(BaseModel):
     """User preferences model."""
 
     language: str = Field(default="en", pattern="^(en|fr)$")
-    theme: str = Field(default="light", pattern="^(light|dark|auto)$")
-    notifications: bool = True
+    theme: str = Field(default="auto", pattern="^(light|dark|auto)$")
+    font_size: str = Field(default="medium", pattern="^(small|medium|large|extra_large)$")
+    high_contrast: bool = Field(default=False)
+    reduce_motion: bool = Field(default=False)
+    notifications: bool = Field(default=True)
     default_topics: list[str] = Field(default_factory=list)
 
 

@@ -7,7 +7,7 @@ Demonstrates the complete Service → Repository → monk/ architecture.
 
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,7 @@ class ReportService:
     def __init__(self, settings: Settings | None = None):
         self.report_repo = ReportRepository()
         self.settings = settings or get_settings()
-        self.export_dir = Path("backend/monk/reports/exports")
+        self.export_dir = Path("monk/reports/exports")
         self.export_dir.mkdir(parents=True, exist_ok=True)
 
     async def generate_report(
@@ -136,7 +136,7 @@ class ReportService:
         try:
             # Create export filename
             safe_title = "".join(c for c in report.title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"{safe_title}_{timestamp}.{self._get_file_extension(format)}"
             file_path = self.export_dir / filename
             
@@ -159,7 +159,7 @@ class ReportService:
                     f.write(content)
             
             # Return export info
-            expires_at = datetime.now() + timedelta(days=7)  # Files expire after 7 days
+            expires_at = datetime.now(timezone.utc) + timedelta(days=7)  # Files expire after 7 days
             
             return {
                 "file_path": str(file_path),
@@ -268,8 +268,8 @@ class ReportService:
             status=status,
             author=author,
             content=content,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             metadata=metadata,
             tags=[],
             version=1,
@@ -317,7 +317,7 @@ class ReportService:
             report.metadata.section_count = content.count("\n\n") + 1 if content else 0
 
         # Update timestamps and version
-        report.updated_at = datetime.utcnow()
+        report.updated_at = datetime.now(timezone.utc)
         report.version += 1
 
         # Save through repository
@@ -371,7 +371,7 @@ class ReportService:
                 "status_breakdown": status_counts,
                 "type_breakdown": type_counts,
                 "author_breakdown": author_counts,
-                "last_updated": datetime.utcnow().isoformat(),
+                "last_updated": datetime.now(timezone.utc).isoformat(),
             }
 
         except Exception as e:

@@ -5,19 +5,14 @@ Handles user authentication, registration, and token management.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
-
-from app.core.auth import (
-    create_access_token,
-    get_password_hash,
-    verify_password,
-    verify_token,
-)
+from app.core.auth import (create_access_token, get_password_hash,
+                           verify_password, verify_token)
 from app.core.config import get_settings
 from app.models.user import Token, User, UserCreate, UserLogin
 from app.repositories.user_repository import UserRepository
+from fastapi import HTTPException, status
 
 
 class AuthService:
@@ -57,7 +52,7 @@ class AuthService:
             hashed_password=hashed_password,
             role=user_data.role,
             status="active",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             preferences=user_data.preferences or {},
             metadata=user_data.metadata or {},
         )
@@ -95,7 +90,7 @@ class AuthService:
             )
 
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
         self.user_repo.update(user.id, user)
 
         return user
@@ -169,7 +164,7 @@ class AuthService:
 
         if existing_user:
             # Update last login
-            existing_user.last_login = datetime.utcnow()
+            existing_user.last_login = datetime.now(timezone.utc)
             self.user_repo.update(existing_user.id, existing_user)
             return existing_user
 

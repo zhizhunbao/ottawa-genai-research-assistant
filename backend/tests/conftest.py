@@ -68,24 +68,65 @@ async def async_client(override_get_settings) -> AsyncGenerator[AsyncClient, Non
 @pytest.fixture
 def mock_user():
     """Mock user for testing"""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    from app.models.user import User
+    from app.models.user import User, UserMetadata, UserPreferences
     
     return User(
         id="test-user-id",
         username="testuser",
         email="test@example.com",
         full_name="Test User",
+        hashed_password="$2b$12$test.hashed.password",  # Mock hashed password
+        role="researcher",
+        status="active",
         is_active=True,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+        last_login=None,
+        preferences=UserPreferences(),
+        metadata=UserMetadata(),
     )
 
 
 @pytest.fixture
 def auth_headers(mock_user):
     """Create authentication headers for testing"""
-    # In a real implementation, you'd create a valid JWT token here
-    # For now, we'll use a simple mock token
-    return {"Authorization": "Bearer test-token"} 
+    from app.core.auth import create_access_token
+
+    # Create a real JWT token for testing
+    token = create_access_token(data={"sub": mock_user.email})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def mock_auth(monkeypatch, mock_user):
+    """Mock authentication for testing"""
+    from app.api.auth import get_current_user
+    from app.repositories.user_repository import UserRepository
+
+    # Ensure the test user exists in the repository
+    user_repo = UserRepository()
+    existing_user = user_repo.find_by_email(mock_user.email)
+    if not existing_user:
+        user_repo.create(mock_user)
+    
+    async def mock_get_current_user(credentials=None):
+        """Mock function that returns the test user regardless of credentials"""
+        return mock_user
+    
+    # Override the get_current_user dependency at the app level
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    
+    yield mock_user
+    
+    # Clean up
+    if get_current_user in app.dependency_overrides:
+        del app.dependency_overrides[get_current_user]
+
+
+@pytest.fixture
+def authenticated_client(client, mock_auth, auth_headers):
+    """Create an authenticated test client"""
+    client.headers.update(auth_headers)
+    return client 

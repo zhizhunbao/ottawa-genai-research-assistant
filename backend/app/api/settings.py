@@ -7,7 +7,7 @@ Handles application settings and user preferences.
 from app.api.auth import get_current_user
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 router = APIRouter()
 
@@ -16,10 +16,31 @@ router = APIRouter()
 class UserPreferences(BaseModel):
     language: str = "en"
     theme: str = "auto"  # light, dark, auto
-    font_size: str = "medium"  # small, medium, large
+    font_size: str = "medium"  # small, medium, large, extra_large
     high_contrast: bool = False
     reduce_motion: bool = False
     notifications: bool = True
+
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v):
+        if v not in ["en", "fr"]:
+            raise ValueError('Language must be either "en" or "fr"')
+        return v
+
+    @field_validator('theme')
+    @classmethod
+    def validate_theme(cls, v):
+        if v not in ["light", "dark", "auto"]:
+            raise ValueError('Theme must be one of "light", "dark", or "auto"')
+        return v
+
+    @field_validator('font_size')
+    @classmethod
+    def validate_font_size(cls, v):
+        if v not in ["small", "medium", "large", "extra_large"]:
+            raise ValueError('Font size must be one of "small", "medium", "large", or "extra_large"')
+        return v
 
 
 class LanguageInfo(BaseModel):
@@ -80,8 +101,8 @@ async def get_user_preferences(current_user: User = Depends(get_current_user)):
         if user and user.preferences:
             # Convert user preferences to API model
             return UserPreferences(
-                language=user.preferences.language,
-                theme=user.preferences.theme,
+                language=getattr(user.preferences, 'language', 'en'),
+                theme=getattr(user.preferences, 'theme', 'auto'),
                 font_size=getattr(user.preferences, 'font_size', 'medium'),
                 high_contrast=getattr(user.preferences, 'high_contrast', False),
                 reduce_motion=getattr(user.preferences, 'reduce_motion', False),
@@ -107,7 +128,7 @@ async def save_user_preferences(
 
     - **language**: Preferred language (en/fr)
     - **theme**: UI theme preference (light/dark/auto)
-    - **font_size**: Font size preference (small/medium/large)
+    - **font_size**: Font size preference (small/medium/large/extra_large)
     - **high_contrast**: Enable high contrast mode
     - **reduce_motion**: Reduce animations and motion
     - **notifications**: Enable notifications
@@ -118,15 +139,19 @@ async def save_user_preferences(
         
         user_repo = UserRepository()
         
-        # Update user preferences
-        user_preferences = UserPrefModel(
-            language=preferences.language,
-            theme=preferences.theme,
-            font_size=preferences.font_size,
-            high_contrast=preferences.high_contrast,
-            reduce_motion=preferences.reduce_motion,
-            notifications=preferences.notifications,
-        )
+        # Create user preferences model (with validation)
+        try:
+            user_preferences = UserPrefModel(
+                language=preferences.language,
+                theme=preferences.theme,
+                font_size=preferences.font_size,
+                high_contrast=preferences.high_contrast,
+                reduce_motion=preferences.reduce_motion,
+                notifications=preferences.notifications,
+                default_topics=getattr(preferences, 'default_topics', [])
+            )
+        except ValueError as ve:
+            raise HTTPException(status_code=422, detail=str(ve))
         
         # Update user record
         updates = {
@@ -272,6 +297,7 @@ async def get_ai_models():
                 "id": "gpt-3.5-turbo",
                 "name": "GPT-3.5 Turbo",
                 "provider": "OpenAI",
+                "description": "Fast and efficient AI model suitable for general chat and basic analysis tasks",
                 "capabilities": ["chat", "analysis", "summarization"],
                 "languages": ["en", "fr"],
                 "max_tokens": 4000,
@@ -282,6 +308,7 @@ async def get_ai_models():
                 "id": "gpt-4",
                 "name": "GPT-4",
                 "provider": "OpenAI",
+                "description": "Advanced AI model with superior reasoning capabilities for complex tasks",
                 "capabilities": [
                     "chat",
                     "analysis",
@@ -297,6 +324,7 @@ async def get_ai_models():
                 "id": "claude-3-sonnet",
                 "name": "Claude 3 Sonnet",
                 "provider": "Anthropic",
+                "description": "Powerful AI model with exceptional document processing and analytical capabilities",
                 "capabilities": [
                     "chat",
                     "analysis",
