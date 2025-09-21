@@ -15,7 +15,7 @@ pandas>=2.0.0
 numpy>=1.24.0
 
 # PDF处理
-PyPDF2>=3.0.0
+pypdf>=6.0.0
 pdfplumber>=0.9.0
 
 # 认证和安全 - 修复bcrypt版本兼容问题
@@ -58,6 +58,7 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 black>=23.0.0
+flake8>=6.0.0
 isort>=5.12.0
 
 # 测试工具

@@ -437,5 +437,33 @@
       "start_char": null,
       "end_char": null
     }
+  },
+  {
+    "id": "e884b2c3-6f5e-4595-aba4-eb63248f47ef",
+    "user_id": "user_001",
+    "filename": "test_document.pdf",
+    "title": "test_document.pdf",
+    "description": "Failed to process: Error extracting text from PDF: No /Root object! - Is this really a PDF?",
+    "file_path": "./uploads\\e884b2c3-6f5e-4595-aba4-eb63248f47ef_test_document.pdf",
+    "file_size": 48,
+    "mime_type": "application/pdf",
+    "upload_date": "2025-09-21T23:01:24.939941+00:00",
+    "last_modified": "2025-09-21T23:01:24.939944+00:00",
+    "status": "error",
+    "language": "en",
+    "tags": [],
+    "content": "",
+    "chunks": [],
+    "vector_id": null,
+    "metadata": {
+      "pages": null,
+      "author": null,
+      "version": null,
+      "section": null,
+      "subsection": null,
+      "word_count": null,
+      "start_char": null,
+      "end_char": null
+    }
   }
 ]

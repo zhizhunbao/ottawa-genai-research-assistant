@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 import pdfplumber
-import PyPDF2
+import pypdf
 from app.core.config import Settings
 from app.models.document import Document, DocumentMetadata
 from app.repositories.document_repository import DocumentRepository
@@ -158,10 +158,10 @@ class DocumentService:
                     if page_text:
                         extracted_text += page_text + "\n"
 
-            # If pdfplumber didn't extract much text, try PyPDF2
+            # If pdfplumber didn't extract much text, try pypdf
             if len(extracted_text.strip()) < 100:
                 with open(file_path, "rb") as file:
-                    pdf_reader = PyPDF2.PdfReader(file)
+                    pdf_reader = pypdf.PdfReader(file)
                     extracted_text = ""
 
                     for page_num in range(len(pdf_reader.pages)):
@@ -182,7 +182,7 @@ class DocumentService:
 
         try:
             with open(file_path, "rb") as file:
-                pdf_reader = PyPDF2.PdfReader(file)
+                pdf_reader = pypdf.PdfReader(file)
 
                 # Basic metadata
                 metadata["page_count"] = len(pdf_reader.pages)
