@@ -306,19 +306,19 @@ npm test
 ### Code Formatting | 代码格式化
 
 ```bash
-# Backend formatting with Ruff (recommended)
+# Backend code formatting with Ruff (recommended) | 后端代码格式化（推荐使用Ruff）
 cd backend
-ruff check . --fix    # Fix linting issues
-ruff format .         # Format code
+ruff check . --fix    # Fix linting issues | 修复代码检查问题
+ruff format .         # Format code | 格式化代码
 
-# Legacy formatting tools (deprecated)
+# Legacy tools (deprecated) | 旧版工具（已弃用）
 # black .
 # isort .
 
-# Frontend formatting
+# Frontend code formatting | 前端代码格式化
 cd frontend
-npm run format
-npm run lint
+npm run format        # Format code | 格式化代码
+npm run lint          # Lint code | 代码检查
 ```
 
 ### Development Mode | 开发模式
