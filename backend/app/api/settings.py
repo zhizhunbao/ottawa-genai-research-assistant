@@ -4,11 +4,13 @@
 Handles application settings and user preferences.
 """
 
-from fastapi import APIRouter, HTTPException
+from app.api.auth import get_current_user
+from app.models.user import User
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 
 router = APIRouter()
+
 
 # Request/Response Models
 class UserPreferences(BaseModel):
@@ -19,21 +21,24 @@ class UserPreferences(BaseModel):
     reduce_motion: bool = False
     notifications: bool = True
 
+
 class LanguageInfo(BaseModel):
     code: str
     name: str
     native_name: str
     supported: bool
 
+
 class SystemInfo(BaseModel):
     version: str
     build_date: str
-    features: List[str]
-    ai_models: List[str]
+    features: list[str]
+    ai_models: list[str]
     max_file_size_mb: int
 
+
 @router.get("/languages")
-async def get_supported_languages() -> Dict[str, List[LanguageInfo]]:
+async def get_supported_languages() -> dict[str, list[LanguageInfo]]:
     """
     Get list of supported languages for the application.
     """
@@ -43,39 +48,63 @@ async def get_supported_languages() -> Dict[str, List[LanguageInfo]]:
                 code="en",
                 name="English",
                 native_name="English",
-                supported=True
+                supported=True,
             ),
             LanguageInfo(
                 code="fr",
                 name="French",
                 native_name="Français",
-                supported=True
-            )
+                supported=True,
+            ),
         ]
-        
+
         return {"languages": languages}
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving languages: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving languages: {str(e)}"
+        )
+
 
 @router.get("/preferences", response_model=UserPreferences)
-async def get_user_preferences():
+async def get_user_preferences(current_user: User = Depends(get_current_user)):
     """
     Get current user preferences.
     """
     try:
-        # TODO: Implement actual user preference retrieval
-        # For now, return default preferences
-        return UserPreferences()
+        from app.repositories.user_repository import UserRepository
         
+        user_repo = UserRepository()
+        user = user_repo.find_by_id(current_user.id)
+        
+        if user and user.preferences:
+            # Convert user preferences to API model
+            return UserPreferences(
+                language=user.preferences.language,
+                theme=user.preferences.theme,
+                font_size=getattr(user.preferences, 'font_size', 'medium'),
+                high_contrast=getattr(user.preferences, 'high_contrast', False),
+                reduce_motion=getattr(user.preferences, 'reduce_motion', False),
+                notifications=getattr(user.preferences, 'notifications', True),
+            )
+        else:
+            # Return default preferences if user not found or no preferences set
+            return UserPreferences()
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving preferences: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving preferences: {str(e)}"
+        )
+
 
 @router.post("/preferences", response_model=UserPreferences)
-async def save_user_preferences(preferences: UserPreferences):
+async def save_user_preferences(
+    preferences: UserPreferences,
+    current_user: User = Depends(get_current_user),
+):
     """
     Save user preferences.
-    
+
     - **language**: Preferred language (en/fr)
     - **theme**: UI theme preference (light/dark/auto)
     - **font_size**: Font size preference (small/medium/large)
@@ -84,13 +113,40 @@ async def save_user_preferences(preferences: UserPreferences):
     - **notifications**: Enable notifications
     """
     try:
-        # TODO: Implement actual preference saving to database
-        # For now, just return the received preferences
+        from app.models.user import UserPreferences as UserPrefModel
+        from app.repositories.user_repository import UserRepository
+        
+        user_repo = UserRepository()
+        
+        # Update user preferences
+        user_preferences = UserPrefModel(
+            language=preferences.language,
+            theme=preferences.theme,
+            font_size=preferences.font_size,
+            high_contrast=preferences.high_contrast,
+            reduce_motion=preferences.reduce_motion,
+            notifications=preferences.notifications,
+        )
+        
+        # Update user record
+        updates = {
+            "preferences": user_preferences.model_dump(),
+        }
+        
+        updated_user = user_repo.update(current_user.id, updates)
+        
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found")
         
         return preferences
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving preferences: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error saving preferences: {str(e)}"
+        )
+
 
 @router.get("/system-info", response_model=SystemInfo)
 async def get_system_info():
@@ -107,18 +163,17 @@ async def get_system_info():
                 "Report Generation",
                 "Data Visualization",
                 "Bilingual Support",
-                "Accessibility Features"
+                "Accessibility Features",
             ],
-            ai_models=[
-                "GPT-3.5-Turbo",
-                "GPT-4",
-                "Claude-3-Sonnet"
-            ],
-            max_file_size_mb=50
+            ai_models=["GPT-3.5-Turbo", "GPT-4", "Claude-3-Sonnet"],
+            max_file_size_mb=50,
         )
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving system info: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving system info: {str(e)}"
+        )
+
 
 @router.get("/accessibility")
 async def get_accessibility_settings():
@@ -131,27 +186,31 @@ async def get_accessibility_settings():
                 {"value": "small", "label": "Small", "px": 14},
                 {"value": "medium", "label": "Medium", "px": 16},
                 {"value": "large", "label": "Large", "px": 18},
-                {"value": "extra_large", "label": "Extra Large", "px": 20}
+                {"value": "extra_large", "label": "Extra Large", "px": 20},
             ],
             "contrast_modes": [
                 {"value": "normal", "label": "Normal Contrast"},
                 {"value": "high", "label": "High Contrast"},
-                {"value": "extra_high", "label": "Extra High Contrast"}
+                {"value": "extra_high", "label": "Extra High Contrast"},
             ],
             "motion_preferences": [
                 {"value": "normal", "label": "Normal Motion"},
                 {"value": "reduced", "label": "Reduced Motion"},
-                {"value": "none", "label": "No Motion"}
+                {"value": "none", "label": "No Motion"},
             ],
             "screen_reader_support": True,
             "keyboard_navigation": True,
-            "focus_indicators": True
+            "focus_indicators": True,
         }
-        
+
         return accessibility_options
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving accessibility settings: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving accessibility settings: {str(e)}",
+        )
+
 
 @router.get("/export-options")
 async def get_export_options():
@@ -164,37 +223,43 @@ async def get_export_options():
                 {
                     "value": "pdf",
                     "label": "PDF Document",
-                    "description": "Portable Document Format with preserved formatting",
-                    "supports_charts": True
+                    "description": (
+                        "Portable Document Format with preserved formatting"
+                    ),
+                    "supports_charts": True,
                 },
                 {
                     "value": "word",
                     "label": "Microsoft Word",
                     "description": "Editable Word document (.docx)",
-                    "supports_charts": True
+                    "supports_charts": True,
                 },
                 {
                     "value": "html",
                     "label": "Web Page",
                     "description": "HTML format for web viewing",
-                    "supports_charts": True
+                    "supports_charts": True,
                 },
                 {
                     "value": "csv",
                     "label": "CSV Data",
                     "description": "Comma-separated values for data analysis",
-                    "supports_charts": False
-                }
+                    "supports_charts": False,
+                },
             ],
             "quality_options": ["low", "medium", "high"],
             "page_sizes": ["letter", "a4", "legal"],
-            "orientations": ["portrait", "landscape"]
+            "orientations": ["portrait", "landscape"],
         }
-        
+
         return export_options
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving export options: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving export options: {str(e)}",
+        )
+
 
 @router.get("/ai-models")
 async def get_ai_models():
@@ -211,46 +276,79 @@ async def get_ai_models():
                 "languages": ["en", "fr"],
                 "max_tokens": 4000,
                 "cost": "low",
-                "speed": "fast"
+                "speed": "fast",
             },
             {
                 "id": "gpt-4",
                 "name": "GPT-4",
                 "provider": "OpenAI",
-                "capabilities": ["chat", "analysis", "summarization", "complex_reasoning"],
+                "capabilities": [
+                    "chat",
+                    "analysis",
+                    "summarization",
+                    "complex_reasoning",
+                ],
                 "languages": ["en", "fr"],
                 "max_tokens": 8000,
                 "cost": "high",
-                "speed": "medium"
+                "speed": "medium",
             },
             {
                 "id": "claude-3-sonnet",
                 "name": "Claude 3 Sonnet",
                 "provider": "Anthropic",
-                "capabilities": ["chat", "analysis", "summarization", "document_processing"],
+                "capabilities": [
+                    "chat",
+                    "analysis",
+                    "summarization",
+                    "document_processing",
+                ],
                 "languages": ["en", "fr"],
                 "max_tokens": 200000,
                 "cost": "medium",
-                "speed": "fast"
-            }
+                "speed": "fast",
+            },
         ]
-        
+
         return {"models": ai_models}
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving AI models: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving AI models: {str(e)}"
+        )
+
 
 @router.post("/reset")
-async def reset_settings():
+async def reset_settings(current_user: User = Depends(get_current_user)):
     """
     Reset all settings to default values.
     """
     try:
-        # TODO: Implement actual settings reset
-        return {
-            "message": "Settings reset to defaults successfully",
-            "preferences": UserPreferences()
+        from app.models.user import UserPreferences as UserPrefModel
+        from app.repositories.user_repository import UserRepository
+        
+        user_repo = UserRepository()
+        
+        # Reset to default preferences
+        default_preferences = UserPrefModel()
+        
+        updates = {
+            "preferences": default_preferences.model_dump(),
         }
         
+        updated_user = user_repo.update(current_user.id, updates)
+        
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "message": "Settings reset to defaults successfully",
+            "preferences": UserPreferences(),
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error resetting settings: {str(e)}") 
+        raise HTTPException(
+            status_code=500, detail=f"Error resetting settings: {str(e)}"
+        )

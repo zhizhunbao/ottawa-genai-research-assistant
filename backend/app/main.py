@@ -6,14 +6,15 @@ This is the entry point for the FastAPI backend server.
 
 import os
 
-# Import API routers
-from app.api import auth, chat, documents, reports
-from app.api import settings as settings_router
-from app.core.config import get_settings
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+
+# Import API routers
+from app.api import auth, chat, documents, reports
+from app.api import settings as settings_router
+from app.core.config import get_settings
 
 # Load environment variables
 load_dotenv()
@@ -24,9 +25,7 @@ settings = get_settings()
 # Create FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description=(
-        "AI-powered research assistant for Ottawa Economic " "Development team"
-    ),
+    description=("AI-powered research assistant for Ottawa Economic Development team"),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

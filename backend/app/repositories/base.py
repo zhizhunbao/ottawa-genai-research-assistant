@@ -3,7 +3,7 @@
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -18,19 +18,19 @@ class BaseRepository(ABC, Generic[T]):
         self.data_file = Path(data_file)
         self.data_file.parent.mkdir(parents=True, exist_ok=True)
 
-    def _load_data(self) -> List[Dict[str, Any]]:
+    def _load_data(self) -> list[dict[str, Any]]:
         """Load data from JSON file."""
         if not self.data_file.exists():
             return []
 
         try:
-            with open(self.data_file, "r", encoding="utf-8") as f:
+            with open(self.data_file, encoding="utf-8") as f:
                 data = json.load(f)
                 return data if isinstance(data, list) else [data]
         except (json.JSONDecodeError, FileNotFoundError):
             return []
 
-    def _save_data(self, data: List[Dict[str, Any]]) -> None:
+    def _save_data(self, data: list[dict[str, Any]]) -> None:
         """Save data to JSON file."""
 
         def json_serializer(obj):
@@ -43,21 +43,21 @@ class BaseRepository(ABC, Generic[T]):
             json.dump(data, f, indent=2, ensure_ascii=False, default=json_serializer)
 
     @abstractmethod
-    def _to_dict(self, item: T) -> Dict[str, Any]:
+    def _to_dict(self, item: T) -> dict[str, Any]:
         """Convert model to dictionary."""
         pass
 
     @abstractmethod
-    def _from_dict(self, data: Dict[str, Any]) -> T:
+    def _from_dict(self, data: dict[str, Any]) -> T:
         """Convert dictionary to model."""
         pass
 
-    def find_all(self) -> List[T]:
+    def find_all(self) -> list[T]:
         """Find all items."""
         data = self._load_data()
         return [self._from_dict(item) for item in data]
 
-    def find_by_id(self, item_id: str) -> Optional[T]:
+    def find_by_id(self, item_id: str) -> T | None:
         """Find item by ID."""
         data = self._load_data()
         for item in data:
@@ -73,7 +73,7 @@ class BaseRepository(ABC, Generic[T]):
         self._save_data(data)
         return item
 
-    def update(self, item_id: str, updates: Dict[str, Any]) -> Optional[T]:
+    def update(self, item_id: str, updates: dict[str, Any]) -> T | None:
         """Update item by ID."""
         data = self._load_data()
         for i, item in enumerate(data):

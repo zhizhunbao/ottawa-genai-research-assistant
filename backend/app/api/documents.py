@@ -7,7 +7,6 @@ Handles PDF document upload, processing, and management.
 import os
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from app.api.auth import get_current_user
 from app.core.config import get_settings
@@ -26,12 +25,12 @@ class DocumentInfo(BaseModel):
     size: int
     upload_date: datetime
     processed: bool
-    page_count: Optional[int] = None
-    language: Optional[str] = None
+    page_count: int | None = None
+    language: str | None = None
 
 
 class DocumentList(BaseModel):
-    documents: List[DocumentInfo]
+    documents: list[DocumentInfo]
     total: int
 
 
@@ -46,7 +45,7 @@ class UploadResponse(BaseModel):
 @router.post("/upload", response_model=UploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    language: Optional[str] = "en",
+    language: str | None = "en",
     current_user: User = Depends(get_current_user),
     settings=Depends(get_settings),
 ):
@@ -147,17 +146,25 @@ async def list_documents(
 
 
 @router.get("/{doc_id}", response_model=DocumentInfo)
-async def get_document(doc_id: str):
+async def get_document(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    settings=Depends(get_settings),
+):
     """
     Get information about a specific document.
 
     - **doc_id**: Unique document identifier
     """
     try:
-        # TODO: Implement actual document retrieval from database
-        # For now, return mock data
+        doc_service = DocumentService(settings)
+        document = doc_service.get_document_by_id(doc_id, current_user.id)
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
         return DocumentInfo(
-            id=doc_id,
+            id=document.id,
             filename="Sample_Document.pdf",
             size=1024000,
             upload_date=datetime.now(),
@@ -166,26 +173,39 @@ async def get_document(doc_id: str):
             language="en",
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail=f"Document not found: {doc_id}")
 
 
 @router.delete("/{doc_id}")
-async def delete_document(doc_id: str):
+async def delete_document(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    settings=Depends(get_settings),
+):
     """
     Delete a document and its associated data.
 
     - **doc_id**: Unique document identifier
     """
     try:
-        # TODO: Implement actual document deletion
-        # This should remove:
-        # 1. The file from storage
-        # 2. The record from database
-        # 3. The vectors from vector database
+        doc_service = DocumentService(settings)
+        
+        # Check if document exists and belongs to user
+        document = doc_service.get_document_by_id(doc_id, current_user.id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Delete the document using the service
+        success = await doc_service.delete_document(doc_id)
+        
+        if success:
+            return {"message": f"Document {doc_id} deleted successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete document")
 
-        return {"message": f"Document {doc_id} deleted successfully"}
-
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error deleting document: {str(e)}"
@@ -193,16 +213,35 @@ async def delete_document(doc_id: str):
 
 
 @router.post("/{doc_id}/reprocess")
-async def reprocess_document(doc_id: str):
+async def reprocess_document(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    settings=Depends(get_settings),
+):
     """
     Reprocess a document (useful if processing failed or needs updating).
 
     - **doc_id**: Unique document identifier
     """
     try:
-        # TODO: Implement document reprocessing
-        return {"message": f"Document {doc_id} queued for reprocessing"}
+        doc_service = DocumentService(settings)
+        
+        # Check if document exists and belongs to user
+        document = doc_service.get_document_by_id(doc_id, current_user.id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Reprocess the document
+        result = await doc_service.reprocess_document(doc_id, current_user.id)
+        
+        return {
+            "message": f"Document {doc_id} queued for reprocessing",
+            "status": result.get("status", "processing"),
+            "processing_id": result.get("processing_id"),
+        }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error reprocessing document: {str(e)}"
@@ -210,7 +249,12 @@ async def reprocess_document(doc_id: str):
 
 
 @router.get("/{doc_id}/content")
-async def get_document_content(doc_id: str, page: Optional[int] = None):
+async def get_document_content(
+    doc_id: str,
+    page: int | None = None,
+    current_user: User = Depends(get_current_user),
+    settings=Depends(get_settings),
+):
     """
     Get extracted text content from a document.
 
@@ -218,16 +262,20 @@ async def get_document_content(doc_id: str, page: Optional[int] = None):
     - **page**: Specific page number (optional, returns all if not specified)
     """
     try:
-        # TODO: Implement content retrieval from processed document
-        mock_content = {
-            "doc_id": doc_id,
-            "total_pages": 12,
-            "page": page or "all",
-            "content": "Sample extracted text content from the PDF document...",
-        }
+        doc_service = DocumentService(settings)
+        
+        # Check if document exists and belongs to user
+        document = doc_service.get_document_by_id(doc_id, current_user.id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Get document content
+        content = await doc_service.get_document_content(doc_id, page)
+        
+        return content
 
-        return mock_content
-
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error retrieving document content: {str(e)}"

@@ -6,18 +6,18 @@ and retrieval operations, abstracting away the specific storage implementation.
 """
 
 from .base import BaseRepository
+from .chat_repository import ChatRepository, MessageRepository
 from .document_repository import DocumentRepository
-from .user_repository import UserRepository
 from .report_repository import ReportRepository
 from .system_repository import SystemRepository
-from .chat_repository import ChatRepository, MessageRepository
+from .user_repository import UserRepository
 
 __all__ = [
     "BaseRepository",
-    "DocumentRepository", 
+    "DocumentRepository",
     "UserRepository",
     "ReportRepository",
     "SystemRepository",
     "ChatRepository",
     "MessageRepository",
-] 
+]

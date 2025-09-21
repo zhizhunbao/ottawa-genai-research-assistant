@@ -5,7 +5,6 @@ Centralized configuration using Pydantic Settings for type safety.
 """
 
 from functools import lru_cache
-from typing import List
 
 from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
@@ -40,14 +39,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = Field(
+    ALLOWED_ORIGINS: list[str] = Field(
         default=["http://localhost:3000", "http://localhost:3001"]
     )
 
     # File Upload
     MAX_FILE_SIZE_MB: int = Field(default=50)
-    UPLOAD_DIR: str = Field(default="./uploads")
-    ALLOWED_FILE_TYPES: List[str] = Field(default=["pdf"])
+    UPLOAD_DIR: str = Field(default="./backend/uploads")
+    ALLOWED_FILE_TYPES: list[str] = Field(default=["pdf"])
 
     # AI Model Settings
     DEFAULT_AI_MODEL: str = Field(default="gpt-3.5-turbo")
@@ -58,7 +57,7 @@ class Settings(BaseSettings):
     LOG_FILE: str = Field(default="./logs/app.log")
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()

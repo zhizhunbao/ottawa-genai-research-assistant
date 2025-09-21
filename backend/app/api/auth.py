@@ -5,14 +5,8 @@ Handles user authentication operations like login, register, and user info.
 """
 
 import jwt
-from app.models.user import (
-    AuthResponse,
-    Token,
-    User,
-    UserCreate,
-    UserLogin,
-    UserSummary,
-)
+from app.models.user import (AuthResponse, Token, User, UserCreate, UserLogin,
+                             UserSummary)
 from app.services.auth_service import AuthService
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -131,7 +125,9 @@ async def get_current_user_info(
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def refresh_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
     """
     Refresh access token.
 
@@ -244,7 +240,9 @@ async def verify_google_token(token: str) -> dict:
                 print(f"  Token issued at (iat): {iat}")
                 print(f"  Token expires at (exp): {exp}")
                 time_diff = current_time - iat
-                print(f"  Time difference (current - iat): {time_diff} seconds")
+                print(
+                    f"  Time difference (current - iat): {time_diff} seconds"
+                )
 
                 # Extract user information from verified token
                 user_info = {
@@ -273,7 +271,10 @@ async def verify_google_token(token: str) -> dict:
                         detail=detail,
                     )
                 elif "Token expired" in error_msg:
-                    detail = "Google token has expired. Please try logging " "in again."
+                    detail = (
+                        "Google token has expired. "
+                        "Please try logging in again."
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail=detail,
@@ -291,7 +292,9 @@ async def verify_google_token(token: str) -> dict:
             print(warning_msg)
             # Fallback: decode without verification (less secure)
             # Note: This should only be used in development
-            decoded_token = jwt.decode(token, options={"verify_signature": False})
+            decoded_token = jwt.decode(
+                token, options={"verify_signature": False}
+            )
 
             user_info = {
                 "google_id": decoded_token.get("sub"),
@@ -314,7 +317,9 @@ async def verify_google_token(token: str) -> dict:
             detail="Invalid Google token format",
         )
     except Exception as e:
-        error_detail = f"❌ Unexpected error in Google token verification: {str(e)}"
+        error_detail = (
+            f"❌ Unexpected error in Google token verification: {str(e)}"
+        )
         print(error_detail)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -345,6 +350,7 @@ async def get_current_admin_user(
     """
     if current_user.role != "admin":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Operation not permitted"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operation not permitted"
         )
     return current_user

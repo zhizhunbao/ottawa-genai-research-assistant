@@ -7,6 +7,8 @@ Handles user authentication, registration, and token management.
 import uuid
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException, status
+
 from app.core.auth import (
     create_access_token,
     get_password_hash,
@@ -16,7 +18,6 @@ from app.core.auth import (
 from app.core.config import get_settings
 from app.models.user import Token, User, UserCreate, UserLogin
 from app.repositories.user_repository import UserRepository
-from fastapi import HTTPException, status
 
 
 class AuthService:

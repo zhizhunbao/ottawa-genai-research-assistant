@@ -7,7 +7,6 @@ This demonstrates the correct Service → Repository → monk/ architecture.
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from app.core.config import get_settings
 from app.models.user import User, UserMetadata, UserPreferences
@@ -53,23 +52,23 @@ class UserService:
         saved_user = self.user_repo.create(user)
         return saved_user
 
-    async def get_user_by_id(self, user_id: str) -> Optional[User]:
+    async def get_user_by_id(self, user_id: str) -> User | None:
         """Get user by ID."""
         return self.user_repo.get_by_id(user_id)
 
-    async def get_user_by_username(self, username: str) -> Optional[User]:
+    async def get_user_by_username(self, username: str) -> User | None:
         """Get user by username."""
         return self.user_repo.find_by_username(username)
 
-    async def get_user_by_email(self, email: str) -> Optional[User]:
+    async def get_user_by_email(self, email: str) -> User | None:
         """Get user by email."""
         return self.user_repo.find_by_email(email)
 
-    async def list_users(self) -> List[User]:
+    async def list_users(self) -> list[User]:
         """Get all users."""
         return self.user_repo.get_all()
 
-    async def update_user(self, user_id: str, **kwargs) -> Optional[User]:
+    async def update_user(self, user_id: str, **kwargs) -> User | None:
         """Update user information."""
         user = self.user_repo.get_by_id(user_id)
         if not user:
@@ -83,7 +82,7 @@ class UserService:
         # Save through repository
         return self.user_repo.update(user_id, user)
 
-    async def update_last_login(self, user_id: str) -> Optional[User]:
+    async def update_last_login(self, user_id: str) -> User | None:
         """Update user's last login time."""
         return await self.update_user(user_id, last_login=datetime.utcnow())
 
@@ -101,12 +100,12 @@ class UserService:
         """Delete a user."""
         return self.user_repo.delete(user_id)
 
-    async def get_active_users(self) -> List[User]:
+    async def get_active_users(self) -> list[User]:
         """Get all active users."""
         all_users = self.user_repo.get_all()
         return [user for user in all_users if user.status == "active"]
 
-    async def get_users_by_role(self, role: str) -> List[User]:
+    async def get_users_by_role(self, role: str) -> list[User]:
         """Get users by role."""
         all_users = self.user_repo.get_all()
         return [user for user in all_users if user.role == role]

@@ -40,6 +40,8 @@ A comprehensive AI-powered research assistant application designed for Ottawa Ci
 ```
 ottawa-genai-research-assistant/
 ├── 📚 docs/                      # Documentation | 文档
+│   ├── CODING_STANDARDS.md              # 🚫 Coding standards & NO TODO rules
+│   ├── 编码规范.md                       # 🚫 中文编码规范 & 禁止TODO规则
 │   ├── System Architecture Guide.md      # English architecture guide
 │   ├── 系统架构指南.md                    # Chinese architecture guide
 │   ├── Data Management Guide.md          # English data management
@@ -76,13 +78,15 @@ ottawa-genai-research-assistant/
 │   │   │   ├── document_service.py     # Document service
 │   │   │   ├── report_service.py       # Report service
 │   │   │   └── chat_service.py         # AI chat service
-│   │   └── main.py            # FastAPI entry point | FastAPI入口
+│   │   └── __init__.py        # Package initialization | 包初始化
 │   ├── monk/                  # Data Storage | 数据存储
 │   │   ├── users/            # User data files
 │   │   ├── documents/        # Document files
 │   │   ├── reports/          # Generated reports
 │   │   └── chats/            # Chat conversations
 │   ├── uploads/              # File Upload Directory | 文件上传目录
+│   ├── main.py              # FastAPI entry point | FastAPI入口
+│   ├── Dockerfile           # Container configuration | 容器配置
 │   └── requirements.txt      # Python Dependencies | Python依赖
 ├── 🎨 frontend/                 # React Frontend | React前端
 │   ├── public/               # Static Assets | 静态资源

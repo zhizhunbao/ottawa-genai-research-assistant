@@ -1,7 +1,7 @@
 """User repository."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.models.user import User, UserMetadata, UserPreferences
 
@@ -11,14 +11,14 @@ from .base import BaseRepository
 class UserRepository(BaseRepository[User]):
     """Repository for user data operations."""
 
-    def __init__(self, data_file: str = "monk/users/users.json"):
+    def __init__(self, data_file: str = "backend/monk/users/users.json"):
         super().__init__(data_file)
 
-    def _to_dict(self, user: User) -> Dict[str, Any]:
+    def _to_dict(self, user: User) -> dict[str, Any]:
         """Convert User model to dictionary."""
         return user.model_dump()
 
-    def _from_dict(self, data: Dict[str, Any]) -> User:
+    def _from_dict(self, data: dict[str, Any]) -> User:
         """Convert dictionary to User model."""
         # Convert string dates to datetime objects
         if isinstance(data.get("created_at"), str):
@@ -48,7 +48,7 @@ class UserRepository(BaseRepository[User]):
 
         return User(**data)
 
-    def find_by_username(self, username: str) -> Optional[User]:
+    def find_by_username(self, username: str) -> User | None:
         """Find user by username."""
         data = self._load_data()
         for item in data:
@@ -56,7 +56,7 @@ class UserRepository(BaseRepository[User]):
                 return self._from_dict(item)
         return None
 
-    def find_by_email(self, email: str) -> Optional[User]:
+    def find_by_email(self, email: str) -> User | None:
         """Find user by email."""
         data = self._load_data()
         for item in data:
@@ -64,7 +64,7 @@ class UserRepository(BaseRepository[User]):
                 return self._from_dict(item)
         return None
 
-    def find_by_role(self, role: str) -> List[User]:
+    def find_by_role(self, role: str) -> list[User]:
         """Find users by role."""
         data = self._load_data()
         users = []
@@ -73,7 +73,7 @@ class UserRepository(BaseRepository[User]):
                 users.append(self._from_dict(item))
         return users
 
-    def find_active_users(self) -> List[User]:
+    def find_active_users(self) -> list[User]:
         """Find all active users."""
         data = self._load_data()
         users = []
@@ -82,12 +82,12 @@ class UserRepository(BaseRepository[User]):
                 users.append(self._from_dict(item))
         return users
 
-    def update_last_login(self, user_id: str, login_time: datetime) -> Optional[User]:
+    def update_last_login(self, user_id: str, login_time: datetime) -> User | None:
         """Update user's last login time."""
         return self.update(user_id, {"last_login": login_time.isoformat()})
 
     def update_preferences(
         self, user_id: str, preferences: UserPreferences
-    ) -> Optional[User]:
+    ) -> User | None:
         """Update user preferences."""
         return self.update(user_id, {"preferences": preferences.model_dump()})

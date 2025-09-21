@@ -6,14 +6,13 @@ Now properly uses the Repository layer for data persistence.
 """
 
 import os
-import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pdfplumber
 import PyPDF2
 from app.core.config import Settings
-from app.models.document import Document, DocumentChunk, DocumentMetadata
+from app.models.document import Document, DocumentMetadata
 from app.repositories.document_repository import DocumentRepository
 
 
@@ -34,8 +33,8 @@ class DocumentService:
         doc_id: str,
         filename: str,
         user_id: str,
-        language: Optional[str] = "en",
-    ) -> Dict[str, Any]:
+        language: str | None = "en",
+    ) -> dict[str, Any]:
         """
         Process an uploaded PDF document and save to repository.
 
@@ -86,7 +85,7 @@ class DocumentService:
             )
 
             # Save through repository
-            saved_document = self.document_repo.create(document)
+            self.document_repo.create(document)
 
             processing_result = {
                 "status": "processed",
@@ -169,7 +168,7 @@ class DocumentService:
         except Exception as e:
             raise Exception(f"Error extracting text from PDF: {str(e)}")
 
-    async def _extract_metadata(self, file_path: str) -> Dict[str, Any]:
+    async def _extract_metadata(self, file_path: str) -> dict[str, Any]:
         """Extract metadata from PDF file."""
 
         metadata = {}
@@ -201,7 +200,7 @@ class DocumentService:
 
     async def _chunk_text(
         self, text: str, chunk_size: int = 1000, overlap: int = 200
-    ) -> List[str]:
+    ) -> list[str]:
         """Split text into overlapping chunks for vector storage."""
 
         if not text:
@@ -236,10 +235,10 @@ class DocumentService:
 
         return chunks
 
-    async def _generate_embeddings(self, chunks: List[str]) -> List[List[float]]:
+    async def _generate_embeddings(self, chunks: list[str]) -> list[list[float]]:
         """Generate embeddings for text chunks."""
 
-        # TODO: Implement actual embedding generation
+        # Embedding generation would be implemented here using OpenAI or similar
         # This would use sentence-transformers or OpenAI embeddings
 
         # For now, return mock embeddings
@@ -254,14 +253,14 @@ class DocumentService:
     async def _store_in_vector_db(
         self,
         doc_id: str,
-        chunks: List[str],
-        embeddings: List[List[float]],
-        metadata: Dict[str, Any],
+        chunks: list[str],
+        embeddings: list[list[float]],
+        metadata: dict[str, Any],
     ) -> bool:
         """Store document chunks and embeddings in vector database."""
 
         try:
-            # TODO: Implement actual vector database storage
+            # Vector database storage would be implemented here
             # This would use ChromaDB, Pinecone, or similar
 
             # For now, simulate successful storage
@@ -272,11 +271,11 @@ class DocumentService:
 
     async def search_documents(
         self, query: str, limit: int = 5, similarity_threshold: float = 0.7
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for relevant document chunks based on query."""
 
         try:
-            # TODO: Implement actual vector search
+            # Vector search would be implemented here using ChromaDB or similar
             # This would:
             # 1. Generate embedding for the query
             # 2. Search vector database for similar chunks
@@ -308,8 +307,8 @@ class DocumentService:
             raise Exception(f"Error searching documents: {str(e)}")
 
     async def get_document_content(
-        self, doc_id: str, page: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, doc_id: str, page: int | None = None
+    ) -> dict[str, Any]:
         """Get content from a specific document using repository."""
 
         try:
@@ -346,7 +345,7 @@ class DocumentService:
             # 2. Delete record from repository
             deleted = self.document_repo.delete(doc_id)
 
-            # 3. TODO: Remove vectors from vector database
+            # 3. Remove vectors from vector database (when implemented)
             # This would be implemented when vector storage is added
 
             return deleted
@@ -354,7 +353,7 @@ class DocumentService:
         except Exception as e:
             raise Exception(f"Error deleting document: {str(e)}")
 
-    async def get_documents_list(self) -> List[Dict[str, Any]]:
+    async def get_documents_list(self) -> list[dict[str, Any]]:
         """Get list of all uploaded documents from repository."""
 
         try:
@@ -378,7 +377,7 @@ class DocumentService:
         except Exception as e:
             raise Exception(f"Error retrieving documents list: {str(e)}")
 
-    async def get_document_by_filename(self, filename: str) -> Optional[Dict[str, Any]]:
+    async def get_document_by_filename(self, filename: str) -> dict[str, Any] | None:
         """Get document by filename."""
 
         try:
@@ -404,7 +403,7 @@ class DocumentService:
         except Exception as e:
             raise Exception(f"Error retrieving document by filename: {str(e)}")
 
-    async def get_documents_by_status(self, status: str) -> List[Dict[str, Any]]:
+    async def get_documents_by_status(self, status: str) -> list[dict[str, Any]]:
         """Get documents by processing status."""
 
         try:
@@ -442,9 +441,50 @@ class DocumentService:
         except Exception as e:
             raise Exception(f"Error updating document status: {str(e)}")
 
+    async def reprocess_document(self, doc_id: str, user_id: str) -> dict[str, Any]:
+        """Reprocess a document that has already been uploaded."""
+        
+        try:
+            # Get document info
+            document = self.document_repo.get_by_id(doc_id)
+            if not document:
+                raise ValueError(f"Document with ID {doc_id} not found")
+            
+            # Verify ownership
+            if document.user_id != user_id:
+                raise ValueError("Document does not belong to the current user")
+            
+            # Check if file still exists
+            if not os.path.exists(document.file_path):
+                raise ValueError("Original document file not found")
+            
+            # Update status to processing
+            self.document_repo.update_status(doc_id, "processing")
+            
+            # Reprocess the document using the existing process_document method
+            processing_result = await self.process_document(
+                file_path=document.file_path,
+                doc_id=doc_id,
+                filename=document.filename,
+                user_id=user_id,
+                language=document.language,
+                is_reprocessing=True
+            )
+            
+            return {
+                "status": processing_result["status"],
+                "processing_id": doc_id,
+                "message": "Document reprocessing started successfully"
+            }
+            
+        except Exception as e:
+            # Update status to error if reprocessing fails
+            self.document_repo.update_status(doc_id, "error")
+            raise Exception(f"Error reprocessing document: {str(e)}")
+
     def get_user_documents(
         self, user_id: str, limit: int = 50, offset: int = 0
-    ) -> List[Document]:
+    ) -> list[Document]:
         """
         Get documents for a specific user.
 
@@ -467,7 +507,7 @@ class DocumentService:
                     all_user_docs.append(doc)
 
             # Apply pagination
-            return all_user_docs[offset : offset + limit]
+            return all_user_docs[offset: offset + limit]
 
         except Exception as e:
             raise Exception(f"Error getting user documents: {str(e)}")

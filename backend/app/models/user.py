@@ -1,7 +1,6 @@
 """User data models."""
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -12,13 +11,13 @@ class UserPreferences(BaseModel):
     language: str = Field(default="en", pattern="^(en|fr)$")
     theme: str = Field(default="light", pattern="^(light|dark|auto)$")
     notifications: bool = True
-    default_topics: List[str] = Field(default_factory=list)
+    default_topics: list[str] = Field(default_factory=list)
 
 
 class UserMetadata(BaseModel):
     """User metadata model."""
 
-    department: Optional[str] = None
+    department: str | None = None
     access_level: str = Field(default="standard", pattern="^(standard|advanced|admin)$")
 
 
@@ -32,7 +31,7 @@ class User(BaseModel):
     role: str = Field(pattern="^(researcher|analyst|admin)$")
     status: str = Field(default="active", pattern="^(active|inactive|suspended)$")
     created_at: datetime
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     preferences: UserPreferences = Field(default_factory=UserPreferences)
     metadata: UserMetadata = Field(default_factory=UserMetadata)
 
@@ -44,19 +43,19 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     role: str = Field(pattern="^(researcher|analyst|admin)$")
-    preferences: Optional[UserPreferences] = None
-    metadata: Optional[UserMetadata] = None
+    preferences: UserPreferences | None = None
+    metadata: UserMetadata | None = None
 
 
 class UserUpdate(BaseModel):
     """User update model."""
 
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    email: Optional[EmailStr] = None
-    role: Optional[str] = Field(None, pattern="^(researcher|analyst|admin)$")
-    status: Optional[str] = Field(None, pattern="^(active|inactive|suspended)$")
-    preferences: Optional[UserPreferences] = None
-    metadata: Optional[UserMetadata] = None
+    username: str | None = Field(None, min_length=3, max_length=50)
+    email: EmailStr | None = None
+    role: str | None = Field(None, pattern="^(researcher|analyst|admin)$")
+    status: str | None = Field(None, pattern="^(active|inactive|suspended)$")
+    preferences: UserPreferences | None = None
+    metadata: UserMetadata | None = None
 
 
 class UserLogin(BaseModel):
@@ -74,7 +73,7 @@ class UserSummary(BaseModel):
     email: EmailStr
     role: str
     status: str
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
 
 
 # JWT Token models
@@ -98,5 +97,5 @@ class AuthResponse(BaseModel):
 class TokenData(BaseModel):
     """Token data model."""
 
-    username: Optional[str] = None
-    user_id: Optional[str] = None
+    username: str | None = None
+    user_id: str | None = None

@@ -4,129 +4,234 @@
 Handles natural language conversation with AI assistant.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
 import uuid
+from datetime import datetime
 
+from app.api.auth import get_current_user
 from app.core.config import get_settings
+from app.models.chat import Conversation, Message
+from app.models.user import User
+from app.repositories.chat_repository import (ConversationRepository,
+                                              MessageRepository)
 from app.services.chat_service import ChatService
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter()
+
 
 # Request/Response Models
 class ChatMessage(BaseModel):
     message: str
-    language: Optional[str] = "en"
-    context: Optional[str] = None
+    language: str | None = "en"
+    context: str | None = None
+
 
 class ChatResponse(BaseModel):
     id: str
     response: str
     language: str
     timestamp: datetime
-    sources: Optional[List[str]] = None
-    charts: Optional[dict] = None
+    sources: list[str] | None = None
+    charts: dict | None = None
+
 
 class ChatHistory(BaseModel):
-    messages: List[dict]
+    messages: list[dict]
     total: int
+
 
 @router.post("/message", response_model=ChatResponse)
 async def send_message(
     request: ChatMessage,
-    settings = Depends(get_settings)
+    current_user: User = Depends(get_current_user),
+    settings=Depends(get_settings),
 ):
     """
     Send a message to the AI assistant and get a response.
-    
+
     - **message**: The user's question or message
     - **language**: Language preference (en/fr)
     - **context**: Optional context for the conversation
     """
     try:
         chat_service = ChatService(settings)
-        
+        conversation_repo = ConversationRepository()
+        message_repo = MessageRepository()
+
         # Process the message
         response = await chat_service.process_message(
             message=request.message,
             language=request.language,
-            context=request.context
+            context=request.context,
         )
-        
-        return ChatResponse(
+
+        # Create or get conversation
+        user_conversations = conversation_repo.find_by_user(current_user.id)
+        if not user_conversations:
+            # Create new conversation
+            conversation_id = str(uuid.uuid4())
+            conversation = Conversation(
+                id=conversation_id,
+                user_id=current_user.id,
+                title=request.message[:50] + "..." if len(request.message) > 50 else request.message,
+                language=request.language or "en",
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            conversation_repo.create(conversation)
+        else:
+            # Use the most recent active conversation
+            conversation_id = user_conversations[0].id
+            # Update the conversation's updated_at timestamp
+            conversation_repo.update(conversation_id, {"updated_at": datetime.utcnow().isoformat()})
+
+        # Save user message
+        user_message = Message(
             id=str(uuid.uuid4()),
+            conversation_id=conversation_id,
+            role="user",
+            content=request.message,
+            timestamp=datetime.utcnow(),
+        )
+        message_repo.create(user_message)
+
+        # Save assistant response
+        assistant_message = Message(
+            id=str(uuid.uuid4()),
+            conversation_id=conversation_id,
+            role="assistant",
+            content=response["text"],
+            timestamp=datetime.utcnow(),
+        )
+        assistant_message.metadata.sources = response.get("sources", [])
+        message_repo.create(assistant_message)
+
+        return ChatResponse(
+            id=assistant_message.id,
             response=response["text"],
             language=request.language or "en",
-            timestamp=datetime.now(),
+            timestamp=datetime.utcnow(),
             sources=response.get("sources", []),
-            charts=response.get("charts")
+            charts=response.get("charts"),
         )
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing message: {str(e)}"
+        )
+
 
 @router.get("/history", response_model=ChatHistory)
 async def get_chat_history(
     limit: int = 50,
-    offset: int = 0
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get chat history for the current session.
-    
+
     - **limit**: Maximum number of messages to return
     - **offset**: Number of messages to skip (for pagination)
     """
     try:
-        # TODO: Implement actual chat history retrieval from database
-        # For now, return mock data
-        mock_messages = [
-            {
-                "id": "1",
-                "message": "What were the key economic indicators for Q3?",
-                "response": "Based on the Q3 Economic Development Update...",
-                "timestamp": "2024-01-15T10:30:00",
-                "language": "en"
-            }
-        ]
+        conversation_repo = ConversationRepository()
+        message_repo = MessageRepository()
+
+        # Get user's conversations
+        conversations = conversation_repo.find_by_user(current_user.id)
         
+        all_messages = []
+        for conversation in conversations:
+            # Get messages for each conversation
+            messages = message_repo.find_by_conversation(conversation.id)
+            for message in messages:
+                all_messages.append({
+                    "id": message.id,
+                    "conversation_id": message.conversation_id,
+                    "role": message.role,
+                    "message": message.content if message.role == "user" else "",
+                    "response": message.content if message.role == "assistant" else "",
+                    "timestamp": message.timestamp.isoformat(),
+                    "language": conversation.language,
+                    "sources": message.metadata.sources if message.metadata else [],
+                })
+
+        # Sort by timestamp (newest first)
+        all_messages.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        # Apply pagination
+        paginated_messages = all_messages[offset: offset + limit]
+
         return ChatHistory(
-            messages=mock_messages[offset:offset+limit],
-            total=len(mock_messages)
+            messages=paginated_messages,
+            total=len(all_messages),
         )
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving chat history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving chat history: {str(e)}"
+        )
+
 
 @router.delete("/history")
-async def clear_chat_history():
+async def clear_chat_history(current_user: User = Depends(get_current_user)):
     """
     Clear all chat history for the current session.
     """
     try:
-        # TODO: Implement actual chat history clearing
-        return {"message": "Chat history cleared successfully"}
+        conversation_repo = ConversationRepository()
+        message_repo = MessageRepository()
+
+        # Get user's conversations
+        conversations = conversation_repo.find_by_user(current_user.id)
         
+        # Clear all messages for each conversation
+        for conversation in conversations:
+            message_repo.clear_conversation_messages(conversation.id)
+        
+        # Clear all conversations for the user
+        conversation_repo.clear_user_conversations(current_user.id)
+
+        return {"message": "Chat history cleared successfully"}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error clearing chat history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error clearing chat history: {str(e)}"
+        )
+
 
 @router.get("/suggestions")
-async def get_suggestions():
+async def get_suggestions(current_user: User = Depends(get_current_user)):
     """
     Get suggested questions based on available documents and common queries.
     """
     try:
-        # TODO: Generate dynamic suggestions based on available documents
+        # Generate dynamic suggestions based on available documents
+        from app.repositories.document_repository import DocumentRepository
+        
+        doc_repo = DocumentRepository()
+        documents = doc_repo.find_all()
+        
+        # Base suggestions
         suggestions = [
             "What are the main economic trends in Ottawa this quarter?",
             "Show me small business support program statistics",
             "How has employment changed in the tech sector?",
             "What are the key infrastructure projects planned?",
-            "Summarize the latest economic development initiatives"
+            "Summarize the latest economic development initiatives",
         ]
         
-        return {"suggestions": suggestions}
-        
+        # Add document-specific suggestions if documents are available
+        if documents:
+            recent_docs = sorted(documents, key=lambda x: x.upload_date, reverse=True)[:3]
+            for doc in recent_docs:
+                suggestions.append(f"What are the key insights from {doc.title}?")
+                suggestions.append(f"Summarize the main points in {doc.filename}")
+
+        return {"suggestions": suggestions[:8]}  # Limit to 8 suggestions
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting suggestions: {str(e)}") 
+        raise HTTPException(
+            status_code=500, detail=f"Error getting suggestions: {str(e)}"
+        )
