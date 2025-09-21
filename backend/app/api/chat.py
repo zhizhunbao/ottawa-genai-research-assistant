@@ -74,7 +74,11 @@ async def send_message(
             conversation = Conversation(
                 id=conversation_id,
                 user_id=current_user.id,
-                title=request.message[:50] + "..." if len(request.message) > 50 else request.message,
+                title=(
+                    request.message[:50] + "..." 
+                    if len(request.message) > 50 
+                    else request.message
+                ),
                 language=request.language or "en",
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -84,7 +88,9 @@ async def send_message(
             # Use the most recent active conversation
             conversation_id = user_conversations[0].id
             # Update the conversation's updated_at timestamp
-            conversation_repo.update(conversation_id, {"updated_at": datetime.utcnow().isoformat()})
+            conversation_repo.update(
+                conversation_id, {"updated_at": datetime.utcnow().isoformat()}
+            )
 
         # Save user message
         user_message = Message(
@@ -150,8 +156,12 @@ async def get_chat_history(
                     "id": message.id,
                     "conversation_id": message.conversation_id,
                     "role": message.role,
-                    "message": message.content if message.role == "user" else "",
-                    "response": message.content if message.role == "assistant" else "",
+                    "message": (
+                        message.content if message.role == "user" else ""
+                    ),
+                    "response": (
+                        message.content if message.role == "assistant" else ""
+                    ),
                     "timestamp": message.timestamp.isoformat(),
                     "language": conversation.language,
                     "sources": message.metadata.sources if message.metadata else [],
@@ -224,7 +234,9 @@ async def get_suggestions(current_user: User = Depends(get_current_user)):
         
         # Add document-specific suggestions if documents are available
         if documents:
-            recent_docs = sorted(documents, key=lambda x: x.upload_date, reverse=True)[:3]
+            recent_docs = sorted(
+                documents, key=lambda x: x.upload_date, reverse=True
+            )[:3]
             for doc in recent_docs:
                 suggestions.append(f"What are the key insights from {doc.title}?")
                 suggestions.append(f"Summarize the main points in {doc.filename}")

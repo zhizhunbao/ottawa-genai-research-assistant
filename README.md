@@ -31,6 +31,7 @@ A comprehensive AI-powered research assistant application designed for Ottawa Ci
 ### 🏗️ Architecture | 系统架构
 - **Frontend**: React 18 + TypeScript + Context API
 - **Backend**: FastAPI + Pydantic + Repository Pattern
+- **Code Quality**: Ruff (linting & formatting) + pyproject.toml configuration
 - **Storage**: JSON file storage (monk/ directory)
 - **Authentication**: JWT + Google OAuth 2.0
 - **AI Integration**: OpenAI API
@@ -305,10 +306,14 @@ npm test
 ### Code Formatting | 代码格式化
 
 ```bash
-# Backend formatting
+# Backend formatting with Ruff (recommended)
 cd backend
-black .
-isort .
+ruff check . --fix    # Fix linting issues
+ruff format .         # Format code
+
+# Legacy formatting tools (deprecated)
+# black .
+# isort .
 
 # Frontend formatting
 cd frontend
@@ -389,7 +394,13 @@ docker-compose up --build
 
 ## 📈 Version Updates | 版本更新
 
-### v1.2.0 (Latest) - Google OAuth Integration | Google OAuth集成
+### v1.3.0 (Latest) - Code Quality & Linting Integration | 代码质量与检查集成
+- ✅ **Ruff Integration** | Ruff集成 - Modern Python linter and formatter
+- ✅ **Code Quality Improvements** | 代码质量改进 - Automated linting and formatting
+- ✅ **VS Code Configuration** | VS Code配置 - Optimized development environment
+- ✅ **Enhanced Development Workflow** | 增强开发工作流 - Streamlined code standards
+
+### v1.2.0 - Google OAuth Integration | Google OAuth集成
 - ✅ **Real Google OAuth 2.0 Login** | 真实Google OAuth 2.0登录
 - ✅ **JWT Token Verification** | JWT令牌验证  
 - ✅ **Smart User Creation** | 智能用户创建

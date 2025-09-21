@@ -240,29 +240,31 @@ class DocumentService:
 
     async def _generate_embeddings(self, chunks: list[str]) -> list[list[float]]:
         """Generate embeddings for text chunks using a simple hash-based approach."""
-        
+
         import hashlib
         import math
-        
+
         embeddings = []
         for chunk in chunks:
             try:
                 # Create a deterministic embedding based on content
                 # This is a simplified approach for demonstration
                 # In production, use OpenAI embeddings or sentence-transformers
-                
+
                 # Generate multiple hashes to create more dimensions
                 embedding = []
-                
+
                 # Use different hash functions and salts to create variety
                 hash_functions = [
                     lambda x, salt: hashlib.md5(f"{salt}_{x}".encode()).hexdigest(),
                     lambda x, salt: hashlib.sha1(f"{salt}_{x}".encode()).hexdigest(),
-                    lambda x, salt: hashlib.sha256(f"{salt}_{x}".encode()).hexdigest()[:32],
+                    lambda x, salt: hashlib.sha256(
+                        f"{salt}_{x}".encode()
+                    ).hexdigest()[:32],
                 ]
-                
+
                 salts = ['text', 'content', 'chunk', 'semantic', 'vector', 'embed']
-                
+
                 for hash_func in hash_functions:
                     for salt in salts:
                         hex_hash = hash_func(chunk, salt)
@@ -271,23 +273,25 @@ class DocumentService:
                             hex_pair = hex_hash[i:i + 2]
                             value = int(hex_pair, 16) / 255.0
                             # Apply some mathematical transformation for better distribution
-                            transformed_value = math.sin(value * math.pi) * 0.5 + 0.5
+                            transformed_value = (
+                                math.sin(value * math.pi) * 0.5 + 0.5
+                            )
                             embedding.append(transformed_value)
-                            
+
                             if len(embedding) >= 384:
                                 break
                     if len(embedding) >= 384:
                         break
-                
+
                 # Ensure exactly 384 dimensions
                 embedding = embedding[:384]
                 while len(embedding) < 384:
                     # Fill remaining with content-based values
                     chunk_len_factor = (len(chunk) % 256) / 255.0
                     embedding.append(chunk_len_factor)
-                
+
                 embeddings.append(embedding)
-                
+
             except Exception as e:
                 logger.error(f"Error generating embedding for chunk: {e}")
                 # Fallback to deterministic random embedding based on chunk content
@@ -327,37 +331,42 @@ class DocumentService:
             query_embedding = await self._generate_embeddings([query])
             if not query_embedding:
                 return []
-            
+
             query_vector = query_embedding[0]
-            
+
             # 2. Get all documents from repository
             documents = self.document_repo.find_all()
             if not documents:
                 return []
-            
+
             results = []
-            
+
             # 3. For each document, simulate chunk search with similarity calculation
             for doc in documents:
                 try:
                     # Simulate document chunks (in production, these would be stored in vector DB)
                     sample_chunks = [
-                        f"Content from {doc.filename} discussing economic trends and market analysis.",
-                        f"Key findings from {doc.title} related to business development and growth.",
-                        f"Statistical data and insights from {doc.filename} covering regional performance.",
+                        f"Content from {doc.filename} discussing economic trends "
+                        f"and market analysis.",
+                        f"Key findings from {doc.title} related to business "
+                        f"development and growth.",
+                        f"Statistical data and insights from {doc.filename} "
+                        f"covering regional performance.",
                     ]
-                    
+
                     for i, chunk in enumerate(sample_chunks):
                         # Generate embedding for this chunk
                         chunk_embeddings = await self._generate_embeddings([chunk])
                         if not chunk_embeddings:
                             continue
-                            
+
                         chunk_vector = chunk_embeddings[0]
-                        
+
                         # Calculate cosine similarity
-                        similarity = self._calculate_cosine_similarity(query_vector, chunk_vector)
-                        
+                        similarity = self._calculate_cosine_similarity(
+                            query_vector, chunk_vector
+                        )
+
                         if similarity >= similarity_threshold:
                             results.append({
                                 "doc_id": doc.id,
@@ -372,11 +381,11 @@ class DocumentService:
                                     "language": doc.language,
                                 },
                             })
-                            
+
                 except Exception as e:
                     logger.warning(f"Error processing document {doc.id}: {e}")
                     continue
-            
+
             # Sort by similarity score (descending) and return top results
             results.sort(key=lambda x: x["similarity_score"], reverse=True)
             return results[:limit]
@@ -384,29 +393,31 @@ class DocumentService:
         except Exception as e:
             logger.error(f"Error in search_documents: {e}")
             raise Exception(f"Error searching documents: {str(e)}")
-    
-    def _calculate_cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
+
+    def _calculate_cosine_similarity(
+        self, vec1: list[float], vec2: list[float]
+    ) -> float:
         """Calculate cosine similarity between two vectors."""
         try:
             import math
 
             # Calculate dot product
             dot_product = sum(a * b for a, b in zip(vec1, vec2))
-            
+
             # Calculate magnitudes
             magnitude1 = math.sqrt(sum(a * a for a in vec1))
             magnitude2 = math.sqrt(sum(a * a for a in vec2))
-            
+
             # Avoid division by zero
             if magnitude1 == 0 or magnitude2 == 0:
                 return 0.0
-            
+
             # Calculate cosine similarity
             similarity = dot_product / (magnitude1 * magnitude2)
-            
+
             # Ensure the result is between 0 and 1
             return max(0.0, min(1.0, similarity))
-            
+
         except Exception as e:
             logger.error(f"Error calculating cosine similarity: {e}")
             return 0.0
@@ -548,24 +559,24 @@ class DocumentService:
 
     async def reprocess_document(self, doc_id: str, user_id: str) -> dict[str, Any]:
         """Reprocess a document that has already been uploaded."""
-        
+
         try:
             # Get document info
             document = self.document_repo.get_by_id(doc_id)
             if not document:
                 raise ValueError(f"Document with ID {doc_id} not found")
-            
+
             # Verify ownership
             if document.user_id != user_id:
                 raise ValueError("Document does not belong to the current user")
-            
+
             # Check if file still exists
             if not os.path.exists(document.file_path):
                 raise ValueError("Original document file not found")
-            
+
             # Update status to processing
             self.document_repo.update_status(doc_id, "processing")
-            
+
             # Reprocess the document using the existing process_document method
             processing_result = await self.process_document(
                 file_path=document.file_path,
@@ -574,13 +585,13 @@ class DocumentService:
                 user_id=user_id,
                 language=document.language
             )
-            
+
             return {
                 "status": processing_result["status"],
                 "processing_id": doc_id,
                 "message": "Document reprocessing started successfully"
             }
-            
+
         except Exception as e:
             # Update status to error if reprocessing fails
             self.document_repo.update_status(doc_id, "error")
