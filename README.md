@@ -498,7 +498,14 @@ REACT_APP_API_STRATEGY=real
 
 ## 📈 Version Updates | 版本更新
 
-### v1.4.0 (Latest) - AI Services Integration | AI服务集成
+### v1.4.1 (Latest) - Critical Datetime Fix & Production Stability | 关键时间修复与生产稳定性
+- ✅ **Critical Datetime Fix** | 关键时间修复 - Fixed datetime import issue in authentication service
+- ✅ **Google OAuth Fully Operational** | Google OAuth完全运行 - All authentication endpoints working properly
+- ✅ **Production Server Stability** | 生产服务器稳定性 - Confirmed stable backend operation
+- ✅ **Enhanced Error Handling** | 增强错误处理 - Improved authentication error messages
+- ✅ **Code Quality Maintenance** | 代码质量维护 - Zero Python import violations
+
+### v1.4.0 - AI Services Integration | AI服务集成
 - ✅ **88.8% Comprehensive Test Coverage** | 88.8%综合测试覆盖率 - Including integration tests
 - ✅ **Groq AI Integration** | Groq AI集成 - Ultra-fast Llama 3.3 70B model
 - ✅ **Google Gemini Integration** | Google Gemini集成 - High-quality Gemini 1.5 Flash
