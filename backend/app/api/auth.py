@@ -4,6 +4,8 @@
 Handles user authentication operations like login, register, and user info.
 """
 
+from datetime import datetime, timezone
+
 import jwt
 from app.models.user import (AuthResponse, Token, User, UserCreate, UserLogin,
                              UserSummary)

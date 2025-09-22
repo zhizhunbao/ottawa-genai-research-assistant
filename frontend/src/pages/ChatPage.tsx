@@ -38,7 +38,7 @@ const ChatPage: React.FC = () => {
         const welcomeMessage: Message = {
           id: 'welcome',
           type: 'assistant',
-          content: 'Hello! I\'m your AI Research Assistant for Ottawa\'s economic development data. How can I help you today?',
+          content: '# AI Research Assistant\n\nHello! I\'m your AI Research Assistant for Ottawa\'s economic development data. I can help you analyze business trends, employment statistics, and economic indicators for the Ottawa region.\n\nHow can I assist you today?',
           timestamp: new Date()
         };
         setMessages([welcomeMessage]);
@@ -115,11 +115,6 @@ const ChatPage: React.FC = () => {
   return (
     <div className="chat-page">
       <div className="chat-container">
-        <div className="chat-header">
-          <h1>AI Research Assistant</h1>
-          <p>Ask questions about Ottawa's economic development data</p>
-        </div>
-
         <div className="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
           {messages.map((message) => (
             <div key={message.id} className={`message ${message.type}`}>
@@ -235,7 +230,7 @@ const ChatPage: React.FC = () => {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask a question about economic development data..."
-              rows={1}
+              rows={3}
               disabled={isLoading}
               aria-label="Message input"
             />
