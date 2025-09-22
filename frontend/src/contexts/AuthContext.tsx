@@ -1,11 +1,12 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { AuthResponse, authService, LoginRequest, User } from '../services/authService';
+import { AuthResponse, authService, LoginRequest, RegisterRequest, User } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
+  register: (credentials: RegisterRequest) => Promise<void>;
   googleLogin: (response: any) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
@@ -54,6 +55,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const register = async (credentials: RegisterRequest) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response: AuthResponse = await authService.register(credentials);
+      setUser(response.user);
+    } catch (error: any) {
+      setError(error.message || 'Registration failed');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const googleLogin = async (response: any) => {
     try {
       setIsLoading(true);
@@ -88,6 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     isLoading,
     login,
+    register,
     googleLogin,
     logout,
     error,

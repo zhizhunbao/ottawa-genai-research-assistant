@@ -228,26 +228,6 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Google 登录分割线 */}
-          <div className="divider">
-            <span>or</span>
-          </div>
-
-          {/* Google 登录区域 */}
-          <div className="google-login-section">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              useOneTap={false}
-              auto_select={false}
-              theme="outline"
-              size="large"
-              width="100%"
-              text="continue_with"
-              shape="rectangular"
-            />
-          </div>
-
           <div className="login-footer">
             <p>
               Don't have an account? 

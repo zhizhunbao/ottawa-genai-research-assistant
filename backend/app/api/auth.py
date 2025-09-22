@@ -210,7 +210,9 @@ async def google_login(google_data: GoogleLoginRequest):
 async def verify_google_token(token: str) -> dict:
     """Verify Google JWT token and extract user information."""
     try:
+        import datetime as dt
         import time
+        from datetime import timezone
 
         from app.core.config import get_settings
         from google.auth.transport import requests

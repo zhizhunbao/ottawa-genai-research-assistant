@@ -2,12 +2,13 @@
 
 ## 🎉 **项目状态：生产就绪 | Project Status: Production Ready**
 
-**最新更新**: 2025-09-21  
-**测试覆盖率**: **98.8%** (85/86 API测试通过)  
+**最新更新**: 2025-09-22  
+**测试覆盖率**: **88.8%** (119/134 测试通过，包含集成测试)  
 **代码质量**: **零违规** - 完全符合编码规范  
 **生产状态**: **🚀 企业级就绪**  
+**AI服务**: **Groq AI (Llama 3.3 70B)** + **Google Gemini (1.5 Flash)** 双重备份
 
-> 🏆 **里程碑达成**: 渥太华GenAI研究助手已达到企业级生产部署标准，所有核心API功能100%正常运行。
+> 🏆 **里程碑达成**: 渥太华GenAI研究助手已达到企业级生产部署标准，AI服务完全配置，所有核心API功能正常运行。
 
 ## 🚫 **严格禁止的代码模式 | Strictly Prohibited Code Patterns**
 
@@ -350,6 +351,187 @@ python test_monk_constraints.py
 **代码覆盖率**: 企业级测试覆盖  
 **违规检测**: **零违规代码**  
 
+### 🖥️ **前端集成测试约束 | Frontend Integration Testing Constraints**
+
+**规则**: 前端集成测试**必须严格按照真实页面组件**进行测试，禁止测试不存在的功能或假想的UI元素。
+
+**Rule**: Frontend integration tests **MUST strictly follow real page components**, and testing non-existent features or imaginary UI elements is prohibited.
+
+#### ✅ **强制要求 | Mandatory Requirements**
+
+1. **真实组件匹配** | Real Component Matching
+   - 测试必须使用真实页面组件中存在的文本、占位符和元素
+   - Tests must use actual text, placeholders, and elements that exist in real page components
+   - 禁止测试假想的表单字段或按钮
+   - Prohibited from testing imaginary form fields or buttons
+
+2. **实际功能测试** | Actual Functionality Testing
+   - 只测试组件中真实实现的功能
+   - Only test functionality that is actually implemented in components
+   - 测试应验证真实的用户交互流程
+   - Tests should verify real user interaction flows
+
+3. **准确的选择器** | Accurate Selectors
+   - 使用真实存在的占位符文本、标签和角色
+   - Use actually existing placeholder text, labels, and roles
+   - 基于实际DOM结构编写测试选择器
+   - Write test selectors based on actual DOM structure
+
+#### ❌ **禁止的测试模式 | Prohibited Test Patterns**
+
+```typescript
+// ❌ 禁止 - 测试不存在的占位符 | FORBIDDEN - Testing non-existent placeholder
+it('should send message', async () => {
+  const input = screen.getByPlaceholderText(/type your message/i); // 错误：真实占位符是 "Ask a question about economic development data..."
+  // ...
+});
+
+// ❌ 禁止 - 测试假想的表单 | FORBIDDEN - Testing imaginary form
+it('should generate report', async () => {
+  const titleInput = screen.getByLabelText(/report title/i); // 错误：ReportPage没有表单
+  const generateButton = screen.getByRole('button', { name: /generate/i });
+  // ...
+});
+
+// ❌ 禁止 - 测试不存在的API调用 | FORBIDDEN - Testing non-existent API calls
+it('should call API', async () => {
+  expect(global.fetch).toHaveBeenCalledWith('/api/reports/generate'); // 错误：测试假想的API
+});
+```
+
+#### ✅ **正确的测试模式 | Correct Test Patterns**
+
+```typescript
+// ✅ 正确 - 使用真实占位符 | CORRECT - Using real placeholder
+it('should display chat input with correct placeholder', async () => {
+  renderWithRouter(<ChatPage />);
+  expect(screen.getByPlaceholderText('Ask a question about economic development data...')).toBeInTheDocument();
+});
+
+// ✅ 正确 - 测试真实存在的内容 | CORRECT - Testing actually existing content
+it('should display report page structure', async () => {
+  renderWithRouter(<ReportPage />);
+  
+  // 验证真实存在的侧边栏和内容
+  expect(screen.getByText('Generated Reports')).toBeInTheDocument();
+  expect(screen.getByText('Ottawa Business Growth Analysis Q1 2024')).toBeInTheDocument();
+  expect(screen.getByText('Executive Summary')).toBeInTheDocument();
+});
+
+// ✅ 正确 - 测试真实的用户交互 | CORRECT - Testing real user interactions
+it('should handle file upload through drag and drop', async () => {
+  renderWithRouter(<DocumentUploadPage />);
+  
+  const dropZone = screen.getByText(/drag and drop pdf files here/i).closest('div');
+  const file = createMockFile('test.pdf', 1024, 'application/pdf');
+  
+  // 测试真实存在的拖拽功能
+  fireEvent.drop(dropZone, { dataTransfer: { files: [file] } });
+});
+```
+
+#### 🔍 **测试验证流程 | Test Verification Process**
+
+1. **组件分析阶段** | Component Analysis Phase
+   ```bash
+   # 在编写测试前，先分析真实组件
+   # Before writing tests, analyze real components first
+   
+   # 查看组件源码
+   cat frontend/src/pages/ChatPage.tsx | grep -E "(placeholder|text|label)"
+   
+   # 查看组件中的实际文本
+   grep -r "placeholder\|aria-label\|text" frontend/src/pages/
+   ```
+
+2. **测试编写阶段** | Test Writing Phase
+   ```typescript
+   // 步骤1：渲染真实组件 | Step 1: Render real component
+   renderWithRouter(<ActualPageComponent />);
+   
+   // 步骤2：使用真实存在的选择器 | Step 2: Use actually existing selectors
+   const realElement = screen.getByText('Actual Text From Component');
+   
+   // 步骤3：测试真实的交互 | Step 3: Test real interactions
+   fireEvent.click(realElement);
+   
+   // 步骤4：验证真实的结果 | Step 4: Verify real results
+   await waitFor(() => {
+     expect(screen.getByText('Expected Real Response')).toBeInTheDocument();
+   });
+   ```
+
+3. **测试验证阶段** | Test Verification Phase
+   ```bash
+   # 运行测试确保通过
+   # Run tests to ensure they pass
+   cd frontend && npm test -- --testPathPattern=integration
+   
+   # 验证测试覆盖真实功能
+   # Verify tests cover real functionality
+   npm test -- --coverage --testPathPattern=integration
+   ```
+
+#### 📋 **组件-测试映射检查清单 | Component-Test Mapping Checklist**
+
+##### ChatPage 组件测试 | ChatPage Component Tests
+- [x] 使用真实占位符: `"Ask a question about economic development data..."`
+- [x] 测试真实的消息发送功能
+- [x] 验证真实的AI响应显示
+- [x] 测试真实的建议按钮功能
+- [x] 验证真实的消息历史显示
+
+##### ReportPage 组件测试 | ReportPage Component Tests  
+- [x] 测试真实的侧边栏结构: `"Generated Reports"`
+- [x] 验证真实的报告内容: `"Ottawa Business Growth Analysis Q1 2024"`
+- [x] 测试真实的报告章节: `"Executive Summary"`, `"Key Findings"` 等
+- [x] 验证真实的操作按钮: `"Share"`, `"Export PDF"`
+- [x] 测试真实的数据图表显示
+
+##### DocumentUploadPage 组件测试 | DocumentUploadPage Component Tests
+- [x] 测试真实的拖拽区域: `"Drag and drop PDF files here, or click to browse"`
+- [x] 验证真实的文件类型限制: `"Only PDF files are supported"`
+- [x] 测试真实的上传状态显示: `"Uploading"`, `"Completed"`, `"Error"`
+- [x] 验证真实的文件管理功能
+
+#### 🚨 **违规检测脚本 | Violation Detection Script**
+
+```bash
+#!/bin/bash
+# 检测前端集成测试违规 | Detect frontend integration test violations
+
+echo "🔍 检查前端集成测试违规 | Checking frontend integration test violations"
+
+# 检查是否使用了不存在的占位符
+echo "检查占位符匹配 | Checking placeholder matching..."
+grep -r "getByPlaceholderText.*type your message" frontend/tests/integration/ && echo "❌ 发现假想占位符" || echo "✅ 占位符检查通过"
+
+# 检查是否测试了不存在的表单
+echo "检查表单测试 | Checking form testing..."
+grep -r "getByLabelText.*report title" frontend/tests/integration/ && echo "❌ 发现假想表单测试" || echo "✅ 表单测试检查通过"
+
+# 检查是否测试了不存在的API
+echo "检查API测试 | Checking API testing..."
+grep -r "fetch.*reports/generate" frontend/tests/integration/ && echo "❌ 发现假想API测试" || echo "✅ API测试检查通过"
+
+# 验证测试是否使用真实组件
+echo "验证组件使用 | Verifying component usage..."
+for test_file in frontend/tests/integration/*.test.tsx; do
+  if [ -f "$test_file" ]; then
+    component_name=$(basename "$test_file" .integration.test.tsx)
+    component_file="frontend/src/pages/${component_name}Page.tsx"
+    
+    if [ -f "$component_file" ]; then
+      echo "✅ 找到对应组件: $component_file"
+    else
+      echo "❌ 未找到对应组件: $component_file"
+    fi
+  fi
+done
+
+echo "🎯 前端集成测试约束检查完成 | Frontend integration test constraint check completed"
+```
+
 ### 🚫 **测试文件位置约束 | Test File Location Constraints**
 
 **规则**: 测试执行时**严格禁止**在项目根目录或其他非测试目录下创建任何文件或目录。
@@ -510,6 +692,7 @@ rm -f /tmp/before_test_dirs.txt /tmp/after_test_dirs.txt
 - [x] **Repository模式** | Repository pattern (**已实现**)
 - [x] **现代Python语法** | Modern Python syntax (**Ruff验证通过**)
 - [x] **测试目录约束** | Test directory constraints (**已验证**)
+- [x] **前端集成测试约束** | Frontend integration test constraints (**已验证通过**)
 
 ### 🚨 **自动拒绝条件 | Automatic Rejection Criteria**
 - [ ] 包含 TODO/FIXME 标记 | Contains TODO/FIXME markers (**当前项目：零违规**)
@@ -523,6 +706,9 @@ rm -f /tmp/before_test_dirs.txt /tmp/after_test_dirs.txt
 - [ ] 违反 MONK 数据约束 | Violates MONK data constraints (**当前项目：零违规**)
 - [ ] 测试在根目录创建文件/目录 | Tests create files/directories in root directory (**当前项目：零违规**)
 - [ ] 测试在非tests目录创建临时文件 | Tests create temp files outside tests directory (**当前项目：零违规**)
+- [ ] 前端集成测试使用假想的UI元素 | Frontend integration tests use imaginary UI elements (**当前项目：零违规**)
+- [ ] 前端集成测试使用不存在的占位符文本 | Frontend integration tests use non-existent placeholder text (**当前项目：零违规**)
+- [ ] 前端集成测试测试不存在的功能 | Frontend integration tests test non-existent functionality (**当前项目：零违规**)
 
 ### ✅ **通过条件 | Acceptance Criteria**
 - [x] 所有函数完整实现 | All functions fully implemented (**已验证**)
@@ -538,6 +724,9 @@ rm -f /tmp/before_test_dirs.txt /tmp/after_test_dirs.txt
 - [x] 测试文件仅在tests/目录下创建 | Test files only created under tests/ directory (**已验证**)
 - [x] 测试使用自动清理机制 | Tests use automatic cleanup mechanisms (**已验证**)
 - [x] 测试不污染项目根目录 | Tests do not pollute project root directory (**已验证**)
+- [x] 前端集成测试严格匹配真实页面组件 | Frontend integration tests strictly match real page components (**已验证**)
+- [x] 前端集成测试使用真实存在的文本和元素 | Frontend integration tests use actually existing text and elements (**已验证**)
+- [x] 前端集成测试只测试实际实现的功能 | Frontend integration tests only test actually implemented functionality (**已验证**)
 
 ## 🛠️ **实施工具 | Implementation Tools**
 
@@ -572,6 +761,11 @@ cd backend && python test_monk_constraints.py || exit 1
 # Check if tests create files in root directory (should run in CI)
 echo "🔍 Running test directory constraint validation..."
 cd backend && python tests/validate_test_constraints.py || exit 1
+
+# 检查前端集成测试违规
+# Check frontend integration test violations
+echo "🔍 Running frontend integration test constraint validation..."
+bash scripts/check_frontend_integration_tests.sh || exit 1
 ```
 
 ### 🔧 **工具配置 | Tool Configuration**

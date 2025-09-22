@@ -108,11 +108,19 @@ export const realApi = {
 
   // Chat API
   sendMessage: async (message: string, conversationId?: string): Promise<Message> => {
-    return apiClient.post<Message>('/chat/message', { 
+    const response = await apiClient.post<any>('/chat/demo/message', { 
       message,
       language: 'en',
       context: conversationId 
     });
+    
+    // Transform backend response to frontend Message format
+    return {
+      id: response.id,
+      type: 'assistant',
+      content: response.response,
+      timestamp: new Date(response.timestamp)
+    };
   },
 
   getConversationHistory: async (conversationId: string): Promise<Message[]> => {

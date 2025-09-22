@@ -70,6 +70,10 @@ google-auth>=2.0.0
 google-auth-oauthlib>=1.0.0
 google-auth-httplib2>=0.2.0
 
+# AI/ML相关 - 免费AI提供商
+google-generativeai>=0.3.0  # Google Gemini AI (免费)
+groq>=0.4.0                  # Groq AI (免费超快速)
+
 # AI/ML相关（可选）
 openai>=1.0.0
 anthropic>=0.7.0

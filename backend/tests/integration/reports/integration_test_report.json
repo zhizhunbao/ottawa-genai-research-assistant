@@ -1,0 +1,42 @@
+{
+  "start_time": "2025-09-21T20:38:36.349473",
+  "end_time": "2025-09-21T20:38:38.859169",
+  "duration": 2.509681463241577,
+  "environment": {
+    "python_version": "3.13.7",
+    "status": "ready"
+  },
+  "service_health": {
+    "backend": "healthy",
+    "frontend": "healthy"
+  },
+  "test_results": {
+    "api": {
+      "exit_code": 0,
+      "duration": 1.40256667137146,
+      "status": "passed"
+    },
+    "auth": {
+      "exit_code": 0,
+      "duration": 0.369051456451416,
+      "status": "passed"
+    },
+    "service": {
+      "exit_code": 0,
+      "duration": 0.3696253299713135,
+      "status": "passed"
+    },
+    "workflow": {
+      "exit_code": 0,
+      "duration": 0.3670947551727295,
+      "status": "passed"
+    }
+  },
+  "summary": {
+    "total_categories": 4,
+    "passed_categories": 4,
+    "failed_categories": 0,
+    "success_rate": 100.0,
+    "overall_status": "passed"
+  }
+}

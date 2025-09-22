@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import './LoginPage.css'; // Reuse login page styles
 
 const RegisterPage: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { register, isLoading, error } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -47,12 +47,15 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-      // Mock registration - automatically log in with demo credentials
-      await login({
-        email: 'demo@example.com',
-        password: 'demo123456' // Use the registered demo password
+      // Call real registration API
+      await register({
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: 'researcher' // Default role for new users
       });
-      navigate('/');
+      // Registration successful, user is automatically logged in
+      navigate('/', { replace: true });
     } catch (error: any) {
       setFormError(error.message || 'Registration failed');
     }
@@ -124,9 +127,14 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            {formError && (
+            {(error || formError) && (
               <div className="error-message">
-                {formError}
+                <svg className="error-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                {error || formError}
               </div>
             )}
 

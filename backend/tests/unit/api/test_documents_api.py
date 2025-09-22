@@ -13,9 +13,9 @@
 - DELETE /documents/{document_id}
 """
 
-import datetime
 import json
 import tempfile
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import AsyncMock, patch

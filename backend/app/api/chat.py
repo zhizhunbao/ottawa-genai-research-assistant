@@ -42,6 +42,44 @@ class ChatHistory(BaseModel):
     total: int
 
 
+# Public demo endpoint (no authentication required)
+@router.post("/demo/message", response_model=ChatResponse)
+async def send_demo_message(
+    request: ChatMessage,
+    settings=Depends(get_settings),
+):
+    """
+    Send a message to the AI assistant (demo mode - no authentication required).
+    
+    - **message**: The user's question or message
+    - **language**: Language preference (en/fr)
+    - **context**: Optional context for the conversation
+    """
+    try:
+        chat_service = ChatService(settings)
+        
+        # Process the message without saving to database
+        response = await chat_service.process_message(
+            message=request.message,
+            language=request.language,
+            conversation_id=request.context,
+        )
+        
+        return ChatResponse(
+            id=str(uuid.uuid4()),
+            response=response["text"],
+            language=request.language or "en",
+            timestamp=datetime.now(timezone.utc),
+            sources=response.get("sources", []),
+            charts=response.get("charts"),
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error processing message: {str(e)}"
+        )
+
+
 @router.post("/message", response_model=ChatResponse)
 async def send_message(
     request: ChatMessage,
@@ -64,7 +102,7 @@ async def send_message(
         response = await chat_service.process_message(
             message=request.message,
             language=request.language,
-            context=request.context,
+            conversation_id=request.context,
         )
 
         # Create or get conversation

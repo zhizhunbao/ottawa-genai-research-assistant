@@ -6,11 +6,13 @@
 
 
 from datetime import datetime, timezone
-from datetime import datetime, timezone
 from typing import Any
+
 from app.core.data_paths import monk_paths
 from app.models.chat import Conversation, Message
+
 from .base import BaseRepository
+
 
 class ConversationRepository(BaseRepository[Conversation]):
     """Repository for conversation data operations."""

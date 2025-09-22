@@ -95,9 +95,19 @@
     "role": "researcher",
     "status": "active",
     "created_at": "2025-09-18T19:37:59.817293",
-    "last_login": "2025-09-19T19:28:39.180785",
-    "preferences": "language='en' theme='light' notifications=True default_topics=[]",
-    "metadata": "department=None access_level='standard'"
+    "last_login": "2025-09-22T00:34:59.447835+00:00",
+    "preferences": {
+      "language": "en",
+      "theme": "auto",
+      "font_size": "medium",
+      "high_contrast": false,
+      "reduce_motion": false,
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "access_level": "standard"
+    }
   },
   {
     "id": "6a1827ac-6363-4066-abb4-32e00429b2aa",
@@ -129,9 +139,19 @@
     "role": "researcher",
     "status": "active",
     "created_at": "2025-09-19T01:26:16.050993",
-    "last_login": "2025-09-19T19:28:24.901915",
-    "preferences": "language='en' theme='light' notifications=True default_topics=[]",
-    "metadata": "department=None access_level='standard'"
+    "last_login": "2025-09-22T19:44:45.790940+00:00",
+    "preferences": {
+      "language": "en",
+      "theme": "auto",
+      "font_size": "medium",
+      "high_contrast": false,
+      "reduce_motion": false,
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "access_level": "standard"
+    }
   },
   {
     "id": "db5e55cf-a174-4622-ac16-f197bf93dcf7",
@@ -673,6 +693,74 @@
     "role": "researcher",
     "status": "active",
     "created_at": "2025-09-21T23:00:59.080461+00:00",
+    "last_login": null,
+    "preferences": {
+      "language": "en",
+      "theme": "auto",
+      "font_size": "medium",
+      "high_contrast": false,
+      "reduce_motion": false,
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "department": null,
+      "access_level": "standard"
+    }
+  },
+  {
+    "id": "3d76aa92-475a-43bf-828d-ba90c1190b33",
+    "username": "test_integration_user",
+    "email": "integration_test@ottawa.ca",
+    "hashed_password": "$2b$12$WSRfjaxMs9sOrteue.hW9OhTNBjj7pSeDnBksmmJR3xEwRnvP0mUq",
+    "role": "researcher",
+    "status": "active",
+    "created_at": "2025-09-21T23:25:34.593141+00:00",
+    "last_login": "2025-09-21T23:31:16.250653+00:00",
+    "preferences": {
+      "language": "en",
+      "theme": "auto",
+      "font_size": "medium",
+      "high_contrast": false,
+      "reduce_motion": false,
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "access_level": "standard"
+    }
+  },
+  {
+    "id": "5a60ac95-b7b2-44f1-b225-2894eacc0956",
+    "username": "test_user_123",
+    "email": "test123@example.com",
+    "hashed_password": "$2b$12$0Mmav8mwNp02rqvOpFPHwOpTJzrvHN3FCgvbUwKrBIreqcHYhIwKW",
+    "role": "researcher",
+    "status": "active",
+    "created_at": "2025-09-22T19:08:16.400538+00:00",
+    "last_login": null,
+    "preferences": {
+      "language": "en",
+      "theme": "auto",
+      "font_size": "medium",
+      "high_contrast": false,
+      "reduce_motion": false,
+      "notifications": true,
+      "default_topics": []
+    },
+    "metadata": {
+      "department": null,
+      "access_level": "standard"
+    }
+  },
+  {
+    "id": "ee0e12bb-cdda-4a3b-a1e4-08a8cb063698",
+    "username": "test_frontend_user",
+    "email": "testfrontend@example.com",
+    "hashed_password": "$2b$12$e9nPZOAE/38GTTt50PY.IuNFinf0D3sE9Ey9qFOcKzQmeHRIqVfeq",
+    "role": "researcher",
+    "status": "active",
+    "created_at": "2025-09-22T19:09:06.551538+00:00",
     "last_login": null,
     "preferences": {
       "language": "en",

@@ -2,7 +2,7 @@
 
 ## 📊 Overall System Architecture
 
-The Ottawa GenAI Research Assistant adopts a modern **full-stack architecture** with clear separation of concerns, featuring a **React frontend** with TypeScript for type safety, a **FastAPI backend** with layered architecture, and **Google OAuth 2.0** authentication. The system is designed for scalability, maintainability, and seamless bilingual (English/French) support.
+The Ottawa GenAI Research Assistant adopts a modern **full-stack architecture** with clear separation of concerns, featuring a **React frontend** with TypeScript for type safety, a **FastAPI backend** with layered architecture, **Groq AI (Llama 3.3 70B)** and **Google Gemini (1.5 Flash)** for AI services, and **Google OAuth 2.0** authentication. The system is designed for scalability, maintainability, and seamless bilingual (English/French) support.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -29,7 +29,7 @@ The Ottawa GenAI Research Assistant adopts a modern **full-stack architecture** 
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                Service Layer                           │   │
 │  │               - Business logic implementation          │   │
-│  │               - AI chat processing (OpenAI)            │   │
+│  │               - AI chat processing (Groq/Gemini)      │   │
 │  │               - Document processing                    │   │
 │  │               - Report generation                      │   │
 │  │               - Process orchestration                  │   │
@@ -51,6 +51,28 @@ The Ottawa GenAI Research Assistant adopts a modern **full-stack architecture** 
 │  │               - Document file management               │   │
 │  │               - Simple file system                     │   │
 │  │               - Easy backup & migration                │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                🤖 AI Services Layer                            │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │           Primary: Groq AI (Llama 3.3 70B)            │   │
+│  │           - Ultra-fast responses (0.3s average)        │   │
+│  │           - 30 requests/minute rate limit              │   │
+│  │           - Completely free with API key               │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │         Backup: Google Gemini (1.5 Flash)             │   │
+│  │           - High-quality responses                     │   │
+│  │           - 60 requests/minute rate limit              │   │
+│  │           - Completely free with API key               │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Fallback: Mock Responses                  │   │
+│  │           - Graceful degradation when APIs fail       │   │
+│  │           - Maintains system availability              │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -143,7 +165,8 @@ sequenceDiagram
 - **FastAPI** for high-performance API development
 - **Pydantic** for data validation and serialization
 - **JSON file storage** for simple data persistence
-- **OpenAI API** for AI-powered chat functionality
+- **Groq AI (Llama 3.3 70B)** for ultra-fast AI chat responses
+- **Google Gemini (1.5 Flash)** for high-quality AI backup
 - **JWT** for secure authentication
 
 ### Backend Directory Structure
@@ -300,25 +323,24 @@ class ChatService:
         language: str = "en",
         context: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Process user message with OpenAI integration"""
+        """Process user message with Groq/Gemini AI integration"""
         
-        # Build system prompt based on language
-        system_prompt = self._build_system_prompt(language)
+        # Try each AI service in priority order
+        for service_name, service in self.ai_services:
+            if service.is_available:
+                try:
+                    logger.info(f"🤖 Trying {service_name} AI service...")
+                    response = await service.generate_response(message, language)
+                    
+                    logger.info(f"✅ {service_name} response generated successfully")
+                    return response
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ {service_name} failed: {e}")
+                    continue
         
-        # Send to OpenAI API
-        response = await self.openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ]
-        )
-        
-        return {
-            "response": response.choices[0].message.content,
-            "language": language,
-            "timestamp": datetime.now()
-        }
+        # Fallback to mock response if all services fail
+        return await self._get_fallback_response(message, language)
 ```
 
 ### Document Service

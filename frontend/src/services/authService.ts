@@ -85,6 +85,50 @@ class AuthService {
     return authResponse;
   }
 
+  async register(credentials: RegisterRequest): Promise<AuthResponse> {
+    console.log('📝 Register attempt:', { 
+      url: `${API_BASE_URL}/auth/register`, 
+      credentials: { 
+        username: credentials.username, 
+        email: credentials.email, 
+        role: credentials.role,
+        password: '***' 
+      }
+    });
+    
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      console.error('❌ Registration failed:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        url: response.url
+      });
+      
+      const errorData = await response.json();
+      console.error('❌ Error details:', errorData);
+      throw new Error(errorData.detail || 'Registration failed');
+    }
+
+    console.log('✅ Registration successful:', { 
+      status: response.status
+    });
+    
+    // After successful registration, automatically log in the user
+    const loginResponse = await this.login({
+      email: credentials.email,
+      password: credentials.password
+    });
+    
+    return loginResponse;
+  }
+
   async logout(): Promise<void> {
     try {
       if (this.token) {

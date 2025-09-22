@@ -1,352 +1,224 @@
 """
-💬 Chat Service
+Chat Service with Free AI Integration
 
-Handles AI-powered chat interactions and context management.
+This service provides AI-powered chat functionality using completely free AI providers:
+- Groq AI (ultra-fast, free)
+- Google Gemini (high-quality, free)
+- Local fallback when no API keys are available
+
+All services are completely free and provide enterprise-grade AI responses.
 """
 
-import json
-from pathlib import Path
-from typing import Any
-
-from openai import AsyncOpenAI
+import logging
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 from app.core.config import Settings
+from app.models.chat import Conversation, Message
+from app.repositories.chat_repository import (ConversationRepository,
+                                              MessageRepository)
+from app.services.ai_providers import GeminiService, GroqService
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
-    """Service for handling AI chat interactions."""
-
+    """
+    Chat service with free AI integration and intelligent fallback
+    """
+    
     def __init__(self, settings: Settings):
+        """Initialize chat service with free AI providers"""
         self.settings = settings
-        self.openai_client = None
-        self.monk_data_path = Path("monk")
-
-        # Initialize OpenAI client if API key is available
-        if settings.OPENAI_API_KEY:
-            self.openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
+        self.conversation_repository = ConversationRepository()
+        self.message_repository = MessageRepository()
+        
+        # Initialize free AI services
+        self.groq_service = GroqService(settings)
+        self.gemini_service = GeminiService(settings)
+        
+        # Service priority: Groq first (fastest), then Gemini (high quality)
+        self.ai_services = [
+            ("Groq", self.groq_service),
+            ("Gemini", self.gemini_service)
+        ]
+        
+        # Check available services
+        available_services = [name for name, service in self.ai_services if service.is_available]
+        
+        if available_services:
+            logger.info(f"✅ Free AI services available: {', '.join(available_services)}")
+        else:
+            logger.warning("⚠️ No AI services available - will use mock responses")
+    
     async def process_message(
-        self,
-        message: str,
-        language: str | None = "en",
-        context: str | None = None,
-    ) -> dict[str, Any]:
+        self, 
+        message: str, 
+        language: str = "en",
+        conversation_id: Optional[str] = None,
+        user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Process a user message and generate an AI response.
-
+        Process user message and generate AI response
+        
         Args:
-            message: User's input message
-            language: Language preference (en/fr)
-            context: Additional context for the conversation
-
+            message: User input message
+            language: Response language (en, fr, zh)
+            conversation_id: Optional conversation ID
+            user_id: Optional user ID
+            
         Returns:
-            Dictionary containing the AI response and metadata
+            Dict containing AI response and metadata
         """
         try:
-            # For now, return mock data if no OpenAI key is configured
-            if not self.openai_client:
-                return await self._generate_mock_response(message, language)
-
-            # Prepare the system prompt
-            system_prompt = self._build_system_prompt(language)
-
-            # Build messages for OpenAI
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message},
-            ]
-
-            # Add context if provided
-            if context:
-                messages.insert(
-                    1, {"role": "assistant", "content": f"Context: {context}"}
-                )
-
-                # Call OpenAI API
-            response = await self.openai_client.chat.completions.create(
-                model=self.settings.DEFAULT_AI_MODEL,
-                messages=messages,
-                max_tokens=self.settings.MAX_TOKENS,
-                temperature=self.settings.TEMPERATURE,
-            )
-
-            ai_response = response.choices[0].message.content
-
-            # Parse response for sources and charts
-            parsed_response = self._parse_ai_response(ai_response)
-
-            return {
-                "text": parsed_response["text"],
-                "sources": parsed_response.get("sources", []),
-                "charts": parsed_response.get("charts"),
-                "language": language,
-            }
-
+            # Try each AI service in priority order
+            for service_name, service in self.ai_services:
+                if service.is_available:
+                    try:
+                        logger.info(f"🤖 Trying {service_name} AI service...")
+                        response = await service.generate_response(message, language)
+                        
+                        # Save conversation if IDs provided
+                        if conversation_id and user_id:
+                            await self._save_conversation(
+                                conversation_id, user_id, message, response["text"], language
+                            )
+                        
+                        logger.info(f"✅ {service_name} response generated successfully")
+                        return response
+                        
+                    except Exception as e:
+                        logger.warning(f"⚠️ {service_name} failed: {e}")
+                        continue
+            
+            # If all AI services fail, use fallback
+            logger.warning("⚠️ All AI services failed, using mock response")
+            return await self._get_fallback_response(message, language)
+            
         except Exception as e:
-            # Fallback to mock response on error
-            return await self._generate_mock_response(message, language, error=str(e))
-
-    def _build_system_prompt(self, language: str) -> str:
-        """Build the system prompt based on language and context."""
-
-        if language == "fr":
-            return """
-            Vous êtes un assistant de recherche IA spécialisé dans le
-            développement économique pour la Ville d'Ottawa. Votre rôle est
-            d'aider les employés municipaux à analyser des documents,
-            générer des rapports et répondre à des questions sur le
-            développement économique.
-
-            Directives:
-            - Répondez en français
-            - Soyez précis et professionnel
-            - Citez vos sources quand possible
-            - Proposez des visualisations de données pertinentes
-            - Respectez les standards d'accessibilité et de bilinguisme
-              du gouvernement
-            """
-        else:
-            return """
-            You are an AI research assistant specialized in economic
-            development for the City of Ottawa. Your role is to help
-            municipal employees analyze documents, generate reports, and
-            answer questions about economic development.
-
-            Guidelines:
-            - Respond in English
-            - Be precise and professional
-            - Cite your sources when possible
-            - Suggest relevant data visualizations
-            - Adhere to government accessibility and bilingual standards
-            """
-
-    def _parse_ai_response(self, response: str) -> dict[str, Any]:
-        """Parse AI response to extract text, sources, and chart
-        suggestions."""
-
-        # Simple parsing logic - in production, this would be more
-        # sophisticated
-        result = {"text": response, "sources": [], "charts": None}
-
-        # Look for source citations (this is a simple example)
-        if "[Source:" in response:
-            # Extract sources from response
-            import re
-
-            sources = re.findall(r"\[Source: (.*?)\]", response)
-            result["sources"] = sources
-            # Remove source citations from display text
-            result["text"] = re.sub(r"\[Source: .*?\]", "", response).strip()
-
-        # Look for chart suggestions
-        if "chart" in response.lower() or "graph" in response.lower():
-            # This is a placeholder - real implementation would analyze the
-            # content
-            result["charts"] = {
-                "suggested": True,
-                "type": "bar",
-                "title": "Economic Indicators",
-                "data": {"labels": ["Q1", "Q2", "Q3"], "values": [100, 120, 135]},
-            }
-
-        return result
-
-    async def _load_monk_data(self) -> dict[str, Any]:
-        """Load data from monk directory."""
-        data = {
-            "economic_reports": [],
-            "business_programs": [],
-            "statistics": {},
+            logger.error(f"❌ Chat service error: {e}")
+            return await self._get_fallback_response(message, language)
+    
+    async def _get_fallback_response(self, message: str, language: str) -> Dict[str, Any]:
+        """
+        Generate fallback response when AI services are unavailable
+        """
+        fallback_responses = {
+            "en": "Thank you for your question about Ottawa's economic development. Based on our local data, I can provide detailed analysis. What specific information would you like to know about business opportunities, investment climate, or economic programs?",
+            "fr": "Merci pour votre question sur le développement économique d'Ottawa. Basé sur nos données locales, je peux fournir une analyse détaillée. Quelles informations spécifiques aimeriez-vous connaître sur les opportunités d'affaires, le climat d'investissement ou les programmes économiques?",
+            "zh": "感谢您关于渥太华经济发展的问题。基于我们的本地数据，我可以提供详细分析。您希望了解关于商业机会、投资环境或经济项目的哪些具体信息？"
         }
-
-        try:
-            # Load economic reports
-            reports_path = self.monk_data_path / "economic_reports"
-            if reports_path.exists():
-                for file_path in reports_path.glob("*.json"):
-                    with open(file_path, encoding="utf-8") as f:
-                        report_data = json.load(f)
-                        data["economic_reports"].append(report_data)
-
-            # Load business programs
-            programs_path = self.monk_data_path / "business_programs"
-            if programs_path.exists():
-                for file_path in programs_path.glob("*.json"):
-                    with open(file_path, encoding="utf-8") as f:
-                        program_data = json.load(f)
-                        data["business_programs"].append(program_data)
-
-            # Load statistics
-            stats_path = self.monk_data_path / "statistics" / "latest.json"
-            if stats_path.exists():
-                with open(stats_path, encoding="utf-8") as f:
-                    data["statistics"] = json.load(f)
-
-        except Exception as e:
-            print(f"Error loading monk data: {e}")
-
-        return data
-
-    async def _generate_mock_response(
-        self, message: str, language: str, error: str | None = None
-    ) -> dict[str, Any]:
-        """Generate a mock response when AI is not available."""
-
-        # Load actual data from monk directory
-        monk_data = await self._load_monk_data()
-
-        # Generate response based on available data
-        response_text = self._generate_response_from_data(message, language, monk_data)
-
-        # Add error note if applicable
-        if error:
-            error_note = (
-                " (Note: AI service temporarily unavailable - showing "
-                "data-based response)"
-                if language == "en"
-                else " (Note: Service IA temporairement indisponible - "
-                "réponse basée sur les données)"
-            )
-            response_text += error_note
-
-        # Extract sources from loaded data
-        sources = []
-        if monk_data["economic_reports"]:
-            sources.extend(
-                [
-                    report.get("title", "Economic Report")
-                    for report in monk_data["economic_reports"][:3]
-                ]
-            )
-        if monk_data["business_programs"]:
-            sources.extend(
-                [
-                    program.get("name", "Business Program")
-                    for program in monk_data["business_programs"][:2]
-                ]
-            )
-
-        # Generate charts based on available statistics
-        charts = None
-        if monk_data["statistics"]:
-            stats_data = monk_data["statistics"]
-            charts = self._generate_chart_from_stats(stats_data, language)
-
+        
         return {
-            "text": response_text,
-            "sources": sources if sources else ["Local Data Repository"],
-            "charts": charts,
+            "text": fallback_responses.get(language, fallback_responses["en"]),
+            "provider": "Mock",
+            "model": "local-data",
             "language": language,
+            "tokens_used": 50,
+            "cost": 0.0,
+            "note": "This is a fallback response. Please set up free API keys for Groq and Gemini for best experience."
         }
-
-    def _generate_response_from_data(
-        self, message: str, language: str, data: dict[str, Any]
-    ) -> str:
-        """Generate response based on loaded monk data."""
-
-        message_lower = message.lower()
-
-        # Check for economic-related queries
-        if any(
-            word in message_lower
-            for word in ["economic", "economy", "économique", "growth", "croissance"]
-        ):
-            if data["economic_reports"]:
-                latest_report = data["economic_reports"][0]
-                if language == "fr":
-                    title = latest_report.get("title", "Rapport économique")
-                    summary = latest_report.get(
-                        "summary_fr",
-                        "les données montrent une croissance positive.",
-                    )
-                    return f"Selon le dernier rapport économique '{title}', {summary}"
-                else:
-                    title = latest_report.get("title", "Economic Report")
-                    summary = latest_report.get(
-                        "summary_en",
-                        "data shows positive growth across multiple sectors.",
-                    )
-                    return (
-                        f"According to the latest economic report '{title}', {summary}"
-                    )
-
-        # Check for business program queries
-        elif any(
-            word in message_lower
-            for word in ["business", "entreprise", "program", "programme", "support"]
-        ):
-            if data["business_programs"]:
-                programs = data["business_programs"][:3]
-                if language == "fr":
-                    program_list = ", ".join(
-                        [p.get("name_fr", p.get("name", "Programme")) for p in programs]
-                    )
-                    return (
-                        f"La Ville d'Ottawa offre plusieurs programmes de "
-                        f"soutien aux entreprises, notamment: {program_list}. "
-                        f"Ces programmes ont aidé de nombreuses entreprises "
-                        f"locales cette année."
-                    )
-                else:
-                    program_list = ", ".join(
-                        [p.get("name_en", p.get("name", "Program")) for p in programs]
-                    )
-                    return (
-                        f"The City of Ottawa offers several business support "
-                        f"programs including: {program_list}. These programs "
-                        f"have assisted numerous local businesses this year."
-                    )
-
-        # Default response
-        if language == "fr":
-            return (
-                "Merci pour votre question sur le développement économique "
-                "d'Ottawa. Basé sur nos données locales, je peux fournir "
-                "une analyse détaillée. Que souhaiteriez-vous savoir "
-                "spécifiquement?"
+    
+    async def _save_conversation(
+        self, 
+        conversation_id: str, 
+        user_id: str, 
+        user_message: str, 
+        ai_response: str,
+        language: str
+    ) -> None:
+        """Save conversation to repository"""
+        try:
+            # Create user message
+            user_msg = Message(
+                id=f"msg_{datetime.now(timezone.utc).timestamp()}",
+                conversation_id=conversation_id,
+                role="user",
+                content=user_message,
+                timestamp=datetime.now(timezone.utc)
             )
-        else:
-            return (
-                "Thank you for your question about Ottawa's economic "
-                "development. Based on our local data, I can provide "
-                "detailed analysis. What specific information would you "
-                "like to know?"
+            
+            # Create AI response message
+            ai_msg = Message(
+                id=f"msg_{datetime.now(timezone.utc).timestamp()}_ai",
+                conversation_id=conversation_id,
+                role="assistant",
+                content=ai_response,
+                timestamp=datetime.now(timezone.utc)
             )
-
-    def _generate_chart_from_stats(
-        self, stats: dict[str, Any], language: str
-    ) -> dict[str, Any] | None:
-        """Generate chart configuration from statistics data."""
-
-        if not stats:
-            return None
-
-        # Look for chart-worthy data in statistics
-        chart_data = None
-        chart_title = "Economic Indicators"
-
-        if "quarterly_growth" in stats:
-            chart_data = {
-                "labels": list(stats["quarterly_growth"].keys()),
-                "values": list(stats["quarterly_growth"].values()),
-            }
-            chart_title = (
-                "Quarterly Growth" if language == "en" else "Croissance trimestrielle"
+            
+            # Save messages
+            self.message_repository.create(user_msg)
+            self.message_repository.create(ai_msg)
+            
+        except Exception as e:
+            logger.warning(f"Failed to save conversation: {e}")
+    
+    async def get_conversation_history(
+        self, 
+        conversation_id: str, 
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """Get conversation history"""
+        try:
+            messages = self.message_repository.find_by_conversation(
+                conversation_id, limit
             )
-        elif "sector_performance" in stats:
-            chart_data = {
-                "labels": list(stats["sector_performance"].keys()),
-                "values": list(stats["sector_performance"].values()),
-            }
-            chart_title = (
-                "Sector Performance" if language == "en" else "Performance par secteur"
+            return [
+                {
+                    "id": msg.id,
+                    "role": msg.role,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.isoformat()
+                }
+                for msg in messages
+            ]
+        except Exception as e:
+            logger.error(f"Failed to get conversation history: {e}")
+            return []
+    
+    async def create_conversation(
+        self, 
+        user_id: str, 
+        title: Optional[str] = None,
+        language: str = "en"
+    ) -> Dict[str, Any]:
+        """Create new conversation"""
+        try:
+            now = datetime.now(timezone.utc)
+            conversation = Conversation(
+                id=f"conv_{now.timestamp()}",
+                user_id=user_id,
+                title=title or f"New Chat - {now.strftime('%Y-%m-%d %H:%M')}",
+                created_at=now,
+                updated_at=now,
+                language=language
             )
-
-        if chart_data:
+            
+            self.conversation_repository.create(conversation)
+            
             return {
-                "type": "bar",
-                "title": chart_title,
-                "data": chart_data,
+                "id": conversation.id,
+                "title": conversation.title,
+                "created_at": conversation.created_at.isoformat(),
+                "language": conversation.language
             }
-
-        return None
+            
+        except Exception as e:
+            logger.error(f"Failed to create conversation: {e}")
+            raise Exception(f"Could not create conversation: {str(e)}")
+    
+    def get_ai_service_status(self) -> Dict[str, Any]:
+        """Get status of all AI services"""
+        services_status = []
+        
+        for service_name, service in self.ai_services:
+            services_status.append(service.get_status())
+        
+        return {
+            "total_services": len(self.ai_services),
+            "available_services": len([s for s in services_status if s["available"]]),
+            "services": services_status,
+            "fallback_available": True,
+            "recommendation": "Set up free API keys for Groq and Gemini for best experience"
+        }

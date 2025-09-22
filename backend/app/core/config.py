@@ -26,6 +26,8 @@ class Settings(BaseSettings):
 
     # API Keys
     OPENAI_API_KEY: str = Field(default="")
+    GROQ_API_KEY: str = Field(default="")
+    GEMINI_API_KEY: str = Field(default="")
     GOOGLE_CLIENT_ID: str = Field(default="")
 
     # Database
@@ -45,7 +47,7 @@ class Settings(BaseSettings):
 
     # File Upload
     MAX_FILE_SIZE_MB: int = Field(default=50)
-    UPLOAD_DIR: str = Field(default="./uploads")
+    UPLOAD_DIR: str = Field(default="uploads")
     ALLOWED_FILE_TYPES: list[str] = Field(default=["pdf"])
     
     # Data Storage - All data must be stored in monk/ directory

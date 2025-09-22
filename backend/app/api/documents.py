@@ -4,11 +4,10 @@
 Handles PDF document upload, processing, and management.
 """
 
-import datetime
 import logging
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.api.auth import get_current_user
 from app.core.config import get_settings

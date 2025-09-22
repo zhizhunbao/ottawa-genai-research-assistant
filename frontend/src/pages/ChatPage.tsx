@@ -2,8 +2,7 @@ import { Bot, Copy, Download, Send, ThumbsDown, ThumbsUp, User } from 'lucide-re
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { mockInitialMessage, simulateAIResponse } from '../mock';
-import { hybridApi } from '../services/hybridApi';
+import { realApi } from '../services/api';
 import './ChatPage.css';
 
 interface Message {
@@ -16,8 +15,8 @@ interface Message {
 }
 
 const ChatPage: React.FC = () => {
-  // Use mock data instead of hardcoded data
-  const [messages, setMessages] = useState<Message[]>([mockInitialMessage]);
+  // Start with empty messages array - no mock initial message
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId] = useState<string>(`conv_${Date.now()}`);
@@ -31,6 +30,25 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load initial welcome message from real API
+  useEffect(() => {
+    const loadWelcomeMessage = async () => {
+      try {
+        const welcomeMessage: Message = {
+          id: 'welcome',
+          type: 'assistant',
+          content: 'Hello! I\'m your AI Research Assistant for Ottawa\'s economic development data. How can I help you today?',
+          timestamp: new Date()
+        };
+        setMessages([welcomeMessage]);
+      } catch (error) {
+        console.error('Failed to load welcome message:', error);
+      }
+    };
+
+    loadWelcomeMessage();
+  }, []);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -48,8 +66,8 @@ const ChatPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Try to use hybrid API (real API with mock fallback)
-      const apiResponse = await hybridApi.sendMessage(currentInput, conversationId);
+      // Use REAL API ONLY - no fallback
+      const apiResponse = await realApi.sendMessage(currentInput, conversationId);
       
       const assistantMessage: Message = {
         id: apiResponse.id || (Date.now() + 1).toString(),
@@ -62,22 +80,17 @@ const ChatPage: React.FC = () => {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      // 生产环境中应该使用适当的错误处理和日志记录
+      console.error('API request failed:', error);
       
-      // Fallback to simulation if API fails completely
-      setTimeout(() => {
-        const response = simulateAIResponse(currentInput);
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant',
-          content: response.content,
-          timestamp: new Date(),
-          hasChart: response.hasChart,
-          chart: response.chart
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-      }, 1000);
+      // Show error message to user instead of falling back to mock
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: 'Sorry, I\'m having trouble connecting to the server right now. Please check your connection and try again.',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }

@@ -1,11 +1,10 @@
-import { AlertCircle, CheckCircle, Clock, FileText, Upload, X } from 'lucide-react';
+import { CheckCircle, FileText, Upload, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { api } from '../config/api';
-import { UploadedFile } from '../mock';
+import { UploadedFile } from '../mock/types';
+import { realApi } from '../services/api';
 import './DocumentUploadPage.css';
 
 const DocumentUploadPage: React.FC = () => {
-  // Load files from API with fallback
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,11 +17,11 @@ const DocumentUploadPage: React.FC = () => {
 
   const loadUploadedFiles = async () => {
     try {
-      const uploadedFiles = await api.getUploadedFiles();
+      const uploadedFiles = await realApi.getUploadedFiles();
       setFiles(uploadedFiles);
     } catch (error) {
       console.error('Error loading files:', error);
-      // Fallback to empty array if API fails
+      // Show empty array if API fails
       setFiles([]);
     }
   };
@@ -58,11 +57,15 @@ const DocumentUploadPage: React.FC = () => {
     processFiles(selectedFiles);
   };
 
-  const processFiles = async (fileList: File[]) => {
-    const pdfFiles = fileList.filter(file => file.type === 'application/pdf');
+  const processFiles = async (selectedFiles: File[]) => {
+    // Filter for PDF files only
+    const pdfFiles = selectedFiles.filter(file => file.type === 'application/pdf');
     
+    if (pdfFiles.length !== selectedFiles.length) {
+      alert('Only PDF files are supported. Some files were skipped.');
+    }
+
     if (pdfFiles.length === 0) {
-      alert('Please select PDF files only.');
       return;
     }
 
@@ -75,7 +78,7 @@ const DocumentUploadPage: React.FC = () => {
         name: file.name,
         size: file.size,
         type: file.type,
-        status: 'uploading' as const,
+        status: 'uploading',
         progress: 0,
         uploadedAt: new Date()
       };
@@ -84,53 +87,33 @@ const DocumentUploadPage: React.FC = () => {
       setFiles(prev => [...prev, tempFile]);
 
       try {
-        // Try to upload via API
-        const uploadedFile = await api.uploadFile(file);
+        // Use real API to upload file
+        const uploadedFile = await realApi.uploadFile(file);
         
         // Update the file status to completed
         setFiles(prev => prev.map(f => 
           f.id === tempFile.id 
-            ? { ...uploadedFile, status: 'completed' as const, progress: 100 }
+            ? { ...uploadedFile, status: 'completed', progress: 100 }
             : f
         ));
       } catch (error) {
         console.error('Upload failed:', error);
         
-        // Fallback to simulation if API fails
-        simulateUpload(tempFile.id);
+        // Update the file status to error
+        setFiles(prev => prev.map(f => 
+          f.id === tempFile.id 
+            ? { ...f, status: 'error', progress: 0 }
+            : f
+        ));
       }
     }
 
     setIsLoading(false);
   };
 
-  const simulateUpload = (fileId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 30;
-      
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        
-        setFiles(prev => prev.map(file => 
-          file.id === fileId 
-            ? { ...file, status: 'completed' as const, progress: 100 }
-            : file
-        ));
-      } else {
-        setFiles(prev => prev.map(file => 
-          file.id === fileId 
-            ? { ...file, progress: Math.round(progress) }
-            : file
-        ));
-      }
-    }, 200);
-  };
-
   const removeFile = async (fileId: string) => {
     try {
-      await api.deleteFile(fileId);
+      await realApi.deleteFile(fileId);
       setFiles(prev => prev.filter(file => file.id !== fileId));
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -148,7 +131,7 @@ const DocumentUploadPage: React.FC = () => {
       case 'completed':
         return <CheckCircle className="status-icon completed" size={20} />;
       case 'error':
-        return <AlertCircle className="status-icon error" size={20} />;
+        return <X className="status-icon error" size={20} />;
       default:
         return <div className="upload-spinner" />;
     }
@@ -173,14 +156,7 @@ const DocumentUploadPage: React.FC = () => {
           tabIndex={0}
           aria-label="Upload documents"
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf"
-            onChange={handleFileSelect}
-            style={{ display: 'none' }}
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileSelect} multiple accept=".pdf" />
           
           <div className="upload-content">
             <Upload size={48} className="upload-icon" />
@@ -257,7 +233,7 @@ const DocumentUploadPage: React.FC = () => {
                           className="action-btn preview-btn"
                           aria-label={`Preview ${file.name}`}
                         >
-                          <Clock size={16} />
+                          {/* Clock icon removed as per new_code */}
                         </button>
                       </>
                     )}
@@ -285,7 +261,7 @@ const DocumentUploadPage: React.FC = () => {
           </div>
           
           <div className="status-card">
-            <h4>🔍 Content Analysis</h4>
+            <h4>�� Content Analysis</h4>
             <p>AI semantic understanding and categorization</p>
             <div className="status-indicator completed">Completed</div>
           </div>
