@@ -4,7 +4,8 @@
 Handles user authentication operations like login, register, and user info.
 """
 
-from datetime import datetime, timezone
+import time
+from datetime import datetime, timedelta, timezone  # 正确的导入方式
 
 import jwt
 from app.models.user import (AuthResponse, Token, User, UserCreate, UserLogin,
@@ -212,10 +213,6 @@ async def google_login(google_data: GoogleLoginRequest):
 async def verify_google_token(token: str) -> dict:
     """Verify Google JWT token and extract user information."""
     try:
-        import datetime as dt
-        import time
-        from datetime import timezone
-
         from app.core.config import get_settings
         from google.auth.transport import requests
         from google.oauth2 import id_token
@@ -321,13 +318,15 @@ async def verify_google_token(token: str) -> dict:
             detail="Invalid Google token format",
         )
     except Exception as e:
+        import traceback
         error_detail = (
-            f"❌ Unexpected error in Google token verification: {str(e)}"
+            f"❌ Unexpected error in Google token verification (verify_google_token function in auth.py): {str(e)}"
         )
         print(error_detail)
+        print(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error verifying Google token: {str(e)}",
+            detail=f"Error verifying Google token in verify_google_token: {str(e)}",
         )
 
 
