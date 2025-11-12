@@ -1,4 +1,4 @@
-import { Bot, Copy, Download, Send, ThumbsDown, ThumbsUp, User } from 'lucide-react';
+import { Copy, Download, Send } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -38,7 +38,7 @@ const ChatPage: React.FC = () => {
         const welcomeMessage: Message = {
           id: 'welcome',
           type: 'assistant',
-          content: '# AI Research Assistant\n\nHello! I\'m your AI Research Assistant for Ottawa\'s economic development data. I can help you analyze business trends, employment statistics, and economic indicators for the Ottawa region.\n\nHow can I assist you today?',
+          content: 'Hello! I\'m your AI Research Assistant for Ottawa\'s economic development data. I can help you analyze business trends, employment statistics, and economic indicators for the Ottawa region.\n\nHow can I assist you today?',
           timestamp: new Date()
         };
         setMessages([welcomeMessage]);
@@ -103,6 +103,17 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target;
+    setInputValue(textarea.value);
+    
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    // Set the height to the scrollHeight, but not more than max-height
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
@@ -118,14 +129,6 @@ const ChatPage: React.FC = () => {
         <div className="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
           {messages.map((message) => (
             <div key={message.id} className={`message ${message.type}`}>
-              <div className="message-avatar">
-                {message.type === 'user' ? (
-                  <User size={20} aria-hidden="true" />
-                ) : (
-                  <Bot size={20} aria-hidden="true" />
-                )}
-              </div>
-              
               <div className="message-content">
                 <div className="message-text">
                   {message.type === 'assistant' ? (
@@ -180,35 +183,15 @@ const ChatPage: React.FC = () => {
                       aria-label="Copy message"
                     >
                       <Copy size={14} />
-                      Copy
-                    </button>
-                    <button 
-                      className="action-btn"
-                      aria-label="Helpful response"
-                    >
-                      <ThumbsUp size={14} />
-                    </button>
-                    <button 
-                      className="action-btn"
-                      aria-label="Not helpful response"
-                    >
-                      <ThumbsDown size={14} />
                     </button>
                   </div>
                 )}
-
-                <div className="message-timestamp">
-                  {message.timestamp.toLocaleTimeString()}
-                </div>
               </div>
             </div>
           ))}
 
           {isLoading && (
             <div className="message assistant">
-              <div className="message-avatar">
-                <Bot size={20} aria-hidden="true" />
-              </div>
               <div className="message-content">
                 <div className="typing-indicator">
                   <span></span>
@@ -227,10 +210,10 @@ const ChatPage: React.FC = () => {
             <textarea
               ref={inputRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Ask a question about economic development data..."
-              rows={3}
+              rows={1}
               disabled={isLoading}
               aria-label="Message input"
             />
@@ -240,28 +223,7 @@ const ChatPage: React.FC = () => {
               className="send-button"
               aria-label="Send message"
             >
-              <Send size={20} />
-            </button>
-          </div>
-          
-          <div className="input-suggestions">
-            <button 
-              onClick={() => setInputValue("What are the latest business growth trends?")}
-              className="suggestion-btn"
-            >
-              Business trends
-            </button>
-            <button 
-              onClick={() => setInputValue("Show me employment statistics")}
-              className="suggestion-btn"
-            >
-              Employment data
-            </button>
-            <button 
-              onClick={() => setInputValue("What can you help me with?")}
-              className="suggestion-btn"
-            >
-              Help
+              <Send size={16} />
             </button>
           </div>
         </div>

@@ -1,579 +1,292 @@
-# 🏛️ Ottawa GenAI Research Assistant | 渥太华生成式AI研究助手
+# 🏛️ Ottawa GenAI Research Assistant
 
-[![CI Pipeline](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/ci.yml)
-[![Deploy to GitHub Pages](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/deploy-github-pages.yml/badge.svg)](https://github.com/username/ottawa-genai-research-assistant/actions/workflows/deploy-github-pages.yml)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen)](https://username.github.io/ottawa-genai-research-assistant)
-[![Test Coverage](https://img.shields.io/badge/Tests-88.8%25%20Passing-brightgreen)](./docs/TEST_STATUS_REPORT.md)
-[![Integration Tests](https://img.shields.io/badge/Integration%20Tests-70.8%25%20Passing-yellow)](./docs/INTEGRATION_TESTING.md)
-[![Production Ready](https://img.shields.io/badge/Production-Ready-success)](https://ottawa-genai-frontend.onrender.com)
+**Enterprise-grade research assistant for the City of Ottawa, engineered for government compliance, security, and maintainability.**
 
-**🚀 Enterprise-Grade AI Application | 企业级AI应用**
+- **Free AI provider support:** Google Gemini & Groq (no OpenAI fees)
+- **Extensive automated testing:** 134 tests with 88.8% overall coverage
+- **Production deployment:** Render-hosted frontend and backend
+- **Government-ready architecture:** Security controls, accessibility, bilingual UX
 
-> **🆓 NEW: 完全免费的AI服务支持！** 现在支持Google Gemini和Groq AI，无需昂贵的OpenAI费用
-> 
-> **🆓 NEW: Completely Free AI Services!** Now supports Google Gemini and Groq AI, no expensive OpenAI fees required
+## 🚀 Live Demo
 
-A comprehensive AI-powered research assistant application designed for Ottawa City government, featuring **88.8% test coverage** (134 tests including 48 integration tests), complete functionality, government-compliant architecture, and **free AI services**.
+- **Production app:** [https://ottawa-genai-frontend.onrender.com](https://ottawa-genai-frontend.onrender.com)
+- **Backend API:** [https://ottawa-genai-backend.onrender.com](https://ottawa-genai-backend.onrender.com)
+- **API Docs:** [Swagger](https://ottawa-genai-backend.onrender.com/docs) · [ReDoc](https://ottawa-genai-backend.onrender.com/redoc)
 
-基于AI的综合研究助手应用，专为渥太华市政府设计，具备**88.8%的测试覆盖率**（134个测试，包括48个集成测试）、完整功能、政府合规架构和**免费AI服务**。
+Production releases run on the Render platform to ensure dependable uptime and observability.
 
-## 🚀 Live Demo | 在线演示
+## 🌟 Highlights
 
-**[🌐 Access the live application](https://ottawa-genai-frontend.onrender.com)**
+- **Free AI services:** Gemini 1.5 Flash & Groq Llama 3.3 70B integration with seamless failover
+- **AI-powered workflows:** Chat, document analysis, report automation, and configuration management
+- **Authentication:** Google OAuth 2.0 with JWT verification and smart user provisioning
+- **Accessibility & UX:** WCAG 2.1 compliant, responsive UI, English/French language toggle
+- **Operations ready:** Deployment blueprints, CI/CD, extensive documentation, and coding standards
 
-*Production deployment powered by Render platform with enterprise-grade stability.*
+## 🏗️ Architecture Overview
 
-*生产环境由 Render 平台提供支持，具备企业级稳定性。*
+| Layer | Technology | Key Capabilities |
+|-------|------------|------------------|
+| Frontend | React 18, TypeScript, Context API | Responsive UI, bilingual support, secure auth flows |
+| Backend | FastAPI, Pydantic, Repository pattern | RESTful APIs, JWT auth, provider orchestration |
+| Storage | JSON-based persistence (monk) | User, document, chat, and report data |
+| Quality | Pytest, React Testing Library, Ruff | 134 tests, formatting, linting, GitHub Actions CI |
+| Deployment | Render (frontend/backend) | Managed hosting, GitHub Pages preview, Docker support |
 
-## 🌟 Features | 功能特性
+For full project details, see `docs/Product Requirements Document (PRD).md` and `docs/Project Status Report.md`.
 
-### ✅ Core Features | 核心功能
-- 🆓 **Free AI Services** | 免费AI服务 - Google Gemini + Groq AI (超快速，完全免费)
-- 🤖 **AI-Powered Chat** | AI智能对话 - Multi-provider support with **100% test coverage**
-- 🔐 **Google OAuth 2.0** | 谷歌身份验证 - Secure authentication with JWT token verification (**94.1% tested**)
-- 👤 **Intelligent User Management** | 智能用户管理 - Auto-create users from Google accounts with smart username generation
-- 📄 **Document Management** | 文档管理 - Upload, analyze, and manage documents (**100% test coverage**)
-- 📊 **Report Generation** | 报告生成 - Automated research reports (**100% test coverage**)
-- ⚙️ **System Configuration** | 系统配置 - Complete settings management (**100% test coverage**)
-- 🌐 **Bilingual Support** | 双语支持 - English/French (EN/FR)
-- ♿ **Accessibility** | 无障碍 - WCAG 2.1 compliant
-- 📱 **Responsive Design** | 响应式设计 - Modern, mobile-friendly UI
+## 🧪 Test Coverage Snapshot
 
-### 🏗️ Architecture | 系统架构
-- **Frontend**: React 18 + TypeScript + Context API
-- **Backend**: FastAPI + Pydantic + Repository Pattern
-- **Testing**: **88.8% Coverage** (134 tests: 86 API + 48 integration tests)
-- **Code Quality**: Ruff (linting & formatting) + pyproject.toml configuration
-- **Storage**: JSON file storage (monk/ directory)
-- **Authentication**: JWT + Google OAuth 2.0
-- **AI Integration**: Free AI Providers (Gemini + Groq) + OpenAI API Ready
+| API Module | Coverage | Status | Notes |
+|------------|----------|--------|-------|
+| Authentication | 94.1% (16/17) | 🟢 Excellent | OAuth 2.0, JWT issuance, user lifecycle |
+| Chat | 100% (11/11) | 🟢 Perfect | Multi-provider AI conversation engine |
+| Documents | 100% (18/18) | 🟢 Perfect | Upload, retrieval, retention policies |
+| Reports | 100% (21/21) | 🟢 Perfect | Automated research report generation |
+| Settings | 100% (15/15) | 🟢 Perfect | Configuration management APIs |
+| **System total** | **88.8%** (119/134) | 🟢 Production ready | Integration + unit coverage |
 
-## 🧪 Test Coverage Status | 测试覆盖状态
+Run `pytest --cov=app --cov-report=html` in the backend directory for detailed coverage reports.
 
-### 🎉 **Enterprise-Grade Test Coverage: 88.8%** | 企业级测试覆盖率：88.8%
-
-| API Module | Test Coverage | Status | Achievement |
-|------------|---------------|--------|-------------|
-| 🔐 **Authentication API** | **94.1%** (16/17) | 🟢 Excellent | Google OAuth, JWT, User Management |
-| 💬 **Chat API** | **100%** (11/11) | 🟢 Perfect | **Complete AI Conversation System** |
-| 📄 **Documents API** | **100%** (18/18) | 🟢 Perfect | **Complete Document Management** |
-| 📊 **Reports API** | **100%** (21/21) | 🟢 Perfect | **Complete Report Generation** |
-| ⚙️ **Settings API** | **100%** (15/15) | 🟢 Perfect | **Complete Configuration Management** |
-| **Overall System** | **88.8%** (119/134) | 🟢 **Production Ready** | **🚀 Enterprise Deployment Ready** |
-
-**📊 View detailed test report**: [TEST_STATUS_REPORT.md](./docs/TEST_STATUS_REPORT.md)
-
-## 📁 Project Structure | 项目结构
+## 📁 Project Structure
 
 ```
 ottawa-genai-research-assistant/
-├── 📚 docs/                      # Documentation | 文档
-│   ├── CODING_STANDARDS.md              # 🚫 Coding standards & NO TODO rules
-│   ├── System Architecture Guide.md      # System architecture guide
-│   ├── Data Management Guide.md          # Data management guide
-│   ├── Project Status Report.md          # Project status report
-│   ├── TEST_STATUS_REPORT.md             # 🧪 Complete test coverage report
-│   ├── INTEGRATION_TESTING.md            # Integration testing documentation
-│   ├── DEPLOYMENT.md                     # Deployment guide
-│   └── Product Requirements Document (PRD).md   # Product requirements document
-├── 🚀 backend/                   # Backend API Service | 后端API服务
-│   ├── app/                     # FastAPI Application | FastAPI应用
-│   │   ├── api/                # API Routes | API路由
-│   │   │   ├── auth.py         # Authentication endpoints (94.1% tested)
-│   │   │   ├── chat.py         # Chat conversation endpoints (100% tested)
-│   │   │   ├── documents.py    # Document management endpoints (100% tested)
-│   │   │   ├── reports.py      # Report generation endpoints (100% tested)
-│   │   │   └── settings.py     # System settings endpoints (100% tested)
-│   │   ├── core/               # Core Configuration | 核心配置
-│   │   │   ├── config.py       # Application configuration
-│   │   │   └── security.py     # Security & authentication
-│   │   ├── models/             # Data Models | 数据模型
-│   │   │   ├── user.py         # User data model
-│   │   │   ├── document.py     # Document data model
-│   │   │   ├── report.py       # Report data model
-│   │   │   └── chat.py         # Chat data model
-│   │   ├── repositories/       # Data Repositories | 数据仓库
-│   │   │   ├── base.py         # Base repository class
-│   │   │   ├── user_repository.py      # User repository
-│   │   │   ├── document_repository.py  # Document repository
-│   │   │   ├── report_repository.py    # Report repository
-│   │   │   └── chat_repository.py      # Chat repository
-│   │   ├── services/           # Business Logic | 业务逻辑
-│   │   │   ├── user_service.py         # User service
-│   │   │   ├── document_service.py     # Document service
-│   │   │   ├── report_service.py       # Report service
-│   │   │   └── chat_service.py         # AI chat service
-│   │   ├── utils/              # Utility Functions | 工具函数
-│   │   └── __init__.py        # Package initialization | 包初始化
-│   ├── tests/                # Test Suite (88.8% Coverage) | 测试套件
-│   │   ├── unit/             # Unit tests
-│   │   └── integration/      # Integration tests
-│   ├── monk/                  # Data Storage | 数据存储
-│   │   ├── users/            # User data files
-│   │   ├── documents/        # Document files
-│   │   ├── reports/          # Generated reports
-│   │   └── chats/            # Chat conversations
-│   ├── uploads/              # File Upload Directory | 文件上传目录
-│   ├── main.py              # FastAPI entry point | FastAPI入口
-│   ├── Dockerfile           # Container configuration | 容器配置
-│   ├── env.example          # Environment variables template
-│   ├── pyproject.toml       # Python project configuration
-│   └── requirements.txt      # Python Dependencies | Python依赖
-├── 🎨 frontend/                 # React Frontend | React前端
-│   ├── public/               # Static Assets | 静态资源
-│   ├── src/                  # Source Code | 源代码
-│   │   ├── components/       # React Components | React组件
-│   │   │   ├── auth/        # Authentication components
-│   │   │   ├── ui/          # UI components
-│   │   │   └── Navbar.tsx   # Navigation bar
-│   │   ├── pages/           # Page Components | 页面组件
-│   │   │   ├── HomePage.tsx            # Home page
-│   │   │   ├── ChatPage.tsx            # AI chat interface
-│   │   │   ├── DocumentUploadPage.tsx  # Document upload
-│   │   │   ├── ReportPage.tsx          # Report generation
-│   │   │   └── SettingsPage.tsx        # User settings
-│   │   ├── contexts/        # React Context | React上下文
-│   │   │   ├── AuthContext.tsx        # Authentication state
-│   │   │   ├── LanguageContext.tsx     # Language management
-│   │   │   └── ThemeContext.tsx        # Theme management
-│   │   ├── services/        # API Services | API服务
-│   │   │   ├── api.ts                 # API service
-│   │   │   ├── authService.ts         # Authentication service
-│   │   │   └── mockApi.ts             # Mock data service
-│   │   ├── config/          # Configuration | 配置
-│   │   │   └── googleAuth.ts          # Google OAuth config
-│   │   ├── App.tsx          # Root Component | 根组件
-│   │   └── index.tsx        # Application Entry | 应用入口
-│   ├── tests/               # Test Suite | 测试套件
-│   │   ├── integration/     # Integration Tests | 集成测试
-│   │   └── scripts/         # Test Scripts | 测试脚本
-│   ├── package.json         # Project Configuration | 项目配置
-│   ├── tsconfig.json        # TypeScript Configuration | TS配置
-│   ├── Dockerfile          # Container Configuration | 容器配置
-│   └── env.example         # Environment variables template
-├── render.yaml             # Render deployment configuration
-├── .pre-commit-config.yaml # Pre-commit hooks configuration
-├── requirements.txt        # Global Python dependencies
-└── README.md               # Project Documentation | 项目文档
+├── docs/                    # Product, architecture, testing, deployment, and standards
+├── backend/                 # FastAPI service (app/, tests/, monk/ storage, Dockerfile)
+├── frontend/                # React app (src/, tests/, Dockerfile, npm config)
+├── render.yaml              # Render blueprint for multi-service deployment
+├── requirements.txt         # Top-level Python dependencies
+└── README.md                # You are here
 ```
 
-## 🚀 Quick Start | 快速开始
+Refer to `docs/Project Status Report.md` and `docs/Product Requirements Document (PRD).md` for delivery history and scope.
 
-### Prerequisites | 前置要求
-- **Node.js** 18+ and npm
-- **Python** 3.8+
-- **Google OAuth 2.0** Client ID
-- **🆓 Free AI Service** API Key (推荐 | Recommended):
-  - **Gemini API** Key (完全免费 | Completely free) OR
-  - **Groq API** Key (超快速免费 | Ultra-fast & free)
-- **OpenAI API** Key (可选，付费 | Optional, paid)
+## ⚡ Quick Start
 
-### 1. Environment Setup | 环境设置
+### Prerequisites
 
-Create environment files | 创建环境变量文件：
+- Node.js 18+ and npm
+- Python 3.8+
+- Google Cloud OAuth 2.0 client ID/secret
+- API keys (choose one free provider):
+  - Google Gemini
+  - Groq
+- Optional: OpenAI API key
+
+### 1. Configure Environment
 
 ```bash
-# Backend environment
+# Backend configuration
 cp backend/env.example backend/.env
 
-# Frontend environment  
+# Frontend configuration
 cp frontend/env.example frontend/.env.local
 ```
 
-Configure your API keys | 配置API密钥：
+Populate credentials:
 
 ```bash
-# backend/.env (免费AI服务配置 | Free AI Services Config)
-# 🆓 免费AI服务 (推荐，二选一即可) | Free AI Services (Recommended, choose one)
-GEMINI_API_KEY=your_gemini_api_key_here    # 完全免费 | Completely free
-GROQ_API_KEY=your_groq_api_key_here        # 超快速免费 | Ultra-fast & free
+# backend/.env
+GEMINI_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Optional
+# OPENAI_API_KEY=your_openai_key
 
-# 🔐 认证必需 | Authentication Required
-GOOGLE_CLIENT_ID=your_google_client_id_here
-
-# 💰 可选付费服务 | Optional Paid Service
-# OPENAI_API_KEY=your_openai_api_key_here  # 可选 | Optional
-
-# frontend/.env.local (只需要这两个必需的配置)
-REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
+# frontend/.env.local
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
 REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-> **🆓 获取免费API密钥 | Get Free API Keys:**
-> - Gemini: https://makersuite.google.com/app/apikey
-> - Groq: https://console.groq.com/keys
+Gemini keys: https://makersuite.google.com/app/apikey  
+Groq keys: https://console.groq.com/keys
 
-### 2. Backend Setup | 后端设置
+### 2. Launch Backend
 
 ```bash
-# Navigate to backend directory
 cd backend
-
-# Install Python dependencies
 pip install -r requirements.txt
-
-# Start backend service
 uvicorn app.main:app --reload --port 8000
 ```
 
-Backend API will be available at | 后端API地址: http://localhost:8000
-
-### 3. Frontend Setup | 前端设置
+### 3. Launch Frontend
 
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install Node.js dependencies
 npm install
-
-# Start frontend service
 npm start
 ```
 
-Frontend application will be available at | 前端应用地址: http://localhost:3000
+- Backend API: http://localhost:8000  
+- Frontend UI: http://localhost:3000
 
-## 🧪 Testing | 测试
-
-### Running Complete Test Suite | 运行完整测试套件
+## 🧪 Testing
 
 ```bash
-# Backend tests (88.8% coverage)
+# Backend (unit + integration)
 cd backend
 pytest
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+pytest --cov=app --cov-report=html
 
-# Run specific API tests
-pytest tests/unit/ -v              # Unit tests
-pytest tests/integration/ -v       # Integration tests
-
-# Frontend tests
+# Frontend
 cd frontend
-npm test                           # Unit tests
-npm run test:integration          # Integration tests
-```
-
-### Frontend Integration Tests | 前端集成测试
-
-The project includes comprehensive frontend integration tests that validate end-to-end user workflows:
-
-项目包含全面的前端集成测试，验证端到端的用户工作流程：
-
-```bash
-# Run frontend integration tests
-cd frontend/tests/integration
-node run-integration-tests.js
-
-# Or run with npm script
+npm test
 npm run test:integration
 ```
 
-#### Integration Test Coverage | 集成测试覆盖范围
+Frontend integration tests validate end-to-end workflows including authentication, chat, and document management.
 
-| Test Suite | Coverage | Features Tested |
-|------------|----------|-----------------|
-| 🔐 **Authentication Integration** | Complete | Login, Registration, Token Management |
-| 💬 **Chat Integration** | Complete | Message Sending, History, Context Handling |
-| 📄 **Document Integration** | Complete | Upload, List, Delete, Error Handling |
-| 📊 **Report Integration** | Complete | Generation, History, Download |
+## 🔐 Google OAuth Setup
 
-**Integration Test Features | 集成测试功能:**
-- ✅ **API Integration Testing** | API集成测试 - Real API call validation
-- ✅ **User Workflow Testing** | 用户工作流测试 - Complete user journeys  
-- ✅ **Error Handling** | 错误处理 - Network failures, validation errors
-- ✅ **Authentication Flow** | 认证流程 - Login/logout, token management
-- ✅ **File Upload Testing** | 文件上传测试 - Document management workflows
-- ✅ **Mock API Support** | Mock API支持 - Isolated testing environment
+1. In the [Google Cloud Console](https://console.cloud.google.com/):
+   - Create/select a project
+   - Enable **Google Identity Services API**
+   - Create OAuth 2.0 Web Client credentials
+   - Authorized origins: `http://localhost:3000` and your production domains
+   - Optional redirect URI: `http://localhost:3000/auth/callback`
+2. Copy the client ID/secret into backend and frontend environment files.
 
-### Test Coverage Details | 测试覆盖详情
+Authentication flow:
 
-**🎯 Test Results Summary**:
-- **Total Tests**: 134 test cases (86 unit + 48 integration)
-- **Passing**: 119 tests (88.8%)
-- **Skipped**: 1 test (performance test)
-- **Failed**: 14 tests (mostly integration auth issues)
+1. Frontend requests a credential via Google Identity Services.
+2. Frontend submits the credential to `/api/v1/auth/google`.
+3. Backend verifies the token, provisions the user if needed, and returns an application JWT.
+4. Smart username generation ensures unique identities (`john_doe`, `john_doe_1`, ...).
 
-**🔥 API Test Achievements**:
-- **Chat API**: 11/11 tests passing - Complete conversation management
-- **Documents API**: 18/18 tests passing - Complete file management  
-- **Reports API**: 21/21 tests passing - Complete report generation
-- **Settings API**: 15/15 tests passing - Complete configuration management
-- **Auth API**: 16/17 tests passing - Near-perfect authentication system
+## 📊 API Overview
 
-## 🔐 Google OAuth Setup | Google OAuth设置
+```
+Authentication
+  POST /api/v1/auth/login
+  POST /api/v1/auth/google
+  POST /api/v1/auth/logout
+  GET  /api/v1/auth/me
 
-### 1. Google Cloud Console Configuration | 谷歌云控制台配置
+Chat
+  POST   /api/v1/chat/message
+  GET    /api/v1/chat/history
+  DELETE /api/v1/chat/{id}
+  GET    /api/v1/chat/suggestions
 
-1. Visit [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable **Google Identity Services API**
-4. Go to "Credentials" page
-5. Click "Create Credentials" → "OAuth 2.0 Client ID"
-6. Select "Web application"
-7. Add authorized JavaScript origins:
-   - `http://localhost:3000` (development)
-   - Your production domain
-8. Add authorized redirect URIs (if needed):
-   - `http://localhost:3000/auth/callback`
-9. Copy the generated **Client ID** and **Client Secret**
+Documents
+  POST   /api/v1/documents/upload
+  GET    /api/v1/documents
+  GET    /api/v1/documents/{id}
+  DELETE /api/v1/documents/{id}
 
-### 2. Application Configuration | 应用配置
+Reports
+  POST   /api/v1/reports/generate
+  GET    /api/v1/reports
+  GET    /api/v1/reports/{id}
+  DELETE /api/v1/reports/{id}
 
-Add your Google OAuth credentials to environment files | 将Google OAuth凭据添加到环境文件：
+Settings
+  GET /api/v1/settings/languages
+  GET /api/v1/settings/ai-models
+  GET /api/v1/settings/user-prefs
+  PUT /api/v1/settings/user-prefs
+```
+
+Full API references are generated automatically by FastAPI at the `/docs` and `/redoc` endpoints.
+
+## 📚 Documentation
+
+- **[Product Requirements Document (PRD)](docs/Product%20Requirements%20Document%20(PRD).md)** - Complete product specifications, features, and technical requirements
+- **[Project Status Report](docs/Project%20Status%20Report.md)** - Current project status, progress tracking, and delivery milestones
+
+## 🧑‍💻 Development Workflow
 
 ```bash
-# frontend/.env.local
-REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
-
-# backend/.env
-GOOGLE_CLIENT_ID=your_google_client_id_here
-GOOGLE_CLIENT_SECRET=your_google_client_secret_here
-```
-
-### 3. How Google OAuth Works | Google OAuth工作原理
-
-1. **Frontend Authentication** | 前端认证
-   - User clicks "Sign in with Google" button
-   - Google Identity Services popup appears
-   - User selects Google account and grants permissions
-   - Google returns JWT credential token
-
-2. **Backend Verification** | 后端验证
-   - Frontend sends JWT token to `/api/v1/auth/google`
-   - Backend decodes JWT and extracts user information
-   - System checks if user exists by email
-   - If new user: creates account with smart username generation
-   - If existing user: updates last login timestamp
-   - Returns application JWT token for authenticated sessions
-
-3. **Smart Username Generation** | 智能用户名生成
-   - Primary: Uses Google display name (e.g., "John Doe" → "john_doe")
-   - Fallback: Uses email prefix if name unavailable
-   - Uniqueness: Adds numeric suffix if username exists (e.g., "john_doe_1")
-
-## 📊 API Documentation | API文档
-
-After starting the backend service, access API documentation at | 启动后端服务后，访问API文档：
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Core API Endpoints | 核心API端点
-
-```
-🔐 Authentication | 身份验证 (94.1% tested)
-  POST   /api/v1/auth/login       # User login
-  POST   /api/v1/auth/google      # Google OAuth login
-  POST   /api/v1/auth/logout      # User logout
-  GET    /api/v1/auth/me          # Get current user
-
-💬 Chat Interface | 聊天界面 (100% tested)
-  POST   /api/v1/chat/message     # Send chat message
-  GET    /api/v1/chat/history     # Get chat history
-  DELETE /api/v1/chat/{id}        # Delete conversation
-  GET    /api/v1/chat/suggestions # Get chat suggestions
-
-📄 Document Management | 文档管理 (100% tested)
-  POST   /api/v1/documents/upload # Upload document
-  GET    /api/v1/documents        # List documents
-  GET    /api/v1/documents/{id}   # Get document
-  DELETE /api/v1/documents/{id}   # Delete document
-
-📊 Report Generation | 报告生成 (100% tested)
-  POST   /api/v1/reports/generate # Generate report
-  GET    /api/v1/reports          # List reports
-  GET    /api/v1/reports/{id}     # Get report
-  DELETE /api/v1/reports/{id}     # Delete report
-
-⚙️ Settings Management | 设置管理 (100% tested)
-  GET    /api/v1/settings/languages    # Supported languages
-  GET    /api/v1/settings/ai-models    # Available AI models
-  GET    /api/v1/settings/user-prefs   # User preferences
-  PUT    /api/v1/settings/user-prefs   # Update preferences
-```
-
-## 📚 Documentation | 项目文档
-
-### Available Documentation
-- [📋 System Architecture Guide](./docs/System%20Architecture%20Guide.md) - Complete system architecture
-- [🗄️ Data Management Guide](./docs/Data%20Management%20Guide.md) - Data management strategies
-- [📊 Project Status Report](./docs/Project%20Status%20Report.md) - Current project status
-- [🧪 Test Status Report](./docs/TEST_STATUS_REPORT.md) - **Complete test coverage analysis**
-- [🔗 Integration Testing](./docs/INTEGRATION_TESTING.md) - Integration testing documentation
-- [📋 Product Requirements Document](./docs/Product%20Requirements%20Document%20(PRD).md) - Product requirements
-- [🚀 Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment guide
-- [💻 Coding Standards](./docs/CODING_STANDARDS.md) - Development guidelines and standards
-
-## 🧪 Development | 开发指南
-
-### Running Tests | 运行测试
-
-```bash
-# Backend tests (88.8% coverage)
+# Backend formatting and linting
 cd backend
-pytest                           # Run all tests
-pytest -v                        # Verbose output
-pytest tests/unit/ -v            # Unit tests only
-pytest tests/integration/ -v     # Integration tests only
-pytest --cov=app --cov-report=html  # Coverage report
+ruff check . --fix
+ruff format .
 
-# Frontend tests
+# Frontend formatting and linting
 cd frontend
-npm test
+npm run format
+npm run lint
 ```
 
-### Code Formatting | 代码格式化
+API strategy options (frontend):
 
 ```bash
-# Backend code formatting with Ruff (recommended) | 后端代码格式化（推荐使用Ruff）
-cd backend
-ruff check . --fix    # Fix linting issues | 修复代码检查问题
-ruff format .         # Format code | 格式化代码
-
-# Frontend code formatting | 前端代码格式化
-cd frontend
-npm run format        # Format code | 格式化代码
-npm run lint          # Lint code | 代码检查
-```
-
-### Development Mode | 开发模式
-
-The application supports different API strategies | 应用支持不同的API策略：
-
-```bash
-# Mock mode (frontend only)
+# Mock-only
 REACT_APP_API_STRATEGY=mock
 
-# Hybrid mode (real API with mock fallback)
+# Hybrid (real API with mock fallback)
 REACT_APP_API_STRATEGY=hybrid
 
-# Real API mode (full integration)
+# Real API (default)
 REACT_APP_API_STRATEGY=real
 ```
 
-## 🚢 Deployment | 部署
+## 🚢 Deployment
 
-### 🎯 Production Deployment | 生产环境部署
+### Render Production Deployment
 
-**推荐使用 Render 平台进行一键部署：**
-
-1. **快速部署** | Quick Deploy:
+1. Commit and push to trigger CI/CD:
    ```bash
    git add .
    git commit -m "Ready for deployment"
    git push
    ```
+2. Provision services in Render using `render.yaml`:
+   - Frontend: `ottawa-genai-frontend`
+   - Backend: `ottawa-genai-backend`
+   - Database: PostgreSQL (optional, current build uses JSON storage)
+3. Monitor health checks and logs via Render dashboard.
 
-2. **在 Render 控制台创建 Blueprint 服务**
-   - 前端服务: `ottawa-genai-frontend`
-   - 后端服务: `ottawa-genai-backend`
-   - 数据库: PostgreSQL
+For more deployment details, see the Deployment section in `docs/Project Status Report.md`.
 
-3. **访问地址** | Live URLs:
-   - 🌐 **Frontend**: https://ottawa-genai-frontend.onrender.com
-   - 🔗 **Backend API**: https://ottawa-genai-backend.onrender.com
-   - 📚 **API Docs**: https://ottawa-genai-backend.onrender.com/docs
+### GitHub Pages Demo Deployment
 
-📖 **完整部署指南**: [DEPLOYMENT.md](./docs/DEPLOYMENT.md) - 详细的部署步骤、环境配置和故障排查
+1. Set `"homepage": "https://YOUR_USERNAME.github.io/ottawa-genai-research-assistant"` in `frontend/package.json`.
+2. Enable GitHub Pages via repository settings (`Pages` → Source → GitHub Actions).
+3. Push to `main` to trigger the GitHub Pages workflow.
 
-### 🛠️ Development Deployment | 开发环境部署
+## 📈 Release History
 
-### GitHub Pages (前端演示)
+- **v1.4.2 – System Enhancements & UI Improvements**
+  - Hardened authentication services, improved chat UX, refreshed documentation.
+- **v1.4.1 – Critical Datetime Fix**
+  - Resolved auth datetime regression, stabilized production deployment.
+- **v1.4.0 – AI Services Integration**
+  - Added Gemini and Groq providers, achieved 100% coverage across major APIs.
+- **v1.3.0 – Code Quality & Linting**
+  - Introduced Ruff, streamlined formatting, and upgraded dev workflow.
+- **v1.2.0 – Google OAuth Integration**
+  - Delivered full OAuth 2.0 login with JWT token issuance.
+- **v1.1.0 – Core Feature Expansion**
+  - Chat, documents, reports, bilingual UX, responsive design.
+- **v1.0.0 – Initial Release**
+  - FastAPI backend, React frontend, mock API support.
 
-**Quick Start** | 快速开始:
+## 🤝 Contributing
 
-1. **Configure homepage** | 配置主页:
-   ```bash
-   # Update frontend/package.json
-   "homepage": "https://YOUR_USERNAME.github.io/ottawa-genai-research-assistant"
-   ```
+1. Fork the repository.
+2. Create a feature branch.
+3. Implement changes with accompanying tests.
+4. Ensure CI passes and maintain ≥88.8% coverage.
+5. Submit a pull request for review.
 
-2. **Enable GitHub Pages** | 启用 GitHub Pages:
-   - Go to repository **Settings** > **Pages**
-   - Set Source to **GitHub Actions**
+Follow the development workflow guidelines above for code formatting and linting.
 
-3. **Deploy** | 部署:
-   ```bash
-   git push origin main  # Triggers automatic deployment
-   ```
+## 📝 License
 
-## 📈 Version Updates | 版本更新
+This project is developed for Ottawa Economic Development. Refer to the `LICENSE` file for full terms.
 
-### v1.4.2 (Latest) - System Enhancement & UI Improvements | 系统增强与UI改进
-- ✅ **Authentication Service Enhancement** | 认证服务增强 - Improved datetime handling and service stability
-- ✅ **UI/UX Improvements** | UI/UX改进 - Enhanced chat interface styling and user experience
-- ✅ **Code Quality Maintenance** | 代码质量维护 - Continued zero Python import violations
-- ✅ **Production Stability** | 生产稳定性 - Maintained enterprise-grade system performance
-- ✅ **Documentation Updates** | 文档更新 - Updated project status and system documentation
+## 🆘 Support
 
-### v1.4.1 - Critical Datetime Fix & Production Stability | 关键时间修复与生产稳定性
-- ✅ **Critical Datetime Fix** | 关键时间修复 - Fixed datetime import issue in authentication service
-- ✅ **Google OAuth Fully Operational** | Google OAuth完全运行 - All authentication endpoints working properly
-- ✅ **Production Server Stability** | 生产服务器稳定性 - Confirmed stable backend operation
-- ✅ **Enhanced Error Handling** | 增强错误处理 - Improved authentication error messages
-
-### v1.4.0 - AI Services Integration | AI服务集成
-- ✅ **88.8% Comprehensive Test Coverage** | 88.8%综合测试覆盖率 - Including integration tests
-- ✅ **Groq AI Integration** | Groq AI集成 - Ultra-fast Llama 3.3 70B model
-- ✅ **Google Gemini Integration** | Google Gemini集成 - High-quality Gemini 1.5 Flash
-- ✅ **AI Service Redundancy** | AI服务冗余 - Automatic failover for 100% uptime
-- ✅ **Chat API 100% Complete** | 聊天API 100%完成 - All 11 functionality tests passing
-- ✅ **Document API 100% Complete** | 文档API 100%完成 - All 18 management tests passing
-- ✅ **Reports API 100% Complete** | 报告API 100%完成 - All 21 generation tests passing
-- ✅ **Settings API 100% Complete** | 设置API 100%完成 - All 15 configuration tests passing
-- ✅ **Production Ready System** | 生产就绪系统 - Zero code violations, government compliant
-
-### v1.3.0 - Code Quality & Linting Integration | 代码质量与检查集成
-- ✅ **Ruff Integration** | Ruff集成 - Modern Python linter and formatter
-- ✅ **Code Quality Improvements** | 代码质量改进 - Automated linting and formatting
-- ✅ **VS Code Configuration** | VS Code配置 - Optimized development environment
-- ✅ **Enhanced Development Workflow** | 增强开发工作流 - Streamlined code standards
-
-### v1.2.0 - Google OAuth Integration | Google OAuth集成
-- ✅ **Real Google OAuth 2.0 Login** | 真实Google OAuth 2.0登录
-- ✅ **JWT Token Verification** | JWT令牌验证  
-- ✅ **Smart User Creation** | 智能用户创建
-- ✅ **Username Generation Algorithm** | 用户名生成算法
-- ✅ **Automatic Account Linking** | 自动账户关联
-- ✅ **Enhanced Security** | 增强安全性
-
-### v1.1.0 - Core Features | 核心功能
-- ✅ AI-powered chat interface
-- ✅ Document management system
-- ✅ Report generation capabilities
-- ✅ Bilingual support (EN/FR)
-- ✅ Responsive design
-
-### v1.0.0 - Initial Release | 初始版本
-- ✅ Basic authentication system
-- ✅ FastAPI backend architecture
-- ✅ React frontend framework
-- ✅ Mock API integration
-
-## 🤝 Contributing | 贡献指南
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new features
-5. Ensure all tests pass (maintain 88.8%+ coverage)
-6. Submit a pull request
-
-## 📝 License | 许可证
-
-This project is developed for Ottawa Economic Development.
-
-本项目为渥太华经济发展部门开发。
-
-## 🆘 Support | 技术支持
-
-For issues and questions | 问题和疑问：
-- Create an issue on GitHub
-- Check documentation in `docs/` directory
-- Review API documentation at `/docs` endpoint
-- Check test coverage report: [TEST_STATUS_REPORT.md](./docs/TEST_STATUS_REPORT.md)
+- Open an issue on GitHub for bugs or feature requests.
+- Review the documentation in the `docs/` directory for project details.
+- Consult live API documentation at `/docs` and `/redoc`.
+- Run `pytest --cov` for the latest test coverage metrics.
 
 ---
 
-**🎉 Built with ❤️ for Ottawa City Government | 为渥太华市政府倾情打造**
-
-**🚀 Enterprise-Ready AI Application with 88.8% Test Coverage | 具备88.8%测试覆盖率的企业级AI应用** 
+**Built with ❤️ for the City of Ottawa — production-ready AI research assistance with measurable quality.**

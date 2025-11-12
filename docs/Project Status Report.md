@@ -368,20 +368,11 @@ The Ottawa GenAI Research Assistant has successfully evolved from a prototype ap
 
 **🚀 The system is now ready to transform how Ottawa City government conducts AI-powered research and analysis!**
 
-## 📚 Updated Documentation References
+## 📚 Documentation References
 
 ### 🏠 Main Project Documentation
 - [📖 Main README](../README.md) - Complete project overview and deployment guide
 
-### 📋 English Documentation
-- [🏗️ System Architecture Guide](./System%20Architecture%20Guide.md) - Complete enterprise system architecture
-- [🗄️ Data Management Guide](./Data%20Management%20Guide.md) - Government data management strategies
+### 📋 Project Documentation
 - [📋 Product Requirements Document (PRD)](./Product%20Requirements%20Document%20(PRD).md) - Complete product specifications
-- [🧪 Test Status Report](./TEST_STATUS_REPORT.md) - Comprehensive testing status and coverage
-
-### 📋 Chinese Documentation | 中文文档
-- [🏗️ 系统架构指南](./系统架构指南.md) - 完整企业系统架构（中文版）
-- [🗄️ 数据管理指南](./数据管理指南.md) - 政府数据管理策略（中文版）
-- [📊 项目现状报告](./项目现状报告.md) - 项目完成状态报告（中文版）
-- [📋 产品需求文档（PRD）](./产品需求文档（PRD）.md) - 完整产品规格说明（中文版）
-- [🧪 测试状态报告](./TEST_STATUS_REPORT.md) - 全面测试状态和覆盖率报告 
+- [📊 Project Status Report](./Project%20Status%20Report.md) - Current project status and progress
