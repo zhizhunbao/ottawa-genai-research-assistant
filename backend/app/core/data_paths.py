@@ -5,7 +5,7 @@
 """
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
 
 class MonkDataPaths:
@@ -29,6 +29,7 @@ class MonkDataPaths:
     CHATS_DIR = f"{MONK_BASE_DIR}/chats"
     REPORTS_DIR = f"{MONK_BASE_DIR}/reports"
     SYSTEM_DIR = f"{MONK_BASE_DIR}/system"
+    VECTOR_DB_DIR = f"{MONK_BASE_DIR}/vector_db"
     
     @classmethod
     def ensure_monk_directories(cls) -> None:
@@ -39,6 +40,7 @@ class MonkDataPaths:
             cls.CHATS_DIR,
             cls.REPORTS_DIR,
             cls.SYSTEM_DIR,
+            cls.VECTOR_DB_DIR,
         ]
         
         for directory in directories:
@@ -71,6 +73,7 @@ class MonkDataPaths:
             "chats": cls.CHATS_DIR,
             "reports": cls.REPORTS_DIR,
             "system": cls.SYSTEM_DIR,
+            "vector_db": cls.VECTOR_DB_DIR,
         }
         
         if directory_type not in directory_mapping:

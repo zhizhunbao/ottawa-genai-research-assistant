@@ -1,18 +1,18 @@
 # Ottawa GenAI Research Assistant - Product Requirements Document
 
 **Project:** Ottawa Economic Development Team GenAI Research Assistant  
-**Phase:** Phase 3 - AI Integration & Processing 🔄 **IN PROGRESS** | Next: Data Visualization & Trust Validation  
-**Updated:** September 2026
+**Phase:** Phase 1 - Internal PDF Analysis 🔄 **IN PROGRESS** | Next: Data Visualization & Trust Validation  
+**Updated:** November 2025
 
 ---
 
 ## 🚀 **Executive Summary**
 
-The Ottawa Economic Development team is developing a **Generative AI Research Assistant** in collaboration with Algonquin College. This internal tool enables municipal staff to analyze and summarize existing economic reports using natural language queries, generating structured analytical reports with data visualizations.
+The Ottawa Economic Development team is developing a **Generative AI Research Assistant** with Algonquin College to answer natural-language questions, generate summaries, and produce visuals sourced from Economic Development Update PDFs hosted on ottawa.ca (Q1 2022 – Q4 2025). The initiative now follows a **greenfield build** that aligns with City technology guidance (Azure AI stack, agentic RAG exploration, trustability-first design).
 
-**Current Status:** Phase 2 authentication & backend ✅ **COMPLETED** - Full-stack application ready for AI integration and PDF processing.
+**Current Status:** Phase 1 scoping and ingestion pipeline design 🔄 **IN PROGRESS** — focus on corpus preparation, retrieval architecture decisions, evaluation metrics, and frontend chat experience definition.
 
-**New Focus:** Building upon existing codebase (Kevin's architecture) to create an internal GenAI research assistant for economic development team's quarterly PDF reports analysis.
+**Next Focus:** Implement end-to-end RAG workflow (ingest → retrieval → answer generation → trust scoring) and establish visualization + reporting pathways for SMEs to pilot.
 
 ---
 
@@ -20,16 +20,16 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ### **Phase 1 - Internal PDF Analysis** 🔄 **CURRENT FOCUS**
 
-- **Objective**: Build an internal GenAI research assistant to help the economic development team quickly analyze and summarize existing economic reports
-- **Data Scope**: Support 10-15 years of quarterly economic PDF reports (up to end of 2025)
-- **Core Features**: Users can directly ask questions and receive text or chart answers based on these reports
-- **Key Requirements**: Generate data visualizations (charts), ensure reliable answers (reduce hallucinations)
+- **Objective**: Deliver a RAG-based assistant that serves Economic Development Update PDFs (ottawa.ca) so analysts can answer stakeholder question lists without redeploying the stack
+- **Data Scope**: Primary focus on Q1 2022 – Q4 2025 ED Update PDFs (gap during Q3 2019 – Q3 2021 acknowledged)
+- **Core Features**: Natural-language Q&A, sourced summaries, auto-generated charts/tables, speaking-note style outputs
+- **Key Requirements**: Trustability indicators with source citations, configurable question lists, reusable ingestion pipeline for new PDFs
 
 ### **Phase 2 - External Data Integration** 📋 **PLANNED**
 
-- **Expansion Scope**: External data sources (StatsCan, real estate reports, etc.)
-- **Enhanced Features**: Supplement more economic indicators based on existing reports
-- **Data Fusion**: Consider integrating public data sources (ottawa.ca, social media) with internal PDFs
+- **Expansion Scope**: Integrate prioritized external data sources (e.g., Statistics Canada APIs, Ottawa Real Estate Board updates) and targeted PDF scraping
+- **Enhanced Features**: Augment indicators, enrich analytics, broaden charting templates, begin agentic workflows crossing multiple corpora
+- **Data Fusion**: Combine public datasets (ottawa.ca, Business Newsroom posts, partner PDFs) with internal ED Update corpus through orchestrated pipelines
 
 ### **Phase 3 - Advanced Analytics** 📋 **FUTURE**
 
@@ -43,16 +43,12 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 | Component | Status | Progress | Next Action |
 |-----------|--------|----------|-------------|
-| 🎨 **Frontend Prototype** | ✅ Complete | 100% | AI Feature Integration |
-| 🔐 **Google OAuth Authentication** | ✅ Complete | 100% | Security Audit |
-| 🚀 **FastAPI Backend** | ✅ Complete | 100% | AI Model Integration |
-| 👥 **User Management** | ✅ Complete | 100% | Role-based Permissions |
-| 🔑 **JWT Authentication** | ✅ Complete | 100% | Advanced Security Features |
-| 🤖 **AI Backend** | 🔄 In Progress | 30% | PDF Processing Integration |
-| 📄 **PDF Processing** | 🔄 In Progress | 20% | Vector Database Setup |
-| 📊 **Data Visualization** | 📋 Planned | 0% | Chart Generation API |
-| 🔍 **Trust Validation** | 📋 Planned | 0% | BLEU/ROUGE Implementation |
-| 🚀 **Production Deployment** | 🔄 Ready | 95% | Final Security Review |
+| 📂 **PDF Ingestion Pipeline** | 🔄 In Progress | 35% | Finalize ottawa.ca download automation + metadata tagging |
+| 🔎 **RAG Retrieval & Backend** | 🟡 Scoping | 20% | Select vector store (Azure AI Search vs Qdrant) and evaluation harness |
+| 💬 **Frontend Chat Experience** | 📋 Planned | 0% | Design React widget UX + role-based access plan |
+| 📉 **Visualization Layer** | 📋 Planned | 0% | Define chart templates + pandas/Plotly pipeline |
+| ✅ **Trustability Metrics** | 📋 Planned | 0% | Confirm accuracy/faithfulness/context recall measurement libraries |
+| 🚀 **Deployment & Ops** | 🟡 Scoping | 10% | Draft containerization + observability requirements |
 
 ---
 
@@ -60,15 +56,15 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ### **Phase 1 - Internal Documents** 🔄
 
-- **Local PDF Reports**: 10-15 years of quarterly economic reports (up to end of 2025)
-- **Storage Method**: Vector database + keyword search
-- **Access Mode**: Offline analysis, no external network dependency
+- **Primary Corpus**: Economic Development Update PDFs on ottawa.ca (Q1 2022 – Q4 2025) supplied by EcDev; note publication gap between Q3 2019 – Q3 2021
+- **Storage Method**: Azure AI Search or equivalent vector DB (FAISS/Qdrant) with hybrid semantic + keyword retrieval
+- **Access Mode**: Offline-friendly processing with repeatable ingestion scripts; keep corpus updatable without redeploying
 
 ### **Phase 2 - External Sources** 📋
 
-- **StatsCan Data**: Statistics Canada economic indicators
-- **Real Estate Reports**: Market analysis and trend data
-- **Business-specified PDFs**: Other relevant economic documents
+- **StatsCan Data**: Priority APIs for Ottawa-level indicators (employment, GDP, housing starts)
+- **Real Estate Reports**: Ottawa Real Estate Board monthly updates, CMHC housing outlooks
+- **Business-specified PDFs**: Content from Ottawa Board of Trade, Invest Ottawa, partner organizations per SME guidance
 
 ### **Future Expansion** 🔮
 
@@ -80,28 +76,29 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ## ⚙️ **Technical Architecture (Updated)**
 
-### **Architecture Based on Existing Codebase**
+### **Architecture Principles**
 
-- **Development Approach**: Secondary development based on Kevin's existing codebase
-- **Code Optimization**: Trim irrelevant modules (such as crawler functions)
-- **Architecture Compatibility**: Maintain compatibility with City's internal architecture
+- **Greenfield Build**: No dependency on legacy Kevin code; follow City guidance (Azure AI stack, open-standard tooling) and document every library.
+- **Modular RAG Pipeline**: Isolate ingestion, retrieval, reasoning, visualization, and evaluation layers for rapid iteration and testing.
+- **Observability & Trust**: Instrument telemetry (OpenTelemetry-style) and capture per-response trustability metadata (sources, metrics, hallucination flags).
+- **Deployment Readiness**: Containerize services for Azure Container Apps/Kubernetes with Infrastructure-as-Code handoff.
 
 ### **Core Technology Stack**
 
-- **Frontend**: Python + Streamlit (replacing original React solution)
-- **Backend**: FastAPI + Python
-- **Database**: Vector database (semantic search + keyword search)
-- **AI Service**: Azure OpenAI (GPT-4, future upgrade to GPT-5)
-- **Deployment**: Docker/Kubernetes
-- **Security**: Key Vault for key management
+- **Frontend**: HTML/CSS/JavaScript interface with a React chat widget for city staff; lightweight demo/ops views can be built with Streamlit as needed.
+- **Backend Orchestrator**: FastAPI services leveraging Microsoft Semantic Kernel (or LangChain) for agentic workflows, tool routing, and evaluation.
+- **Vector & Indexing**: Azure AI Search, FAISS, or Qdrant for hybrid semantic + keyword retrieval.
+- **LLM & Embeddings**: Azure AI Foundry (GPT-4o / GPT-4 Turbo), OpenRouter or Ollama for experiments, Hugging Face embeddings.
+- **Analytics & Visualization**: pandas, NumPy, Matplotlib/Seaborn, Plotly for chart generation.
+- **Security**: Azure Key Vault for secrets, RBAC aligned with City policies, audit logging of user prompts/actions.
 
 ### **AI & Processing Components**
 
-- **Document Processing**: PDF parsing and content extraction
-- **Vectorization**: Document embedding and semantic indexing
-- **Query Engine**: Natural language understanding and retrieval
-- **Visualization**: Automatic chart generation
-- **Validation**: Trust assessment and hallucination detection
+- **Document Processing**: PDF extraction, layout-aware chunking, metadata tagging (report type, quarter, topic).
+- **Vectorization & Retrieval**: Batch embedding jobs, periodic re-embedding, hybrid search with filters (date, topic, department).
+- **Agentic Reasoning**: Retrieval-augmented answering with optional planner/executor agents for multi-hop queries and evaluation sweeps.
+- **Visualization**: Automatic figure/table synthesis using structured data extracted from PDFs or external indicators.
+- **Evaluation & Trust**: Response scoring (accuracy, faithfulness, context recall) plus BLEU/ROUGE/NLI experiments; surfaced to users as confidence badges.
 
 ---
 
@@ -149,21 +146,21 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ### **API Key Management**
 
-- **Azure OpenAI**: API Key provided by City with usage and cost limits
-- **Development Phase**: Students can use free OpenAI-compatible APIs for prototyping
-- **Key Storage**: Secure management through Key Vault
+- **Azure AI Foundry / OpenAI**: Keys provisioned by City with usage & cost limits; document consumption for SMEs.
+- **Development Phase**: Students leverage institutional Azure/OpenRouter/Ollama resources for experimentation prior to City onboarding.
+- **Key Storage**: Always load keys via Azure Key Vault or scoped secrets managers; never embed in code or configs.
 
 ### **Data Security**
 
-- **Internal Data**: Access control for sensitive economic reports
-- **Audit Logs**: Complete tracking of user operations
-- **Compliance Requirements**: Meet government data security standards
+- **Source Data**: Current corpus is public (ottawa.ca PDFs), but enforce role-based access to tooling and logs.
+- **Audit Logs**: Capture prompt, retrieval context, response, trust metrics, and chart generation actions.
+- **Compliance Requirements**: Meet municipal IT standards, follow City-approved libraries, and respect data residency requirements.
 
 ### **Trust & Reliability**
 
-- **Hallucination Detection**: Implement industry validation methods (BLEU, ROUGE, NLI, etc.)
-- **Answer Attribution**: Provide data source references for answers
-- **Confidence Scoring**: Provide credibility assessment for generated content
+- **Hallucination Detection**: Implement accuracy/faithfulness/context recall metrics; supplement with BLEU/ROUGE/NLI experiments.
+- **Answer Attribution**: Cite document title, page, and snippet for every response and visualization.
+- **Confidence Scoring**: Surface evaluation scores + heuristics (retrieval density, model self-check) inside the UI.
 
 ---
 
@@ -171,17 +168,20 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ### **Phase 1 Targets** 🎯
 
-- [ ] Successfully process 10-15 years of quarterly PDF reports
-- [ ] Query response time < 3 seconds
-- [ ] Visualization generation accuracy > 90%
-- [ ] User satisfaction score > 4.0/5.0
+- [ ] Fully ingest & index Q1 2022 – Q4 2025 ED Update PDFs with repeatable pipeline
+- [ ] Achieve ≥75% answer accuracy on SME-provided held-out question lists
+- [ ] Query response time < 3 seconds (P95) for standard prompts
+- [ ] Visualization/table generation accuracy > 90% (spot-checked by analysts)
+- [ ] User satisfaction score > 4.0/5.0 during pilot sessions
+- [ ] Every response presents traceable sources + trust indicators
 
 ### **Trust Validation Metrics**
 
-- [ ] BLEU score > 0.7 (text quality)
-- [ ] ROUGE score > 0.6 (summary accuracy)
-- [ ] NLI consistency score > 0.8 (logical consistency)
-- [ ] Hallucination detection accuracy > 85%
+- [ ] Accuracy ≥ 75% (alignment with SME answer key)
+- [ ] Faithfulness ≥ 90% (citation-backed statements)
+- [ ] Context recall ≥ 85% (grounding coverage)
+- [ ] Hallucination detection accuracy ≥ 85% (self-check/evaluator agreement)
+- [ ] BLEU/ROUGE/NLI pilots documented for research comparison
 
 ### **System Performance**
 
@@ -195,14 +195,14 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ### **Phase 1 Deliverables** 🎯
 
-1. **Customized Tool**: PDF query and visualization system based on existing code
-2. **API Interface Documentation**: Complete interface specifications and usage examples
-3. **Trust Validation Report**: Research and implementation report on industry validation methods
-4. **Demo Version**: Complete demonstration of chat interface + PDF answers + chart generation
+1. **GenAI Research Assistant MVP**: End-to-end RAG workflow (ingest → retrieval → answer → visualization) over ED Update PDFs
+2. **API Interface Documentation**: REST/GraphQL specs covering ingestion triggers, query endpoints, trust telemetry
+3. **Trust Validation Report**: Research + implementation log for accuracy/faithfulness/context recall measurement and BLEU/ROUGE/NLI experiments
+4. **Demo Version**: React chat UI + sourced answers + chart/table generation for SME review
 
 ### **Technical Deliverables**
 
-- **Codebase**: Customized development based on existing architecture
+- **Codebase**: Greenfield FastAPI/React services aligned with City stack guidance
 - **Deployment Package**: Docker containers and K8s configuration files
 - **Test Suite**: Automated testing and performance benchmarks
 - **User Manual**: System usage and maintenance guide
@@ -219,49 +219,32 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 
 ### **Completed** ✅
 
-- **Sep 2025**: High-fidelity prototype delivery
-- **Sep 2025**: Accessibility and compliance validation
-- **Sep 2025**: Stakeholder feedback collection
-- **Jan 2026**: Google OAuth authentication system
-- **Feb 2026**: Meeting requirements analysis and architecture adjustment
+- **Nov 2025**: Stakeholder clarifications workshop & consolidated brief (Js, Eric, student team)
+- **Nov 2025**: Tech stack alignment with City guidance + trustability metric targets
 
 ### **In Progress** 🔄
 
-- **Q1 2026**: PDF processing and vector database integration
-- **Q1 2026**: System transformation based on existing codebase
+- **Nov 2025 – Dec 2025**: Phase 1 RAG prototype over ED Update PDFs (ingestion, retrieval, visualization, trust telemetry)
+- **Nov 2025 – Dec 2025**: Evaluation metric selection, ingestion automation, and UI concepting
 
 ### **Planned** 📋
 
-- **Q2 2026**: Natural language query and visualization features
-- **Q2 2026**: Trust validation system implementation
-- **Q2 2026**: API interface development and documentation
+- **Jan–Apr 2026**: Phase 2 – integrate first external data source + PDF scraping pipeline
+- **Q2 2026**: Trust validation system implementation & API interface documentation
+- **Q2 2026**: Expanded visualization/report export features
 
 ### **Future** 🔮
 
-- **Q3 2026**: External data source integration (StatsCan, etc.)
-- **Q4 2026**: Production environment deployment and user training
-
----
-
-## 🔗 **Related Documentation**
-
-- [Technical Architecture](./Technical%20Architecture.md)
-- [User Authentication Design](./Authentication%20Requirements.md)
-- [Accessibility Compliance Report](./Accessibility%20Report.md)
-- [Project Status Report](./Project%20Status%20Report.md)
+- **Q3 2026**: Advanced analytics (trend forecasting, cross-report comparisons)
+- **Q4 2026**: Production deployment, observability hardening, and citywide user training
 
 ---
 
 **Document Version:** 3.0  
-**Last Updated:** September 26, 2026  
-**Next Review:** October 15, 2026
+**Last Updated:** November 2025  
+**Next Review:** December 15, 2025
 
 ## 📚 Related Documentation
 
 ### 🏠 Main Project
 - [📖 Main README](../README.md) - Project overview and quick start guide
-
-### 📋 English Documentation
-- [🏗️ System Architecture Guide](./System%20Architecture%20Guide.md) - Complete system architecture
-- [🗄️ Data Management Guide](./Data%20Management%20Guide.md) - Data management strategies and implementation
-- [📊 Project Status Report](./Project%20Status%20Report.md) - Current project status and progress

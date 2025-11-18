@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(default="sqlite:///./ottawa_genai.db")
 
     # Vector Database
-    CHROMA_PERSIST_DIR: str = Field(default="./chroma_db")
+    # Note: Actual path is managed by VectorConfig using monk/vector_db
+    CHROMA_PERSIST_DIR: str = Field(default="monk/vector_db")
 
     # Security
     SECRET_KEY: str = Field(default="change-this-in-production")
