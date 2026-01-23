@@ -6,7 +6,7 @@ services:
     region: oregon
     plan: free
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerContext: .
     envVars:
       # Essential API Keys (set these in Render Dashboard)
       - key: OPENAI_API_KEY

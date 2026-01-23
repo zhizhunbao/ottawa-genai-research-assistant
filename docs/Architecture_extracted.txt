@@ -1,0 +1,46 @@
+
+============================================================
+Page 1
+============================================================
+
+Documents
+Azure Blob
+Storage
+A Indexer Job
+Azure Al Search -
+Vector Index
+4b. Top K documents/ Chunks
+4a. Coonitive search
+B create doc embeddings
+Database
+C. extracted text and metadata
+Azure penAl -
+Ada002
+Key Vault
+AZURE_OAL_Key
+Azure_Search_key
+Website Input
+Provide me Insights about the Q1 2024 Report.
+1 send query to api chat
+JSON
+3C
+2 validate request
+FastApI *
+json answer and sources
+4. Query Vector
+4c. push metadata and text—
+3 create query embedding RAG Orchestrator
+Azure OpenAl -
+Ada00 2ft miss
+5 top k chunks
+Semantic
+Lache
+similarity >
+threshold (e.g.,
+05 or 40
+6 grounded answer with citations
+Azure Al
+Foundry
+Prompt with
+Context
+Azure OpenAl -

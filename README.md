@@ -46,7 +46,7 @@ For full project details, see `docs/Product Requirements Document (PRD).md` and 
 | Settings | 100% (15/15) | 🟢 Perfect | Configuration management APIs |
 | **System total** | **88.8%** (119/134) | 🟢 Production ready | Integration + unit coverage |
 
-Run `pytest --cov=app --cov-report=html` in the backend directory for detailed coverage reports.
+Run `uv run pytest --cov=backend/app --cov-report=html` for detailed coverage reports.
 
 ## 📁 Project Structure
 
@@ -56,7 +56,7 @@ ottawa-genai-research-assistant/
 ├── backend/                 # FastAPI service (app/, tests/, monk/ storage, Dockerfile)
 ├── frontend/                # React app (src/, tests/, Dockerfile, npm config)
 ├── render.yaml              # Render blueprint for multi-service deployment
-├── requirements.txt         # Top-level Python dependencies
+├── pyproject.toml           # Python dependencies and project configuration
 └── README.md                # You are here
 ```
 
@@ -67,7 +67,8 @@ Refer to `docs/Project Status Report.md` and `docs/Product Requirements Document
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Python 3.8+
+- Python 3.9+
+- [uv](https://docs.astral.sh/uv/) - Fast Python package manager
 - Google Cloud OAuth 2.0 client ID/secret
 - API keys (choose one free provider):
   - Google Gemini
@@ -106,9 +107,11 @@ Groq keys: https://console.groq.com/keys
 ### 2. Launch Backend
 
 ```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+# Install dependencies (run from project root)
+uv sync
+
+# Start the backend server
+uv run uvicorn backend.app.main:app --reload --port 8000
 ```
 
 ### 3. Launch Frontend
@@ -126,11 +129,10 @@ npm start
 
 ```bash
 # Backend (unit + integration)
-cd backend
-pytest
-pytest tests/unit/ -v
-pytest tests/integration/ -v
-pytest --cov=app --cov-report=html
+uv run pytest backend/tests/
+uv run pytest backend/tests/unit/ -v
+uv run pytest backend/tests/integration/ -v
+uv run pytest --cov=backend/app --cov-report=html
 
 # Frontend
 cd frontend
@@ -202,9 +204,8 @@ Full API references are generated automatically by FastAPI at the `/docs` and `/
 
 ```bash
 # Backend formatting and linting
-cd backend
-ruff check . --fix
-ruff format .
+uv run ruff check backend/ --fix
+uv run ruff format backend/
 
 # Frontend formatting and linting
 cd frontend
@@ -285,7 +286,7 @@ This project is developed for Ottawa Economic Development. Refer to the `LICENSE
 - Open an issue on GitHub for bugs or feature requests.
 - Review the documentation in the `docs/` directory for project details.
 - Consult live API documentation at `/docs` and `/redoc`.
-- Run `pytest --cov` for the latest test coverage metrics.
+- Run `uv run pytest --cov` for the latest test coverage metrics.
 
 ---
 
