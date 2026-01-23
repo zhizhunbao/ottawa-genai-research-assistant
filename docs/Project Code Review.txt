@@ -1,0 +1,16 @@
+Overall User Interface looks amazing but some code need to be refactored and optimized: 
+
+
+Cloud pipeline incomplete: Azure Blob Storage + Azure AI Search integration is not implemented in the Algonquin repo; these are required for the target production pipeline. In our cases , instead of uploading documents manually it should be first in the blob storage/microsoft fabric and it should be trigger from pipeline from our economic features automatically when something added to our portal .
+Vector store choice: Current local vector store approach (FAISS/Chroma-style/local persistence) is not suitable for entreprise  production.  recommend using to Azure AI Search for hybrid (vector + keyword) retrieval which we already had in Vrishab.
+I have seen some openAPI key endpoints but that should not be from the Direct OpenAPI website . It should be from Azure AI Foundry key and endpoints.
+Also in our cases rag pipeline mapping should need to be created from azure portal 
+Prompt quality: Prompting is not optimized.I recommend revisiting prompts to improve response consistency and reduce failure cases.
+LLM evaluation missing: Beyond similarity scoring, there is no evaluation framework. (coherence/relevancy/completeness/grounding/helpfulness). Recommend adding an LLM evaluation step to benchmark responses .
+Chat history storage: Per-user chat history is a good feature, but current local JSON persistence is not scalable/auditable. Cosmos DB(but we are still discussing regarding about this) is good for production-grade persistence.
+For login, you have worked with google authenticator, but we are only compatible with azure entra id(Creating App registeration and adding redirect url) .
+Graphical responses: Chat does not support graph outputs today; if graphs are a requirement, add a graph generation approach (server-side endpoint or client-side rendering).
+Reports : Data shown in /reports section is not dynamic it is hardcoded json data but not comes through real uploaded documents.
+Need to have demo video , well documentation and also screenshots of different resources that you already used working Live API from azure environment  if you can adapt with our current resources.
+I only saw backend code on Azure branch . Is that compatible with frontend repos of main branch as it has different folder structure for backend code. 
+Since frontend code is in react  running with  Create react app. In our cases it is better to use react with VITE(but with same existing code) to prevent from various Dependency vulnerability management as Create React App is officially deprecated and is risks for many currently used packages (with npm) 

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }} - Detailed Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #2c3e50; }
+        .section { margin: 30px 0; padding: 20px; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+    <h2>Detailed Analysis</h2>
+    {% for section in sections %}
+    <div class="section">
+        <h3>{{ section.title }}</h3>
+        <p>{{ section.content }}</p>
+    </div>
+    {% endfor %}
+</body>
+</html>
+

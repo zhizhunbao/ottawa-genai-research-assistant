@@ -23,16 +23,30 @@ Proactively load specialized skills when user queries match keywords below. Skil
 
 | Keywords | Skill |
 | --- | --- |
+| fastapi, backend, python api, async, pydantic, sqlalchemy, dependency injection, 后端开发, FastAPI开发, Python后端 | `dev-backend-fastapi` |
+| backend patterns, repository pattern, service layer, caching strategy, error handling, authentication pattern, 后端模式, 仓储模式, 服务层, 缓存策略, 错误处理模式, 认证模式 | `dev-backend_patterns` |
+| react, frontend, typescript, components, hooks, state management, zustand, react query, 前端开发, React开发, 组件开发 | `dev-frontend-react` |
+| api design, rest, restful, openapi, swagger, api contract, http methods, status codes, API设计, 接口设计, RESTful | `dev-api-design` |
+| testing, unit test, integration test, e2e, pytest, vitest, playwright, test coverage, 测试, 单元测试, 集成测试, 端到端测试 | `dev-testing` |
+| tdd, test-driven development, test-driven, test first, red-green-refactor, 测试驱动开发, TDD, 测试优先, 先写测试 | `dev-tdd_workflow` |
+| architecture, refactor, refactoring, system design, restructure, 架构, 重构, 系统设计, 架构图, 代码重构 | `dev-architecture_refactor` |
+| azure, azure openai, azure ai search, azure blob storage, azure ai foundry, cloud, gpt-4o, ada-002, vector search, 云服务, Azure服务 | `cloud-azure` |
 | docx, word, markdown, md, convert, word to markdown, docx to md, document conversion, pandoc, mammoth, python-docx, 转换, 文档转换 | `dev-docx_to_md` |
 | download, data download, dataset, fetch data, download file, API download, kaggle, huggingface, sklearn, UCI, data acquisition, wget, curl, requests, http download, file download, batch download, 下载, 数据下载, 数据集, 获取数据, 下载文件, API下载, 数据获取, 批量下载 | `dev-data_download` |
 | git, version control, commit, push, pull, branch, merge, rebase, conflict, repository, github, gitlab, gitignore, workflow, 版本控制, 提交, 推送, 拉取, 分支, 合并, 变基, 冲突, 仓库, 工作流 | `dev-git` |
 | discover, resource discovery, evaluation, benchmark, selection, 发现, 资源发现, 评测, 选型 | `dev-resource_discovery` |
 | code standards, naming conventions, directory structure, refactor, code organization, project structure, 代码规范, 命名规范, 目录结构, 重构, 代码组织, 项目结构 | `dev-code_standards` |
+| coding standards, best practices, code quality, immutability, error handling, type safety, API design, KISS, DRY, YAGNI, 代码规范, 最佳实践, 代码质量, 不可变性, 错误处理, 类型安全 | `dev-coding_standards` |
 | code style, formatting, linter, lint, prettier, eslint, ruff, black, type check, pre-commit, 代码风格, 格式化, 类型检查 | `dev-code_style` |
+| frontend patterns, react patterns, component patterns, hooks, custom hooks, state management, performance optimization, forms, animation, accessibility, compound components, render props, 前端模式, React模式, 组件模式, 钩子, 状态管理, 性能优化, 表单, 动画, 可访问性 | `dev-frontend-patterns` |
 | web scraping, crawler, playwright, selenium, beautifulsoup, data extraction, anti-bot, browser automation, 网页抓取, 爬虫, 数据提取, 反爬虫, 浏览器自动化 | `dev-web_scraping` |
 | pdf, extract, convert, markdown, bilingual, translation, academic, paper, slides, 提取, 转换, 双语, 中英文, 翻译, 学术, 论文, 课件 | `dev-pdf_processing` |
 | translation, technical translation, bilingual documentation, terminology, localization, i18n, 翻译, 技术翻译, 双语文档, 术语, 本地化 | `dev-translation` |
 | document review, documentation quality, consistency check, accuracy, readability, technical writing, content organization, error detection, check document, 文档审查, 文档质量, 一致性检查, 准确性, 可读性, 技术写作, 内容组织, 错误检测, 检查文档 | `dev-document_review` |
+| github review, project review, repository review, code review, project assessment, open source review, quality assessment, architecture review, 项目审查, 仓库审查, GitHub审查, 开源项目审查, 质量评估, 架构审查 | `dev-github_review` |
+| security review, authentication, authorization, input validation, SQL injection, XSS, CSRF, secrets management, vulnerability, OWASP, 安全审查, 认证, 授权, 输入验证, SQL注入, 跨站脚本, 密钥管理, 漏洞 | `dev-security_review` |
+| code quality check, quality checker, AST analysis, function size, file size, nesting depth, code smell, 代码质量检查, 质量检查器, 函数大小, 文件大小, 嵌套深度 | `dev-code_quality_check` |
+| security scan, security scanner, vulnerability scan, secrets detection, hardcoded secrets, 安全扫描, 安全扫描器, 漏洞扫描, 密钥检测, 硬编码密钥 | `dev-security_scan` |
 
 ### 🤖 AI Technology
 

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        .metadata {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #ffffff;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .sources {
+            margin-top: 40px;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 8px;
+        }
+        .sources ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .sources li {
+            padding: 8px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ title }}</h1>
+        
+        <div class="metadata">
+            <p><strong>Generated:</strong> {{ generated_at }}</p>
+            <p><strong>Language:</strong> {{ language|upper }}</p>
+            {% if author %}
+            <p><strong>Author:</strong> {{ author }}</p>
+            {% endif %}
+        </div>
+
+        <h2>Executive Summary</h2>
+        <div class="section">
+            <p>{{ summary }}</p>
+        </div>
+
+        {% for section in sections %}
+        <div class="section">
+            <h2>{{ section.title }}</h2>
+            <p>{{ section.content }}</p>
+            
+            {% if section.charts %}
+            <div class="chart-container">
+                <h3>Charts</h3>
+                {% for chart in section.charts %}
+                <div id="chart-{{ loop.index }}" style="margin: 20px 0;"></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if sources %}
+        <div class="sources">
+            <h2>Sources</h2>
+            <ul>
+                {% for source in sources %}
+                <li>{{ source }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if charts_data %}
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        {% for chart in charts_data %}
+        Plotly.newPlot('chart-{{ loop.index }}', {{ chart.data|safe }}, {{ chart.config|safe }});
+        {% endfor %}
+    </script>
+    {% endif %}
+</body>
+</html>
+

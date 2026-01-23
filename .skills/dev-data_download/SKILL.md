@@ -235,15 +235,26 @@ Before using downloaded data:
 Use provided scripts for common tasks:
 
 ```bash
-# Download single file
-python .skills/dev-data_download/scripts/download_file.py <url> <output>
+# Example: Download Ottawa Economic Development PDFs
+uv run python .skills/dev-data_download/scripts/download_ottawa_pdfs.py --list-urls
+uv run python .skills/dev-data_download/scripts/download_ottawa_pdfs.py --all
+uv run python .skills/dev-data_download/scripts/download_ottawa_pdfs.py --year 2024 --quarter Q1
 
-# Download from Kaggle
-python .skills/dev-data_download/scripts/download_kaggle.py <dataset-id>
-
-# Batch download from URLs file
-python .skills/dev-data_download/scripts/batch_download.py urls.txt
+# The Ottawa PDF downloader demonstrates:
+# - Retry logic with exponential backoff
+# - Selenium for dynamic content extraction
+# - Batch downloading with progress tracking
+# - Metadata generation
+# - Automatic URL discovery from web pages
 ```
+
+**Script Features:**
+- Automatic retry with exponential backoff
+- Resume capability for interrupted downloads
+- Progress tracking
+- Metadata extraction and storage
+- Selenium integration for dynamic content
+- Batch processing support
 
 ## References
 

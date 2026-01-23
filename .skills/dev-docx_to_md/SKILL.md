@@ -182,11 +182,23 @@ Use provided scripts for common tasks:
 
 ```bash
 # Convert single file
-uv run python .skills/dev-docx_to_md/scripts/convert_docx_mammoth.py input.docx output.md
+uv run python .skills/dev-docx_to_md/scripts/docx_to_markdown.py input.docx
 
-# Batch convert
-uv run python .skills/dev-docx_to_md/scripts/batch_convert.py input_dir/ output_dir/
+# Convert with custom output directory
+uv run python .skills/dev-docx_to_md/scripts/docx_to_markdown.py input.docx output_dir/
+
+# Batch convert (PowerShell)
+Get-ChildItem -Recurse -Include *.docx | ForEach-Object {
+    uv run python .skills/dev-docx_to_md/scripts/docx_to_markdown.py $_.FullName
+}
 ```
+
+**Script Features:**
+- Preserves hyperlinks
+- Handles Chinese characters (UTF-8)
+- Skips temp files (~$*.docx)
+- Generates clean Markdown
+- Saves metadata as JSON
 
 ## References
 

@@ -1,0 +1,27 @@
+{
+  "name": "dev-coding_standards",
+  "version": "1.0.0",
+  "description": "Universal coding standards and best practices for TypeScript, JavaScript, React, and Node.js",
+  "keywords": [
+    "coding standards",
+    "best practices",
+    "code quality",
+    "naming conventions",
+    "immutability",
+    "error handling",
+    "type safety",
+    "API design",
+    "performance",
+    "代码规范",
+    "最佳实践",
+    "代码质量",
+    "命名规范",
+    "不可变性",
+    "错误处理",
+    "类型安全",
+    "API设计",
+    "性能"
+  ],
+  "author": "Adapted from everything-claude-code",
+  "license": "MIT"
+}

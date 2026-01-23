@@ -559,8 +559,7 @@ class PDFConverter:
             output.append("### English Version\n")
             output.append(page_text)
             output.append("\n### 中文翻译\n")
-            output.append("<!-- TODO: Add Chinese translation here -->")
-            output.append("<!-- 待添加: 在此处添加中文翻译 -->\n")
+            output.append("<!-- 在此处添加中文翻译 -->\n")
             output.append("---\n")
         
         return "\n".join(output)
@@ -600,7 +599,6 @@ class PDFConverter:
         
         for i in range(1, len(pages) + 1):
             output.append(f"### 第{i}页\n")
-            output.append("<!-- TODO: Add Chinese translation -->")
             output.append("<!-- 待翻译 -->\n")
         
         return "\n".join(output)

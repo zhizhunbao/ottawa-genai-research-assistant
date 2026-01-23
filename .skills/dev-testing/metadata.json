@@ -1,0 +1,21 @@
+{
+  "name": "dev-testing",
+  "displayName": "Software Testing Expert",
+  "description": "软件测试专家，提供单元测试、集成测试和 E2E 测试指导",
+  "keywords": [
+    "testing",
+    "unit test",
+    "integration test",
+    "e2e",
+    "pytest",
+    "vitest",
+    "playwright",
+    "tdd",
+    "测试",
+    "单元测试",
+    "集成测试"
+  ],
+  "version": "1.0.0",
+  "author": "AI Assistant",
+  "category": "development"
+}

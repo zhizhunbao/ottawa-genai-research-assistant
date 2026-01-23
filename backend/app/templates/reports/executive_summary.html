@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }} - Executive Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #2c3e50; }
+        .summary { background: #f8f9fa; padding: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+    <div class="summary">
+        <h2>Executive Summary</h2>
+        <p>{{ summary }}</p>
+    </div>
+    {% if key_findings %}
+    <h2>Key Findings</h2>
+    <ul>
+        {% for finding in key_findings %}
+        <li>{{ finding }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</body>
+</html>
+
