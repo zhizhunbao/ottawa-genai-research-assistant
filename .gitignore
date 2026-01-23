@@ -116,3 +116,7 @@ secrets.json
 
 # 🔧 GitHub Workflows (if not needed in repo)
 .github/
+
+# 🚫 IDE and Temporary Files
+.cursorignore
+create_migration_package.py
