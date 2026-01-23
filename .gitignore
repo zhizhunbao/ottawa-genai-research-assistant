@@ -109,3 +109,10 @@ backend/uploads/*
 *.key
 *.crt
 secrets.json
+
+# 🤖 Kiro IDE and Skills
+.kiro/
+.skills/
+
+# 🔧 GitHub Workflows (if not needed in repo)
+.github/
