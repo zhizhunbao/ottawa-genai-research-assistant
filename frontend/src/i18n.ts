@@ -3,6 +3,7 @@
  *
  * Internationalization setup for English and French support.
  * Uses react-i18next for React integration.
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import i18n from 'i18next'
@@ -13,11 +14,17 @@ import enCommon from './locales/en/common.json'
 import enHome from './locales/en/home.json'
 import enAuth from './locales/en/auth.json'
 import enChat from './locales/en/chat.json'
+import enDocuments from './locales/en/documents.json'
+import enSettings from './locales/en/settings.json'
+import enAnalysis from './locales/en/analysis.json'
 
 import frCommon from './locales/fr/common.json'
 import frHome from './locales/fr/home.json'
 import frAuth from './locales/fr/auth.json'
 import frChat from './locales/fr/chat.json'
+import frDocuments from './locales/fr/documents.json'
+import frSettings from './locales/fr/settings.json'
+import frAnalysis from './locales/fr/analysis.json'
 
 // Translation resources
 const resources = {
@@ -26,19 +33,27 @@ const resources = {
     home: enHome,
     auth: enAuth,
     chat: enChat,
+    documents: enDocuments,
+    settings: enSettings,
+    analysis: enAnalysis,
   },
   fr: {
     common: frCommon,
     home: frHome,
     auth: frAuth,
     chat: frChat,
+    documents: frDocuments,
+    settings: frSettings,
+    analysis: frAnalysis,
   },
 }
 
 // Get saved language or default to English
 const getSavedLanguage = (): string => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('language') || 'en'
+    const saved = localStorage.getItem('language')
+    if (saved === 'en' || saved === 'fr') return saved
+    return 'en'
   }
   return 'en'
 }
@@ -49,7 +64,7 @@ i18n.use(initReactI18next).init({
   lng: getSavedLanguage(),
   fallbackLng: 'en',
   defaultNS: 'common',
-  ns: ['common', 'home', 'auth', 'chat'],
+  ns: ['common', 'home', 'auth', 'chat', 'documents', 'settings', 'analysis'],
 
   interpolation: {
     escapeValue: false, // React already escapes values

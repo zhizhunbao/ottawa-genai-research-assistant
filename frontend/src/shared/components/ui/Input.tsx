@@ -1,61 +1,31 @@
 /**
  * Input 组件
  *
- * 遵循 dev-frontend_patterns skill 的类型化组件模式。
+ * 基础输入框组件。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
-import { InputHTMLAttributes, forwardRef } from 'react'
+import React from 'react'
+import { cn } from '@/shared/utils/cn'
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-}
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, style, ...props }, ref) => {
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
     return (
-      <div style={{ marginBottom: 'var(--spacing-md)' }}>
-        {label && (
-          <label
-            style={{
-              display: 'block',
-              marginBottom: 'var(--spacing-xs)',
-              fontWeight: 500,
-              color: 'var(--color-text)',
-            }}
-          >
-            {label}
-          </label>
+      <input
+        type={type}
+        className={cn(
+          'flex h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ottawa-blue focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all font-medium',
+          className
         )}
-        <input
-          ref={ref}
-          style={{
-            width: '100%',
-            padding: 'var(--spacing-sm) var(--spacing-md)',
-            border: `1px solid ${error ? 'var(--color-error)' : 'var(--color-border)'}`,
-            borderRadius: 'var(--radius-md)',
-            fontSize: '1rem',
-            outline: 'none',
-            transition: 'border-color 0.2s ease',
-            ...style,
-          }}
-          {...props}
-        />
-        {error && (
-          <span
-            style={{
-              display: 'block',
-              marginTop: 'var(--spacing-xs)',
-              fontSize: '0.875rem',
-              color: 'var(--color-error)',
-            }}
-          >
-            {error}
-          </span>
-        )}
-      </div>
+        ref={ref}
+        {...props}
+      />
     )
   }
 )
-
 Input.displayName = 'Input'
+
+export { Input }

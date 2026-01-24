@@ -2,6 +2,7 @@
  * 研究 API 服务
  *
  * 处理研究助手核心功能的 API 调用，包括查询、文档管理、可视化等。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { apiService } from '@/shared/services/apiService'

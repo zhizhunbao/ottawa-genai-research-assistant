@@ -19,7 +19,44 @@
     "uploading": "Uploading...",
     "submit": "Upload Document",
     "reset": "Reset",
-    "success": "Document uploaded successfully! It will be processed and indexed shortly."
+    "success": "Document uploaded successfully! It will be processed and indexed shortly.",
+    "status": {
+      "completed": "Completed",
+      "ready": "Ready",
+      "processing": {
+        "title": "Document Processing",
+        "description": "PDF text extraction and indexing"
+      },
+      "analysis": {
+        "title": "Content Analysis",
+        "description": "AI semantic understanding and categorization"
+      },
+      "knowledge": {
+        "title": "Knowledge Base",
+        "description": "Integration with search and Q&A system"
+      }
+    },
+    "guidance": {
+      "title": "Upload Guidelines",
+      "formats": {
+        "title": "Supported Formats",
+        "pdfOnly": "PDF documents only",
+        "textBased": "Text-based PDFs (not scanned images)",
+        "maxSize": "Maximum file size: 50MB"
+      },
+      "bestPractices": {
+        "title": "Best Practices",
+        "descriptiveNames": "Use descriptive file names",
+        "noPassword": "Ensure documents are not password protected",
+        "latestVersion": "Upload the most recent versions"
+      },
+      "privacy": {
+        "title": "Privacy & Security",
+        "publicOnly": "Only upload public information",
+        "noPersonalData": "No personal or confidential data",
+        "localProcessing": "Documents are processed securely"
+      }
+    }
   },
   "filters": {
     "searchPlaceholder": "Search documents...",

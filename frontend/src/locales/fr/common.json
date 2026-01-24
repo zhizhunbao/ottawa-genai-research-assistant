@@ -1,1 +1,66 @@
-{}
+{
+  "app": {
+    "name": "Ottawa Recherche GenAI",
+    "fullName": "Assistant de Recherche GenAI d'Ottawa",
+    "shortName": "Assistant GenAI",
+    "description": "Transformez votre recherche avec l'IA"
+  },
+  "nav": {
+    "home": "Accueil",
+    "chat": "Chat de Recherche",
+    "documents": "Bibliothèque",
+    "upload": "Télécharger",
+    "analysis": "Analyse de Données",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "reports": "Rapports",
+    "profile": "Profil"
+  },
+  "auth": {
+    "signedInAs": "Connecté en tant que",
+    "welcomeBack": "Bon retour",
+    "signinSubtitle": "Connectez-vous pour accéder à votre assistant de recherche"
+  },
+  "buttons": {
+    "submit": "Envoyer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "back": "Retour",
+    "next": "Suivant",
+    "retry": "Réessayer",
+    "loading": "Chargement...",
+    "getStarted": "Commencer",
+    "startChat": "Démarrer",
+    "uploadDocs": "Télécharger Documents"
+  },
+  "messages": {
+    "loading": "Traitement de votre demande...",
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "authError": "Échec de l'authentification. Veuillez vérifier vos identifiants.",
+    "success": "Action terminée avec succès.",
+    "noData": "Aucune donnée trouvée pour cette sélection.",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ceci de façon permanente ?"
+  },
+  "footer": {
+    "copyright": "© 2026 Ville d'Ottawa et Collège Algonquin",
+    "organization": "Développement Économique d'Ottawa",
+    "mission": "Un assistant de recherche propulsé par l'IA aidant l'équipe de Développement Économique à obtenir rapidement des insights et générer des rapports.",
+    "resources": "Ressources",
+    "openData": "Portail de données ouvertes",
+    "economicDev": "Développement économique",
+    "support": "Support et Légal",
+    "privacy": "Politique de confidentialité",
+    "accessibility": "Accessibilité",
+    "terms": "Conditions d'utilisation",
+    "allRights": "Tous droits réservés."
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français",
+    "switch": "Changer de langue"
+  }
+}

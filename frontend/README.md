@@ -56,4 +56,4 @@ npm test
 
 ## 开发服务器
 
-启动后访问: http://localhost:5173
+启动后访问: http://localhost:3000

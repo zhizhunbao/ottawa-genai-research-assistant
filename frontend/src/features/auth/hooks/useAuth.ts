@@ -2,13 +2,13 @@
  * 认证 Hook
  *
  * 提供认证相关的业务逻辑和状态管理。
- * 遵循 dev-frontend_patterns skill 的自定义 Hook 模式。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { useState, useCallback } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/features/auth/services/authApi'
-import type { LoginRequest } from '@/features/auth/types'
+import type { LoginRequest, RegisterRequest } from '@/features/auth/types'
 
 export function useAuth() {
   const {
@@ -40,6 +40,29 @@ export function useAuth() {
         return { success: true, user: response.user }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Login failed'
+        setError(message)
+        return { success: false, error: message }
+      } finally {
+        setLoginLoading(false)
+      }
+    },
+    [setLogin, setError]
+  )
+
+  /**
+   * 执行注册
+   */
+  const register = useCallback(
+    async (data: RegisterRequest) => {
+      setLoginLoading(true)
+      setError(null)
+
+      try {
+        const response = await authApi.register(data)
+        setLogin(response.user, response.token)
+        return { success: true, user: response.user }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Registration failed'
         setError(message)
         return { success: false, error: message }
       } finally {
@@ -89,6 +112,7 @@ export function useAuth() {
     isLoading: isLoading || loginLoading,
     error,
     login,
+    register,
     logout,
     refreshUser,
     clearError,

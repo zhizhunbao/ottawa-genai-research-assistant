@@ -10,6 +10,8 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import type { Quarter, ReportType } from '@/features/documents/types'
 import { DocumentUploadForm } from './DocumentUploadForm'
+import { ProcessingStatus } from './ProcessingStatus'
+import { UploadGuidance } from './UploadGuidance'
 
 interface DocumentUploadPageProps {
   /** 选中的文件 */
@@ -124,6 +126,12 @@ export function DocumentUploadPage({
           onDrop={onDrop}
           onFileSelect={onFileSelect}
         />
+
+        {/* 处理状态 (仅在有文件或上传成功时显示) */}
+        {(file || uploadSuccess) && <ProcessingStatus />}
+
+        {/* 上传指引 */}
+        <UploadGuidance />
       </main>
     </div>
   )

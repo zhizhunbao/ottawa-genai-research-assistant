@@ -2,7 +2,8 @@
 通用 Schemas 模块
 
 定义通用的请求/响应模型。
-遵循 dev-backend_patterns skill 的 API 响应格式规范。
+遵循 dev-backend_patterns skill 规范。
+遵循 dev-tdd_workflow skill 规范。
 """
 
 from typing import Any, Generic, List, Optional, TypeVar
@@ -16,10 +17,10 @@ T = TypeVar("T")
 class ApiResponse(BaseModel, Generic[T]):
     """统一 API 响应格式"""
 
-    success: bool = Field(..., description="请求是否成功")
-    data: Optional[T] = Field(None, description="响应数据")
-    error: Optional[str] = Field(None, description="错误消息")
-    detail: Optional[Any] = Field(None, description="详细信息")
+    success: bool = Field(..., description="Whether the request was successful")
+    data: Optional[T] = Field(None, description="The response data")
+    error: Optional[str] = Field(None, description="The error message if any")
+    detail: Optional[Any] = Field(None, description="Detailed error information")
 
     @classmethod
     def ok(cls, data: T) -> "ApiResponse[T]":
@@ -35,10 +36,10 @@ class ApiResponse(BaseModel, Generic[T]):
 class PaginationMeta(BaseModel):
     """分页元数据"""
 
-    total: int = Field(..., description="总记录数")
-    page: int = Field(..., description="当前页码")
-    page_size: int = Field(..., description="每页大小")
-    total_pages: int = Field(..., description="总页数")
+    total: int = Field(..., description="Total number of records")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of records per page")
+    total_pages: int = Field(..., description="Total number of pages")
 
     @classmethod
     def from_params(cls, total: int, page: int, page_size: int) -> "PaginationMeta":
@@ -51,12 +52,12 @@ class PaginatedResponse(BaseModel, Generic[T]):
     """分页响应格式"""
 
     success: bool = True
-    data: List[T] = Field(default_factory=list, description="数据列表")
-    meta: PaginationMeta = Field(..., description="分页元数据")
+    data: List[T] = Field(default_factory=list, description="List of data items")
+    meta: PaginationMeta = Field(..., description="Pagination metadata")
 
 
 class HealthResponse(BaseModel):
     """健康检查响应"""
 
-    status: str = "healthy"
-    version: str = "0.1.0"
+    status: str = Field("healthy", description="The service health status")
+    version: str = Field("0.1.0", description="The service version")

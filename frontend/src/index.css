@@ -1,10 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
-/* ============================================================================
-   自定义基础样式
-   ============================================================================ */
 @layer base {
   :root {
     --color-primary: #667eea;
@@ -25,25 +21,24 @@
 
   /* 链接默认样式 */
   a {
-    @apply text-primary-500 no-underline hover:underline;
+    @apply text-primary-500 no-underline cursor-pointer;
   }
 
   /* 按钮默认样式 */
   button {
-    @apply cursor-pointer font-inherit;
+    @apply cursor-pointer;
+    font: inherit;
   }
 
   /* 表单元素默认样式 */
   input,
   textarea,
   select {
-    @apply font-inherit text-inherit;
+    font: inherit;
+    color: inherit;
   }
 }
 
-/* ============================================================================
-   自定义组件样式
-   ============================================================================ */
 @layer components {
   /* 玻璃态效果 */
   .glass {
@@ -74,13 +69,26 @@
   }
 }
 
-/* ============================================================================
-   自定义工具类
-   ============================================================================ */
 @layer utilities {
   /* 文字渐变 */
   .text-gradient {
     @apply bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent;
+  }
+
+  /* 渥太华金色高亮 */
+  .text-ottawa-gold {
+    @apply bg-gradient-to-r from-[#ffd700] via-[#ffb000] to-[#ff8c00] bg-clip-text text-transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  .underline-gold {
+    position: relative;
+  }
+
+  .underline-gold::after {
+    content: "";
+    @apply absolute -bottom-1 left-0 h-1 bg-gradient-to-r from-[#ffd700] to-[#ffb000] rounded-full;
+    width: 100%;
   }
 
   /* 安全区域内边距 */
@@ -92,7 +100,7 @@
   /* 滚动条样式 */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.gray.300') transparent;
+    scrollbar-color: var(--color-gray-300) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {

@@ -16,7 +16,8 @@ from app.research.schemas import (
     SearchResponse,
     SearchResult,
 )
-from app.shared.exceptions import ExternalServiceError
+from app.core.enums import ChatRole
+from app.core.exceptions import ExternalServiceError
 
 
 class ResearchService:
@@ -73,7 +74,7 @@ class ResearchService:
             # 如果启用 RAG，先进行搜索
             if request.use_rag and request.messages:
                 last_user_message = next(
-                    (m for m in reversed(request.messages) if m.role == "user"),
+                    (m for m in reversed(request.messages) if m.role == ChatRole.USER),
                     None,
                 )
                 if last_user_message:
@@ -108,6 +109,6 @@ class ResearchService:
                 context += f"- {source.title}: {source.content}\n"
 
         return ChatMessage(
-            role="assistant",
+            role=ChatRole.ASSISTANT,
             content=f"您好！关于 '{query}' 的问题，{context}我来为您解答...",
         )

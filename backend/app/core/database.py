@@ -2,6 +2,8 @@
 数据库连接模块
 
 提供异步数据库会话管理。
+遵循 dev-backend_patterns skill 规范。
+遵循 dev-tdd_workflow skill 规范。
 """
 
 from typing import AsyncGenerator

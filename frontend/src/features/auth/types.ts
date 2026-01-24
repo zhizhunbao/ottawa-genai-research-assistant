@@ -2,7 +2,7 @@
  * 认证功能类型定义
  *
  * 定义用户认证相关的所有 TypeScript 类型。
- * 遵循 dev-frontend_patterns skill 的类型定义规范。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 // ============================================================================
@@ -47,6 +47,13 @@ export interface AuthState {
 export interface LoginRequest {
   email: string
   password: string
+}
+
+/** 注册请求 */
+export interface RegisterRequest {
+  email: string
+  password: string
+  displayName: string
 }
 
 /** 登录响应 */

@@ -2,7 +2,7 @@
  * 认证状态管理 Store
  *
  * 使用 Zustand 管理用户认证状态。
- * 遵循 dev-frontend_patterns skill 的 Zustand Store 模式。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { create } from 'zustand'

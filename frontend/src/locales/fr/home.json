@@ -1,1 +1,61 @@
-{}
+{
+  "hero": {
+    "title": "Assistant de Recherche GenAI d'Ottawa",
+    "titleHighlight": "GenAI",
+    "subtitle": "Un assistant de recherche propulsé par l'IA aidant l'équipe de Développement Économique à obtenir rapidement des insights, générer des rapports et améliorer l'efficacité de la prise de décision.",
+    "startChat": "Commencer le Chat",
+    "uploadDocs": "Télécharger Documents"
+  },
+  "features": {
+    "sectionTitle": "Fonctionnalités Clés",
+    "subtitle": "Tout ce dont vous avez besoin pour mener des recherches avancées avec l'assistance IA",
+    "qa": {
+      "title": "Q&R Intelligente",
+      "description": "Posez des questions complexes et obtenez des réponses détaillées et bien recherchées alimentées par des modèles IA avancés."
+    },
+    "analysis": {
+      "title": "Analyse de Données",
+      "description": "Téléchargez des documents et recevez une analyse complète avec des insights et résumés clés."
+    },
+    "reports": {
+      "title": "Génération de Rapports",
+      "description": "Générez des rapports de recherche professionnels avec citations, graphiques et résultats détaillés."
+    }
+  },
+  "howItWorks": {
+    "sectionTitle": "Comment Ça Marche",
+    "subtitle": "Commencez avec la recherche alimentée par l'IA en trois étapes simples",
+    "step1": {
+      "title": "Téléchargez Vos Documents",
+      "description": "Glissez et déposez simplement vos documents de recherche, PDFs ou fichiers de données dans notre plateforme sécurisée."
+    },
+    "step2": {
+      "title": "Posez des Questions",
+      "description": "Utilisez le langage naturel pour poser des questions sur vos documents ou demander une analyse spécifique."
+    },
+    "step3": {
+      "title": "Obtenez des Insights",
+      "description": "Recevez une analyse complète, des résumés et des visualisations basés sur vos besoins de recherche."
+    }
+  },
+  "stats": {
+    "documents": "Documents Traités",
+    "queries": "Requêtes Répondues",
+    "languages": "Langues Supportées",
+    "accessibility": "Conforme WCAG"
+  },
+  "cta": {
+    "title": "Prêt à Accélérer Votre Recherche ?",
+    "subtitle": "Rejoignez les chercheurs du monde entier qui utilisent l'IA pour débloquer de nouveaux insights et accélérer la découverte.",
+    "signIn": "Se Connecter",
+    "signUp": "S'Inscrire",
+    "getStarted": "Commencer",
+    "startChat": "Démarrer la recherche",
+    "startSession": "Commencer une session",
+    "uploadDocs": "Télécharger documents",
+    "learnMore": "En savoir plus"
+  },
+  "welcome": {
+    "back": "Bienvenue, {{name}}"
+  }
+}

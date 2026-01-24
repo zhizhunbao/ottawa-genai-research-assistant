@@ -2,13 +2,14 @@
  * 聊天 Hook
  *
  * 提供聊天功能的业务逻辑，包括消息发送、会话管理等。
- * 遵循 dev-frontend_patterns skill 的自定义 Hook 模式。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { useCallback, useMemo, useState, FormEvent } from 'react'
 import { useChatStore } from '@/stores/chatStore'
 import { researchApi } from '@/features/research/services/researchApi'
 import type { QueryRequest } from '@/features/research/types'
+import { MessageRole } from '@/features/research/types'
 
 export function useChat() {
   const {
@@ -22,7 +23,6 @@ export function useChat() {
     updateSessionTitle,
     addMessage,
     updateMessage,
-    setMessageLoading,
     setLoading,
     setError,
     clearError,
@@ -51,10 +51,10 @@ export function useChat() {
       }
 
       // 添加用户消息
-      addMessage(sessionId, 'user', content)
+      addMessage(sessionId, MessageRole.USER, content)
 
       // 添加助手消息占位
-      const assistantMessageId = addMessage(sessionId, 'assistant', '')
+      const assistantMessageId = addMessage(sessionId, MessageRole.ASSISTANT, '')
       setLoading(true)
 
       try {

@@ -166,9 +166,17 @@ export function LoginPage({
               {t('login.azureAd')}
             </button>
 
+            {/* Register Link */}
+            <div className="mt-8 text-center text-sm">
+              <span className="text-gray-600">Don't have an account? </span>
+              <Link to="/register" className="text-primary-500 hover:text-primary-600 font-medium">
+                Sign up
+              </Link>
+            </div>
+
             {/* Back to Home */}
-            <div className="mt-8 text-center">
-              <Link to="/" className="text-sm text-primary-500 hover:text-primary-600 inline-flex items-center gap-1">
+            <div className="mt-4 text-center">
+              <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1">
                 <ArrowLeft className="w-4 h-4" />
                 {t('login.backToHome')}
               </Link>

@@ -2,7 +2,7 @@
  * 研究功能类型定义
  *
  * 定义研究助手相关的所有 TypeScript 类型。
- * 遵循 dev-frontend_patterns skill 的类型定义规范。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 // ============================================================================
@@ -10,10 +10,20 @@
 // ============================================================================
 
 /** 文档状态 */
-export type DocumentStatus = 'pending' | 'processing' | 'indexed' | 'failed'
+export enum DocumentStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  INDEXED = 'indexed',
+  FAILED = 'failed'
+}
 
 /** 报告类型 */
-export type ReportType = 'ED_UPDATE' | 'QUARTERLY' | 'ANNUAL' | 'SPECIAL'
+export enum ReportType {
+  ED_UPDATE = 'ED_UPDATE',
+  QUARTERLY = 'QUARTERLY',
+  ANNUAL = 'ANNUAL',
+  SPECIAL = 'SPECIAL'
+}
 
 /** 文档元数据 */
 export interface DocumentMetadata {
@@ -76,7 +86,11 @@ export interface QueryRecord {
 }
 
 /** 聊天消息角色 */
-export type MessageRole = 'user' | 'assistant' | 'system'
+export enum MessageRole {
+  USER = 'user',
+  ASSISTANT = 'assistant',
+  SYSTEM = 'system'
+}
 
 /** 聊天消息 */
 export interface ChatMessage {
@@ -87,6 +101,10 @@ export interface ChatMessage {
   sources?: Source[]
   confidence?: number
   isLoading?: boolean
+  metadata?: {
+    chartData?: Record<string, unknown>[]
+    chartTitle?: string
+  }
 }
 
 /** 聊天会话 */
@@ -103,7 +121,12 @@ export interface ChatSession {
 // ============================================================================
 
 /** 图表类型 */
-export type ChartType = 'line' | 'bar' | 'pie' | 'area'
+export enum ChartType {
+  LINE = 'line',
+  BAR = 'bar',
+  PIE = 'pie',
+  AREA = 'area'
+}
 
 /** 图表数据点 */
 export interface ChartDataPoint {

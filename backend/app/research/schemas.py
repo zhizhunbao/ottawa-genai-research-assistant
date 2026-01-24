@@ -2,58 +2,60 @@
 研究 Schemas
 
 定义研究/RAG 相关的请求/响应模型。
+遵循 dev-backend_patterns skill 规范。
 """
 
 from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
+from app.core.enums import ChatRole
 
 
 class SearchQuery(BaseModel):
     """搜索查询 Schema"""
 
-    query: str = Field(..., min_length=1, max_length=500, description="搜索查询")
-    top_k: int = Field(default=5, ge=1, le=20, description="返回结果数量")
-    filters: Optional[dict] = Field(None, description="过滤条件")
+    query: str = Field(..., min_length=1, max_length=500, description="The search query text")
+    top_k: int = Field(default=5, ge=1, le=20, description="Number of results to return")
+    filters: Optional[dict] = Field(None, description="Filtering criteria")
 
 
 class SearchResult(BaseModel):
     """搜索结果 Schema"""
 
-    id: str = Field(..., description="文档 ID")
-    title: str = Field(..., description="文档标题")
-    content: str = Field(..., description="文档内容片段")
-    score: float = Field(..., description="相关性分数")
-    source: Optional[str] = Field(None, description="来源")
-    metadata: Optional[dict] = Field(None, description="元数据")
+    id: str = Field(..., description="The unique identity of the document")
+    title: str = Field(..., description="The title of the document")
+    content: str = Field(..., description="A snippet of the document content")
+    score: float = Field(..., description="The relevance score")
+    source: Optional[str] = Field(None, description="The document source")
+    metadata: Optional[dict] = Field(None, description="Additional metadata")
 
 
 class SearchResponse(BaseModel):
     """搜索响应 Schema"""
 
-    query: str = Field(..., description="原始查询")
-    results: List[SearchResult] = Field(default_factory=list, description="搜索结果列表")
-    total: int = Field(..., description="总结果数")
+    query: str = Field(..., description="The original search query")
+    results: List[SearchResult] = Field(default_factory=list, description="List of search results")
+    total: int = Field(..., description="Total number of results found")
 
 
 class ChatMessage(BaseModel):
     """聊天消息 Schema"""
 
-    role: str = Field(..., pattern="^(user|assistant|system)$", description="消息角色")
-    content: str = Field(..., min_length=1, description="消息内容")
+    role: ChatRole = Field(..., description="The role of the message author")
+    content: str = Field(..., min_length=1, description="The content of the message")
 
 
 class ChatRequest(BaseModel):
     """聊天请求 Schema"""
 
-    messages: List[ChatMessage] = Field(..., min_length=1, description="消息历史")
-    use_rag: bool = Field(default=True, description="是否使用 RAG")
+    messages: List[ChatMessage] = Field(..., min_length=1, description="The conversation history")
+    use_rag: bool = Field(default=True, description="Whether to use Retrieval-Augmented Generation")
 
 
 class ChatResponse(BaseModel):
     """聊天响应 Schema"""
 
-    message: ChatMessage = Field(..., description="助手回复")
-    sources: List[SearchResult] = Field(default_factory=list, description="引用来源")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="创建时间")
+    message: ChatMessage = Field(..., description="The assistant's response message")
+    sources: List[SearchResult] = Field(default_factory=list, description="Referenced sources")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="The timestamp of the response")

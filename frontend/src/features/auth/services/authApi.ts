@@ -2,10 +2,11 @@
  * 认证 API 服务
  *
  * 处理用户认证相关的 API 调用。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { apiService } from '@/shared/services/apiService'
-import type { User, LoginRequest, LoginResponse } from '@/features/auth/types'
+import type { User, LoginRequest, RegisterRequest, LoginResponse } from '@/features/auth/types'
 
 export const authApi = {
   /**
@@ -19,6 +20,21 @@ export const authApi = {
     )
     if (!response.data) {
       throw new Error(response.error || 'Login failed')
+    }
+    return response.data
+  },
+
+  /**
+   * 用户注册
+   */
+  async register(data: RegisterRequest): Promise<LoginResponse> {
+    const response = await apiService.post<LoginResponse>(
+      '/auth/register',
+      data,
+      { skipAuth: true }
+    )
+    if (!response.data) {
+      throw new Error(response.error || 'Registration failed')
     }
     return response.data
   },

@@ -2,7 +2,8 @@
 依赖注入模块
 
 定义可复用的 FastAPI 依赖项。
-遵循 dev-backend_patterns skill 的依赖注入模式。
+遵循 dev-backend_patterns skill 规范。
+遵循 dev-tdd_workflow skill 规范。
 """
 
 from typing import Annotated

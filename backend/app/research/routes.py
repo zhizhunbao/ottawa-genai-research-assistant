@@ -14,10 +14,10 @@ from app.research.schemas import (
     SearchResponse,
 )
 from app.research.service import ResearchService
-from app.shared.schemas import ApiResponse
+from app.core.schemas import ApiResponse
 
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/research", tags=["research"])
 
 
 def get_research_service() -> ResearchService:

@@ -2,10 +2,10 @@
  * 错误边界组件
  *
  * 捕获子组件树中的 JavaScript 错误。
- * 遵循 dev-frontend_patterns skill 的错误边界模式。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 
 interface Props {
   children: ReactNode

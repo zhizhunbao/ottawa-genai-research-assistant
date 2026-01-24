@@ -2,12 +2,12 @@
  * 文档 Hook
  *
  * 提供文档管理相关的业务逻辑。
- * 遵循 dev-frontend_patterns skill 的自定义 Hook 模式。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { useState, useCallback } from 'react'
 import { researchApi } from '@/features/research/services/researchApi'
-import type { Document, PaginatedResult } from '@/features/research/types'
+import type { Document } from '@/features/research/types'
 
 interface UseDocumentsOptions {
   initialPage?: number

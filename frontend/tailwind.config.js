@@ -23,6 +23,12 @@ export default {
           500: '#764ba2',
           600: '#6b4190',
         },
+        ottawa: {
+          blue: '#004890',
+          'blue-light': '#0066cc',
+          gold: '#ffd700',
+          'gold-dark': '#ffb000',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

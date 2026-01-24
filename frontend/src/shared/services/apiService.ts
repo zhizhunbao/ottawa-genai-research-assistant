@@ -2,7 +2,7 @@
  * API 基础服务
  *
  * 提供统一的 HTTP 请求处理，包括认证、错误处理等。
- * 遵循 dev-frontend_patterns skill 的服务层模式。
+ * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import type { ApiResponse } from '@/features/research/types'

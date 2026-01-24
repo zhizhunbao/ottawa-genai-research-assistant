@@ -1,0 +1,28 @@
+{
+  "title": "Analyse de données et aperçus",
+  "subtitle": "Générez des visualisations et des notes d'allocution basées sur les résultats de recherche",
+  "startAnalysis": {
+    "title": "Démarrer l'analyse",
+    "placeholder": "ex : Analyser les tendances de croissance de l'emploi au T3 2024",
+    "chartButton": "Générer un graphique",
+    "notesButton": "Générer des notes"
+  },
+  "sections": {
+    "visualizations": "Visualisations",
+    "speakingNotes": "Notes d'allocution"
+  },
+  "empty": {
+    "chart": "Aucune donnée de graphique disponible",
+    "notes": "Aucune note d'allocution disponible"
+  },
+  "actions": {
+    "share": "Partager",
+    "export": "Exporter le rapport"
+  },
+  "stats": {
+    "title": "Statistiques clés"
+  },
+  "errors": {
+    "failed": "L'analyse a échoué"
+  }
+}

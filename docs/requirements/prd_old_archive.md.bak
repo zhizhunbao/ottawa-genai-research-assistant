@@ -10,20 +10,24 @@
 ## 1. Executive Summary
 
 ### Product Overview
+
 The Ottawa Economic Development team is developing a **Generative AI Research Assistant** with Algonquin College to answer natural-language questions, generate summaries, and produce visuals sourced from Economic Development Update PDFs hosted on ottawa.ca (Q1 2022 – Q4 2025).
 
 ### Key Objectives
+
 - Build a RAG-based assistant for Economic Development analysts
 - Enable natural-language Q&A without system redeployment
 - Generate narrative updates, charts, and speaking notes from PDF corpus
 - Provide trustable outputs with source citations and confidence metrics
 
 ### Target Users
+
 - **Primary**: Economic Development team members (analysts, researchers)
 - **Secondary**: Other municipal departments for validation
 - **Future**: Public residents through portal
 
 ### Success Criteria
+
 - ≥75% answer accuracy on SME-provided question sets
 - ≥90% faithfulness (citation-backed statements)
 - ≥85% context recall (grounding coverage)
@@ -31,6 +35,7 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 - User satisfaction score > 4.0/5.0
 
 ### Timeline
+
 - **Phase 1** (Sep–Dec 2025): RAG prototype over ED Update PDFs
 - **Phase 2** (Jan–Apr 2026): External data integration (StatsCan APIs, PDF scraping)
 - **Phase 3** (Q3–Q4 2026): Advanced analytics and production deployment
@@ -40,14 +45,18 @@ The Ottawa Economic Development team is developing a **Generative AI Research As
 ## 2. Product Vision & Goals
 
 ### Problem Statement
+
 Economic Development analysts spend significant time manually searching through quarterly PDF reports to answer stakeholder questions, prepare briefings, and generate visualizations. This process is:
+
 - Time-consuming and repetitive
 - Prone to missing relevant information across multiple reports
 - Difficult to maintain consistency in responses
 - Lacks automated visualization capabilities
 
 ### Value Proposition
+
 A GenAI-powered research assistant that:
+
 - Instantly retrieves relevant information from entire PDF corpus
 - Generates accurate, sourced answers with confidence metrics
 - Automatically creates charts and tables from data
@@ -55,6 +64,7 @@ A GenAI-powered research assistant that:
 - Maintains trustability through citation tracking and validation
 
 ### Business Objectives
+
 - **Efficiency**: Reduce research time by 60%+ for common queries
 - **Quality**: Improve answer consistency and completeness
 - **Scalability**: Handle growing document corpus without manual indexing
@@ -63,15 +73,15 @@ A GenAI-powered research assistant that:
 
 ### Success Metrics (KPIs)
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Answer Accuracy | ≥75% | SME evaluation against answer key |
-| Faithfulness | ≥90% | Citation verification |
-| Context Recall | ≥85% | Grounding coverage analysis |
-| Response Time (P95) | <3s | API monitoring |
-| User Satisfaction | >4.0/5.0 | Post-pilot survey |
-| System Uptime | >99.5% | Azure monitoring |
-| Concurrent Users | 50+ | Load testing |
+| Metric              | Target   | Measurement Method                |
+| ------------------- | -------- | --------------------------------- |
+| Answer Accuracy     | ≥75%     | SME evaluation against answer key |
+| Faithfulness        | ≥90%     | Citation verification             |
+| Context Recall      | ≥85%     | Grounding coverage analysis       |
+| Response Time (P95) | <3s      | API monitoring                    |
+| User Satisfaction   | >4.0/5.0 | Post-pilot survey                 |
+| System Uptime       | >99.5%   | Azure monitoring                  |
+| Concurrent Users    | 50+      | Load testing                      |
 
 ---
 
@@ -80,18 +90,21 @@ A GenAI-powered research assistant that:
 ### Primary Persona: Economic Development Analyst
 
 **Demographics:**
+
 - Role: Economic Development Analyst
 - Experience: 3-5 years in municipal economic analysis
 - Technical Skills: Proficient with Excel, PowerPoint, basic data tools
 - Pain Points: Manual PDF searching, inconsistent data extraction, time pressure
 
 **Goals:**
+
 - Quickly answer stakeholder questions with accurate data
 - Generate professional visualizations for reports
 - Maintain credibility through sourced information
 - Reduce repetitive research tasks
 
 **User Journey:**
+
 1. Receives question from stakeholder about Q3 2024 employment trends
 2. Opens GenAI Research Assistant
 3. Enters natural language query
@@ -102,55 +115,65 @@ A GenAI-powered research assistant that:
 ### User Stories
 
 #### US-001: Natural Language Query
+
 **As an** Economic Development Analyst,  
 **I want to** ask questions in natural language,  
 **So that** I can quickly find information without learning complex search syntax.
 
 **Acceptance Criteria:**
+
 - Given I'm on the chat interface
 - When I type "What were the employment trends in Q3 2024?"
 - Then the system returns a sourced answer within 3 seconds
 - And displays confidence score and source citations
 
 #### US-002: Source Verification
+
 **As an** Economic Development Analyst,  
 **I want to** see exact source citations for every answer,  
 **So that** I can verify information and cite sources in my reports.
 
 **Acceptance Criteria:**
+
 - Given the system provides an answer
 - When I review the response
 - Then I see document title, page number, and relevant excerpt
 - And I can click to view the original PDF section
 
 #### US-003: Automatic Visualization
+
 **As an** Economic Development Analyst,  
 **I want to** automatically generate charts from data,  
 **So that** I can create professional presentations quickly.
 
 **Acceptance Criteria:**
+
 - Given the system retrieves numerical data
 - When I request a visualization
 - Then the system generates an appropriate chart type
 - And allows me to download as PNG/SVG
 
 #### US-004: Speaking Notes Generation
+
 **As an** Economic Development Analyst,  
 **I want to** generate speaking notes from report summaries,  
 **So that** I can prepare for stakeholder briefings efficiently.
 
 **Acceptance Criteria:**
+
 - Given I select a report or topic
 - When I request speaking notes
 - Then the system generates bullet-point summaries
 - And highlights key statistics and trends
 
 #### US-005: Document Upload
+
 **As an** Admin,  
 **I want to** upload new quarterly reports,  
 **So that** the system stays current without redeployment.
 
 **Acceptance Criteria:**
+
 - Given I have a new ED Update PDF
 - When I upload it through the admin interface
 - Then the system processes and indexes it within 10 minutes
@@ -163,40 +186,48 @@ A GenAI-powered research assistant that:
 ### 4.1 Document Management
 
 #### FR-DOC-001: PDF Upload
+
 **Priority:** Must-have  
 The system shall allow administrators to upload PDF documents through a web interface.
 
 **Acceptance Criteria:**
+
 - Supports PDF files up to 50MB
 - Validates file format before processing
 - Returns upload confirmation with processing status
 - Handles batch uploads (multiple files)
 
 #### FR-DOC-002: Document Processing
+
 **Priority:** Must-have  
 The system shall extract text, tables, and metadata from uploaded PDFs within 10 minutes.
 
 **Acceptance Criteria:**
+
 - Extracts text with layout preservation
 - Identifies and extracts tables as structured data
 - Tags documents with metadata (quarter, year, report type)
 - Handles multi-column layouts and headers/footers
 
 #### FR-DOC-003: Document Indexing
+
 **Priority:** Must-have  
 The system shall create vector embeddings and index documents for semantic search.
 
 **Acceptance Criteria:**
+
 - Chunks documents into semantic units (paragraphs, sections)
 - Generates embeddings using Azure OpenAI ADA-002
 - Stores vectors in Azure AI Search with metadata
 - Completes indexing within 15 minutes of upload
 
 #### FR-DOC-004: Document Listing
+
 **Priority:** Should-have  
 The system shall display a list of all indexed documents with metadata.
 
 **Acceptance Criteria:**
+
 - Shows document title, upload date, status
 - Allows filtering by quarter, year, report type
 - Displays processing status (pending, indexed, failed)
@@ -205,40 +236,48 @@ The system shall display a list of all indexed documents with metadata.
 ### 4.2 Query & Retrieval
 
 #### FR-QRY-001: Natural Language Query
+
 **Priority:** Must-have  
 The system shall accept natural language queries and return relevant answers within 3 seconds (P95).
 
 **Acceptance Criteria:**
+
 - Accepts queries up to 500 characters
 - Returns response within 3 seconds for 95% of queries
 - Handles follow-up questions with context
 - Supports both English and French queries
 
 #### FR-QRY-002: Semantic Search
+
 **Priority:** Must-have  
 The system shall perform hybrid semantic and keyword search to retrieve relevant document chunks.
 
 **Acceptance Criteria:**
+
 - Combines vector similarity and keyword matching
 - Returns top 5 most relevant chunks
 - Ranks results by relevance score
 - Filters by date range or document type if specified
 
 #### FR-QRY-003: Answer Generation
+
 **Priority:** Must-have  
 The system shall generate answers using retrieved context and Azure AI Foundry GPT-4o.
 
 **Acceptance Criteria:**
+
 - Grounds answers in retrieved document chunks
 - Includes inline citations with document references
 - Indicates when information is not found in corpus
 - Maintains conversational context for follow-ups
 
 #### FR-QRY-004: Source Citation
+
 **Priority:** Must-have  
 The system shall provide exact source citations for every statement in the answer.
 
 **Acceptance Criteria:**
+
 - Cites document title, page number, section
 - Links to original PDF location
 - Highlights relevant text excerpt
@@ -247,30 +286,36 @@ The system shall provide exact source citations for every statement in the answe
 ### 4.3 Visualization & Reporting
 
 #### FR-VIZ-001: Chart Generation
+
 **Priority:** Should-have  
 The system shall automatically generate appropriate charts from numerical data in answers.
 
 **Acceptance Criteria:**
+
 - Detects numerical data in retrieved content
 - Selects appropriate chart type (line, bar, pie)
 - Generates charts using Matplotlib/Plotly
 - Allows download as PNG, SVG, or interactive HTML
 
 #### FR-VIZ-002: Table Extraction
+
 **Priority:** Should-have  
 The system shall extract and format tables from PDFs for display and export.
 
 **Acceptance Criteria:**
+
 - Preserves table structure and formatting
 - Displays tables in responsive web format
 - Allows export to CSV or Excel
 - Handles multi-page tables
 
 #### FR-VIZ-003: Speaking Notes
+
 **Priority:** Should-have  
 The system shall generate bullet-point speaking notes from report summaries.
 
 **Acceptance Criteria:**
+
 - Produces 5-10 key points per topic
 - Highlights statistics and trends
 - Formats for easy reading (bullets, short sentences)
@@ -279,30 +324,36 @@ The system shall generate bullet-point speaking notes from report summaries.
 ### 4.4 Trust & Validation
 
 #### FR-TRS-001: Confidence Scoring
+
 **Priority:** Must-have  
 The system shall display a confidence score for each answer based on retrieval quality and model certainty.
 
 **Acceptance Criteria:**
+
 - Calculates score from retrieval relevance and model logits
 - Displays score as percentage or badge (High/Medium/Low)
 - Explains score factors to user
 - Warns when confidence is below threshold (70%)
 
 #### FR-TRS-002: Accuracy Validation
+
 **Priority:** Must-have  
 The system shall validate answers against ground truth using accuracy, faithfulness, and context recall metrics.
 
 **Acceptance Criteria:**
+
 - Achieves ≥75% accuracy on held-out test set
 - Achieves ≥90% faithfulness (citation-backed)
 - Achieves ≥85% context recall (grounding coverage)
 - Logs validation results for monitoring
 
 #### FR-TRS-003: Hallucination Detection
+
 **Priority:** Should-have  
 The system shall detect and flag potential hallucinations in generated answers.
 
 **Acceptance Criteria:**
+
 - Compares answer statements to retrieved context
 - Flags unsupported claims
 - Uses NLI (Natural Language Inference) models
@@ -311,20 +362,24 @@ The system shall detect and flag potential hallucinations in generated answers.
 ### 4.5 User Management
 
 #### FR-USR-001: Role-Based Access
+
 **Priority:** Should-have  
 The system shall support three user roles: Researcher, Analyst, and Admin.
 
 **Acceptance Criteria:**
+
 - Researcher: Query and view documents
 - Analyst: All Researcher features + export reports
 - Admin: All features + document upload and user management
 - Enforces permissions on all endpoints
 
 #### FR-USR-002: Authentication
+
 **Priority:** Must-have  
 The system shall authenticate users via Azure Entra ID (replacing Google OAuth).
 
 **Acceptance Criteria:**
+
 - Integrates with Azure Entra ID
 - Issues JWT tokens with 24-hour expiry
 - Supports single sign-on (SSO)
@@ -333,10 +388,12 @@ The system shall authenticate users via Azure Entra ID (replacing Google OAuth).
 ### 4.6 API Interface
 
 #### FR-API-001: RESTful Endpoints
+
 **Priority:** Must-have  
 The system shall provide RESTful API endpoints for all core functions.
 
 **Acceptance Criteria:**
+
 - POST /api/v1/query - Submit queries
 - GET /api/v1/documents - List documents
 - POST /api/v1/documents/upload - Upload PDFs
@@ -344,10 +401,12 @@ The system shall provide RESTful API endpoints for all core functions.
 - Follows REST conventions (GET, POST, PUT, DELETE)
 
 #### FR-API-002: Response Format
+
 **Priority:** Must-have  
 The system shall return all API responses in consistent JSON format.
 
 **Acceptance Criteria:**
+
 ```json
 {
   "success": true,
@@ -358,10 +417,12 @@ The system shall return all API responses in consistent JSON format.
 ```
 
 #### FR-API-003: Error Handling
+
 **Priority:** Must-have  
 The system shall return appropriate HTTP status codes and error messages.
 
 **Acceptance Criteria:**
+
 - 400 for invalid input with field-specific errors
 - 401 for authentication failures
 - 403 for authorization failures
@@ -375,6 +436,7 @@ The system shall return appropriate HTTP status codes and error messages.
 ### 5.1 Performance
 
 #### NFR-PERF-001: Response Time
+
 **Priority:** Critical  
 The system shall return query responses within 3 seconds for 95% of requests.
 
@@ -383,6 +445,7 @@ The system shall return query responses within 3 seconds for 95% of requests.
 **Verification:** Load testing with realistic query patterns.
 
 #### NFR-PERF-002: Concurrent Users
+
 **Priority:** High  
 The system shall support 50+ concurrent users without performance degradation.
 
@@ -391,6 +454,7 @@ The system shall support 50+ concurrent users without performance degradation.
 **Verification:** Load testing with 50+ simulated users.
 
 #### NFR-PERF-003: Document Processing
+
 **Priority:** High  
 The system shall process and index PDF documents within 10 minutes of upload.
 
@@ -401,6 +465,7 @@ The system shall process and index PDF documents within 10 minutes of upload.
 ### 5.2 Security
 
 #### NFR-SEC-001: Data Encryption
+
 **Priority:** Critical  
 The system shall encrypt all data in transit using TLS 1.2+ and at rest using Azure Storage encryption.
 
@@ -409,6 +474,7 @@ The system shall encrypt all data in transit using TLS 1.2+ and at rest using Az
 **Verification:** Security audit and penetration testing.
 
 #### NFR-SEC-002: Secret Management
+
 **Priority:** Critical  
 The system shall store all API keys and credentials in Azure Key Vault.
 
@@ -417,6 +483,7 @@ The system shall store all API keys and credentials in Azure Key Vault.
 **Verification:** Code review and security scan.
 
 #### NFR-SEC-003: Audit Logging
+
 **Priority:** High  
 The system shall log all user queries, document uploads, and administrative actions.
 
@@ -425,6 +492,7 @@ The system shall log all user queries, document uploads, and administrative acti
 **Verification:** Log review and compliance audit.
 
 #### NFR-SEC-004: Rate Limiting
+
 **Priority:** Medium  
 The system shall implement rate limiting to prevent abuse (100 requests/minute per user).
 
@@ -435,6 +503,7 @@ The system shall implement rate limiting to prevent abuse (100 requests/minute p
 ### 5.3 Scalability
 
 #### NFR-SCAL-001: Document Capacity
+
 **Priority:** High  
 The system shall support 1000+ PDF documents without performance degradation.
 
@@ -443,6 +512,7 @@ The system shall support 1000+ PDF documents without performance degradation.
 **Verification:** Performance testing with 1000+ documents.
 
 #### NFR-SCAL-002: Query Volume
+
 **Priority:** High  
 The system shall handle 10,000+ queries per day.
 
@@ -453,6 +523,7 @@ The system shall handle 10,000+ queries per day.
 ### 5.4 Reliability
 
 #### NFR-REL-001: Uptime
+
 **Priority:** Critical  
 The system shall achieve 99.5% uptime (excluding planned maintenance).
 
@@ -461,6 +532,7 @@ The system shall achieve 99.5% uptime (excluding planned maintenance).
 **Verification:** Azure monitoring and SLA tracking.
 
 #### NFR-REL-002: Error Rate
+
 **Priority:** High  
 The system shall maintain error rate below 1% for all API requests.
 
@@ -469,6 +541,7 @@ The system shall maintain error rate below 1% for all API requests.
 **Verification:** Application monitoring and error tracking.
 
 #### NFR-REL-003: Recovery Time
+
 **Priority:** High  
 The system shall recover from failures within 5 minutes.
 
@@ -479,6 +552,7 @@ The system shall recover from failures within 5 minutes.
 ### 5.5 Usability
 
 #### NFR-USE-001: Accessibility
+
 **Priority:** High  
 The system shall comply with WCAG 2.1 Level AA accessibility standards.
 
@@ -487,6 +561,7 @@ The system shall comply with WCAG 2.1 Level AA accessibility standards.
 **Verification:** Accessibility audit and testing.
 
 #### NFR-USE-002: Browser Compatibility
+
 **Priority:** High  
 The system shall support latest versions of Chrome, Firefox, Edge, and Safari.
 
@@ -495,6 +570,7 @@ The system shall support latest versions of Chrome, Firefox, Edge, and Safari.
 **Verification:** Cross-browser testing.
 
 #### NFR-USE-003: Mobile Responsiveness
+
 **Priority:** Medium  
 The system shall provide responsive design for tablet and mobile devices.
 
@@ -505,6 +581,7 @@ The system shall provide responsive design for tablet and mobile devices.
 ### 5.6 Maintainability
 
 #### NFR-MAIN-001: Code Quality
+
 **Priority:** High  
 The system shall maintain code quality with automated linting, type checking, and test coverage >80%.
 
@@ -513,6 +590,7 @@ The system shall maintain code quality with automated linting, type checking, an
 **Verification:** CI/CD pipeline checks.
 
 #### NFR-MAIN-002: Documentation
+
 **Priority:** High  
 The system shall include comprehensive API documentation, deployment guides, and user manuals.
 
@@ -521,6 +599,7 @@ The system shall include comprehensive API documentation, deployment guides, and
 **Verification:** Documentation review.
 
 #### NFR-MAIN-003: Observability
+
 **Priority:** High  
 The system shall implement OpenTelemetry-style instrumentation for metrics, logs, and traces.
 
@@ -537,6 +616,7 @@ The system shall implement OpenTelemetry-style instrumentation for metrics, logs
 **Architecture Style:** Microservices with RAG (Retrieval-Augmented Generation) pipeline
 
 **Core Components:**
+
 1. **Frontend**: React 18 + TypeScript chat interface
 2. **Backend Orchestrator**: FastAPI + Microsoft Semantic Kernel
 3. **Vector Store**: Azure AI Search (hybrid semantic + keyword)
@@ -548,6 +628,7 @@ The system shall implement OpenTelemetry-style instrumentation for metrics, logs
 ### 6.2 Technology Stack
 
 #### Backend
+
 - **Framework**: FastAPI 0.104+
 - **Language**: Python 3.11+
 - **Key Libraries**:
@@ -561,6 +642,7 @@ The system shall implement OpenTelemetry-style instrumentation for metrics, logs
   - `matplotlib`, `plotly` - Visualization
 
 #### Frontend
+
 - **Framework**: React 18
 - **Language**: TypeScript 4.9+
 - **Build Tool**: Vite
@@ -569,8 +651,11 @@ The system shall implement OpenTelemetry-style instrumentation for metrics, logs
   - `axios` - HTTP client
   - `react-markdown` - Markdown rendering
   - `recharts` - Chart components
+  - `tailwindcss` - Utility-first CSS framework (Design System)
+  - `lucide-react` - Icon set
 
 #### Infrastructure
+
 - **Cloud Provider**: Microsoft Azure
 - **Container**: Docker
 - **Orchestration**: Azure Container Apps
@@ -580,6 +665,7 @@ The system shall implement OpenTelemetry-style instrumentation for metrics, logs
 ### 6.3 Data Models
 
 #### Document Model
+
 ```python
 {
   "id": "uuid",
@@ -600,6 +686,7 @@ The system shall implement OpenTelemetry-style instrumentation for metrics, logs
 ```
 
 #### Query Model
+
 ```python
 {
   "id": "uuid",
@@ -651,41 +738,61 @@ GET    /api/v1/metrics            - System metrics
 ### 6.5 Integration Points
 
 #### Azure OpenAI
+
 - **Embedding Model**: text-embedding-ada-002
 - **Generation Model**: GPT-4o / GPT-4 Turbo
 - **Usage**: Query embedding, document embedding, answer generation
 
 #### Azure AI Search
+
 - **Search Type**: Hybrid (vector + keyword)
 - **Ranking**: Cosine similarity + BM25
 - **Filters**: Date range, document type, topic
 
 #### Azure Blob Storage
+
 - **Container**: `documents`
 - **Content**: Original PDFs, processed metadata
 - **Access**: Private with SAS tokens
 
 #### Azure Key Vault
+
 - **Secrets**: API keys, connection strings, certificates
 - **Access**: Managed Identity with RBAC
+
+### 6.6 Design Requirements
+
+The application must follow a specific aesthetic derived from the legacy prototype to ensure a premium, modern feel:
+
+- **Design System**: Tailwind CSS
+- **Visual Style**:
+  - **Gradients**: Use `bg-gradient-to-r from-primary-500 to-secondary-500` for primary actions and headers.
+  - **Glassmorphism**: Use `bg-white/10 backdrop-blur-md` for overlays and cards.
+  - **Shadows**: Soft, diffused shadows (`shadow-soft`, `shadow-glow`).
+  - **Typography**: Inter font family, clean and readable.
+- **Responsiveness**: Mobile-first design, fully responsive layouts.
+- **Micro-interactions**: Subtle hover effects, transitions (`transition-all`), and loading states (`animate-spin`).
 
 ---
 
 ## 7. Constraints & Assumptions
 
 ### Technical Constraints
+
 - Must use Azure cloud services (organizational requirement)
 - Python 3.11+ for backend (City standard)
 - React for frontend (team expertise)
 - OpenAI-compatible APIs only (no proprietary formats)
 
 ### Business Constraints
+
 - Budget: ~$500-1000/month for Azure services
 - Timeline: Phase 1 delivery by December 2025
 - Team: 3-4 student developers + 2 City SMEs
 - Data: Public documents only (no confidential content)
 
 ### Assumptions
+
 - PDF documents follow consistent formatting
 - Users have basic familiarity with chat interfaces
 - Azure services maintain 99.9%+ availability
@@ -714,26 +821,31 @@ GET    /api/v1/metrics            - System metrics
 ### Testing Requirements
 
 #### Unit Testing
+
 - Backend: >80% code coverage
 - Frontend: >70% code coverage
 - All critical paths tested
 
 #### Integration Testing
+
 - End-to-end RAG workflow
 - API endpoint contracts
 - Azure service integrations
 
 #### Performance Testing
+
 - Load testing with 50+ concurrent users
 - Response time validation (P95 <3s)
 - Document processing throughput
 
 #### Security Testing
+
 - Penetration testing
 - Vulnerability scanning
 - Secret management audit
 
 #### User Acceptance Testing
+
 - SME pilot with 5-10 analysts
 - Real-world query scenarios
 - Feedback collection and iteration
@@ -744,31 +856,31 @@ GET    /api/v1/metrics            - System metrics
 
 ### Phase 1: Internal PDF Analysis (Sep–Dec 2025) 🔄 IN PROGRESS
 
-| Milestone | Target Date | Status | Deliverables |
-|-----------|-------------|--------|--------------|
-| **M1: Project Kickoff** | Sep 2025 | ✅ Complete | Stakeholder alignment, tech stack selection |
-| **M2: Ingestion Pipeline** | Oct 2025 | 🔄 In Progress | PDF processing, chunking, embedding |
-| **M3: RAG Backend** | Nov 2025 | 🔄 In Progress | Retrieval, generation, trust scoring |
-| **M4: Frontend MVP** | Nov 2025 | 📋 Planned | React chat interface, source display |
-| **M5: Visualization** | Dec 2025 | 📋 Planned | Chart generation, table extraction |
-| **M6: Phase 1 Delivery** | Dec 2025 | 📋 Planned | Testing, documentation, SME pilot |
+| Milestone                  | Target Date | Status         | Deliverables                                |
+| -------------------------- | ----------- | -------------- | ------------------------------------------- |
+| **M1: Project Kickoff**    | Sep 2025    | ✅ Complete    | Stakeholder alignment, tech stack selection |
+| **M2: Ingestion Pipeline** | Oct 2025    | 🔄 In Progress | PDF processing, chunking, embedding         |
+| **M3: RAG Backend**        | Nov 2025    | 🔄 In Progress | Retrieval, generation, trust scoring        |
+| **M4: Frontend MVP**       | Nov 2025    | 📋 Planned     | React chat interface, source display        |
+| **M5: Visualization**      | Dec 2025    | 📋 Planned     | Chart generation, table extraction          |
+| **M6: Phase 1 Delivery**   | Dec 2025    | 📋 Planned     | Testing, documentation, SME pilot           |
 
 ### Phase 2: External Data Integration (Jan–Apr 2026) 📋 PLANNED
 
-| Milestone | Target Date | Status | Deliverables |
-|-----------|-------------|--------|--------------|
-| **M7: StatsCan API** | Feb 2026 | 📋 Planned | API integration, data fusion |
-| **M8: PDF Scraping** | Mar 2026 | 📋 Planned | OREB reports, partner PDFs |
-| **M9: Enhanced Analytics** | Apr 2026 | 📋 Planned | Trend analysis, forecasting |
-| **M10: Phase 2 Delivery** | Apr 2026 | 📋 Planned | Expanded corpus, advanced features |
+| Milestone                  | Target Date | Status     | Deliverables                       |
+| -------------------------- | ----------- | ---------- | ---------------------------------- |
+| **M7: StatsCan API**       | Feb 2026    | 📋 Planned | API integration, data fusion       |
+| **M8: PDF Scraping**       | Mar 2026    | 📋 Planned | OREB reports, partner PDFs         |
+| **M9: Enhanced Analytics** | Apr 2026    | 📋 Planned | Trend analysis, forecasting        |
+| **M10: Phase 2 Delivery**  | Apr 2026    | 📋 Planned | Expanded corpus, advanced features |
 
 ### Phase 3: Production Deployment (Q3–Q4 2026) 🔮 FUTURE
 
-| Milestone | Target Date | Status | Deliverables |
-|-----------|-------------|--------|--------------|
-| **M11: Production Hardening** | Q3 2026 | 🔮 Future | Observability, scaling, security |
-| **M12: User Training** | Q3 2026 | 🔮 Future | Documentation, workshops |
-| **M13: Public Launch** | Q4 2026 | 🔮 Future | Public portal, citywide rollout |
+| Milestone                     | Target Date | Status    | Deliverables                     |
+| ----------------------------- | ----------- | --------- | -------------------------------- |
+| **M11: Production Hardening** | Q3 2026     | 🔮 Future | Observability, scaling, security |
+| **M12: User Training**        | Q3 2026     | 🔮 Future | Documentation, workshops         |
+| **M13: Public Launch**        | Q4 2026     | 🔮 Future | Public portal, citywide rollout  |
 
 ---
 
@@ -776,30 +888,30 @@ GET    /api/v1/metrics            - System metrics
 
 ### Technical Risks
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| **Azure OpenAI rate limits** | High | Medium | Implement caching, request queuing, fallback models |
-| **PDF extraction quality** | High | Medium | Test with diverse PDFs, manual review pipeline |
-| **Vector search accuracy** | High | Low | Hybrid search, query expansion, relevance tuning |
-| **Response latency** | Medium | Medium | Optimize chunking, caching, async processing |
-| **Hallucination rate** | High | Medium | Trust validation, citation enforcement, user warnings |
+| Risk                         | Impact | Probability | Mitigation                                            |
+| ---------------------------- | ------ | ----------- | ----------------------------------------------------- |
+| **Azure OpenAI rate limits** | High   | Medium      | Implement caching, request queuing, fallback models   |
+| **PDF extraction quality**   | High   | Medium      | Test with diverse PDFs, manual review pipeline        |
+| **Vector search accuracy**   | High   | Low         | Hybrid search, query expansion, relevance tuning      |
+| **Response latency**         | Medium | Medium      | Optimize chunking, caching, async processing          |
+| **Hallucination rate**       | High   | Medium      | Trust validation, citation enforcement, user warnings |
 
 ### Business Risks
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| **Budget overrun** | Medium | Low | Monitor Azure costs, optimize API usage |
-| **Timeline delays** | Medium | Medium | Agile sprints, MVP-first approach, buffer time |
-| **User adoption** | High | Low | Early SME involvement, training, feedback loops |
-| **Scope creep** | Medium | High | Strict prioritization, phase gating, change control |
+| Risk                | Impact | Probability | Mitigation                                          |
+| ------------------- | ------ | ----------- | --------------------------------------------------- |
+| **Budget overrun**  | Medium | Low         | Monitor Azure costs, optimize API usage             |
+| **Timeline delays** | Medium | Medium      | Agile sprints, MVP-first approach, buffer time      |
+| **User adoption**   | High   | Low         | Early SME involvement, training, feedback loops     |
+| **Scope creep**     | Medium | High        | Strict prioritization, phase gating, change control |
 
 ### Data Risks
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| **Inconsistent PDF formats** | Medium | High | Robust parsing, manual fallback, format guidelines |
-| **Missing data** | Low | Medium | Gap documentation, external source integration |
-| **Data quality issues** | Medium | Medium | Validation rules, SME review, error reporting |
+| Risk                         | Impact | Probability | Mitigation                                         |
+| ---------------------------- | ------ | ----------- | -------------------------------------------------- |
+| **Inconsistent PDF formats** | Medium | High        | Robust parsing, manual fallback, format guidelines |
+| **Missing data**             | Low    | Medium      | Gap documentation, external source integration     |
+| **Data quality issues**      | Medium | Medium      | Validation rules, SME review, error reporting      |
 
 ---
 
@@ -824,20 +936,20 @@ GET    /api/v1/metrics            - System metrics
 
 ### C. Stakeholders
 
-| Role | Name | Responsibility |
-|------|------|----------------|
-| **Product Owner** | Js (City EcDev) | Requirements, acceptance, business alignment |
-| **Technical SME** | Eric (City IT) | Architecture guidance, security, deployment |
-| **Development Team** | Algonquin Students | Implementation, testing, documentation |
-| **End Users** | EcDev Analysts | User testing, feedback, adoption |
+| Role                 | Name               | Responsibility                               |
+| -------------------- | ------------------ | -------------------------------------------- |
+| **Product Owner**    | Js (City EcDev)    | Requirements, acceptance, business alignment |
+| **Technical SME**    | Eric (City IT)     | Architecture guidance, security, deployment  |
+| **Development Team** | Algonquin Students | Implementation, testing, documentation       |
+| **End Users**        | EcDev Analysts     | User testing, feedback, adoption             |
 
 ### D. Change Log
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | Sep 2025 | Team | Initial draft |
-| 2.0 | Nov 2025 | Team | Greenfield alignment, trust metrics |
-| 3.0 | Jan 2026 | Team | Consolidated PRD with complete requirements |
+| Version | Date     | Author | Changes                                     |
+| ------- | -------- | ------ | ------------------------------------------- |
+| 1.0     | Sep 2025 | Team   | Initial draft                               |
+| 2.0     | Nov 2025 | Team   | Greenfield alignment, trust metrics         |
+| 3.0     | Jan 2026 | Team   | Consolidated PRD with complete requirements |
 
 ---
 

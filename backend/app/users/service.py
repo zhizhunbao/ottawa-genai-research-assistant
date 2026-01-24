@@ -11,7 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash, verify_password
-from app.shared.exceptions import ConflictError, NotFoundError, UnauthorizedError
+from app.core.enums import UserRole
+from app.core.exceptions import ConflictError, NotFoundError, UnauthorizedError
 from app.users.models import User
 from app.users.schemas import UserCreate, UserUpdate
 

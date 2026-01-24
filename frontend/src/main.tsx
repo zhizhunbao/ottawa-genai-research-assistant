@@ -1,3 +1,9 @@
+/**
+ * 组件或工具
+ *
+ * 遵循 dev-frontend_patterns skill 规范。
+ */
+
 import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
 import App from './app/App'

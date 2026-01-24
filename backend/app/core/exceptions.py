@@ -3,6 +3,7 @@
 
 定义应用级别的自定义异常类。
 遵循 dev-security_review skill 的错误处理规范。
+遵循 dev-tdd_workflow skill 规范。
 """
 
 from typing import Any, Optional

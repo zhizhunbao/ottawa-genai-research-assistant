@@ -1,0 +1,28 @@
+{
+  "title": "Data Analysis & Insights",
+  "subtitle": "Generate visualizations and speaking notes based on search results",
+  "startAnalysis": {
+    "title": "Start Analysis",
+    "placeholder": "e.g., Analyze employment growth trends in Q3 2024",
+    "chartButton": "Generate Chart",
+    "notesButton": "Generate Notes"
+  },
+  "sections": {
+    "visualizations": "Visualizations",
+    "speakingNotes": "Speaking Notes"
+  },
+  "empty": {
+    "chart": "No chart data available",
+    "notes": "No speaking notes available"
+  },
+  "actions": {
+    "share": "Share",
+    "export": "Export Report"
+  },
+  "stats": {
+    "title": "Key Statistics"
+  },
+  "errors": {
+    "failed": "Analysis failed"
+  }
+}

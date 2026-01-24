@@ -2,34 +2,46 @@
 安全模块
 
 提供认证、授权和密码处理功能。
+遵循 dev-security_review skill 规范。
+遵循 dev-tdd_workflow skill 规范。
+遵循 dev-libs_compatibility skill 规范（bcrypt 直接使用方案）。
 """
 
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Bearer token 安全方案
 security = HTTPBearer()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """验证密码
+    
+    使用 bcrypt 直接验证，避免 passlib 兼容性问题。
+    """
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'),
+        hashed_password.encode('utf-8')
+    )
 
 
 def get_password_hash(password: str) -> str:
-    """生成密码哈希"""
-    return pwd_context.hash(password)
+    """生成密码哈希
+    
+    使用 bcrypt 直接生成，避免 passlib 兼容性问题。
+    """
+    return bcrypt.hashpw(
+        password.encode('utf-8'),
+        bcrypt.gensalt()
+    ).decode('utf-8')
 
 
 def create_access_token(
