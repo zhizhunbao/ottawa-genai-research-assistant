@@ -1,0 +1,28 @@
+{
+  "title": "Paramètres",
+  "subtitle": "Gérer vos préférences",
+  "saveSuccess": "Paramètres enregistrés avec succès !",
+  "profile": {
+    "section": "Profil",
+    "displayName": "Nom d'affichage",
+    "email": "Courriel",
+    "department": "Département",
+    "jobTitle": "Titre"
+  },
+  "language": {
+    "title": "Langue"
+  },
+  "theme": {
+    "title": "Thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "email": "Notifications par courriel",
+    "emailDescription": "Recevoir des notifications par courriel pour les mises à jour importantes",
+    "browser": "Notifications du navigateur",
+    "browserDescription": "Recevoir des notifications push dans votre navigateur"
+  }
+}

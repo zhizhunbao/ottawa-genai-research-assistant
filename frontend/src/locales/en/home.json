@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "title": "Ottawa GenAI Research Assistant",
+    "subtitle": "An AI-powered research assistant helping the Economic Development team quickly gain insights, generate reports, and improve decision-making efficiency."
+  },
+  "features": {
+    "sectionTitle": "Core Features",
+    "qa": {
+      "title": "Intelligent Q&A",
+      "description": "Ask questions in natural language and get precise answers from Economic Development reports."
+    },
+    "visualization": {
+      "title": "Data Visualization",
+      "description": "Automatically generate charts and tables for clear data insights."
+    },
+    "speakingNotes": {
+      "title": "Speaking Notes",
+      "description": "Generate professional talking points with one click for stakeholder briefings."
+    },
+    "sources": {
+      "title": "Trusted Sources",
+      "description": "Every answer includes clear source citations for full traceability."
+    }
+  },
+  "howItWorks": {
+    "sectionTitle": "How It Works",
+    "step1": {
+      "title": "Ask a Question",
+      "description": "Use natural language to describe what you want to know"
+    },
+    "step2": {
+      "title": "Get Answers",
+      "description": "The system retrieves and generates accurate responses from the report corpus"
+    },
+    "step3": {
+      "title": "Verify Sources",
+      "description": "Review the original documents and page numbers cited"
+    }
+  },
+  "cta": {
+    "title": "Ready to Boost Your Research Efficiency?",
+    "subtitle": "Experience the AI-powered research assistant and get data insights at your fingertips.",
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "startChat": "Start Chat",
+    "learnMore": "Learn More"
+  },
+  "welcome": {
+    "back": "Welcome back, {{name}}"
+  }
+}

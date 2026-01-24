@@ -1,0 +1,24 @@
+代码地图生成报告
+===================
+
+生成时间: 2026-01-23T23:43:45.996Z
+项目名称: Unknown Project
+项目版本: 0.0.0
+
+统计信息:
+- 总文件数: 93
+- 前端文件: 18
+- 后端文件: 54
+- 配置文件: 4
+
+生成的文档:
+- docs/CODEMAPS/INDEX.md
+- docs/CODEMAPS/frontend.md
+- docs/CODEMAPS/backend.md
+- docs/CODEMAPS/database.md
+- docs/CODEMAPS/integrations.md
+
+建议:
+- 定期更新代码地图以保持同步
+- 添加更多的代码注释以改善文档质量
+- 考虑添加架构决策记录 (ADR)

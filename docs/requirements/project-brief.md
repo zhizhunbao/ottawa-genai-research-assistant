@@ -40,29 +40,35 @@
 - **Phase 2 (Jan–Apr 2026):** Integrate at least one external data source via API (e.g., StatsCan APIs for key economic indicators), plus PDF scraping pipelines (e.g., OREB market updates); expand analytics outputs.
 
 ## 6. Technical & Security Guidance
-- Data is public, but adhere to City's preferred stack and document all libraries.
-- Majority of tools must be open source or based on widely adopted standards (OpenTelemetry, OpenAI/S3 compatibility, etc.).
-- Recommended platform components:
-  - **LLM & Embeddings:** Azure AI Foundry / Azure AI Search (LLM API + embeddings + vector store), OpenRouter or Ollama for LLMs (models ≥3B parameters), Hugging Face embeddings
-  - **Vector Storage:** FAISS or Qdrant as vector store
-  - **Orchestration:** Microsoft Semantic Kernel for orchestration with OpenAI, FastAPI backend orchestrator
-  - **Frontend:** HTML/CSS/JavaScript (React chat widget)
-  - **Analytics:** NumPy, pandas, Matplotlib/Seaborn; integrate OpenTelemetry-style observability where possible
-  - **Evaluations:** Library recommendations forthcoming from City SMEs; students can propose options
-- **Development Environment:** Students can initiate development on local machines or College-provided servers. Use students' Azure Foundry accounts or institutional environments.
-- **Testing/Production Environment:** Students work with City Tech team to determine server sizing for hosting the solution in the City environment for testing.
+- Data is public, but adhere to City's preferred Azure-based stack and document all libraries.
+- All platform components must be Azure-native services to ensure enterprise security, compliance, and support.
+- **Required Azure Platform Components:**
+  - **LLM & Embeddings:** Azure OpenAI Service (GPT-4o, GPT-4 Turbo for generation; text-embedding-ada-002 for embeddings)
+  - **Vector Storage:** Azure AI Search (hybrid semantic + keyword search with vector indexing)
+  - **Document Storage:** Azure Blob Storage (secure PDF storage with managed access)
+  - **Orchestration:** Microsoft Semantic Kernel with FastAPI backend orchestrator
+  - **Authentication:** Azure Entra ID (single sign-on and role-based access control)
+  - **Secret Management:** Azure Key Vault (API keys, connection strings, certificates)
+  - **Monitoring:** Azure Application Insights with OpenTelemetry instrumentation
+  - **Frontend:** React TypeScript application hosted on Azure Static Web Apps or Azure App Service
+  - **Analytics:** Python libraries (NumPy, pandas, Matplotlib/Seaborn) running on Azure Container Apps
+  - **Evaluations:** Azure-compatible evaluation frameworks with metrics stored in Azure Monitor
+- **Development Environment:** Students use Azure subscriptions (student accounts or institutional environments) for all development and testing.
+- **Testing/Production Environment:** Deploy to Azure Container Apps or Azure App Service with City IT team collaboration for enterprise integration and security compliance.
 
 ## 7. Outstanding Actions
-- Draft detailed plan aligning solution architecture with trustability metrics and agentic RAG exploration.
-- Confirm evaluation library stack once City SMEs share recommendations; supplement if needed.
-- Continue documenting assumptions, risk areas, and library usage for SME review.
-- Provide list of evaluation-metric libraries (City SMEs to share; students can supplement).
-- Students to draft plan aligning with goals/metrics and confirm library stack.
+- Draft detailed plan aligning solution architecture with trustability metrics and agentic RAG exploration using Azure-native services.
+- Confirm Azure-compatible evaluation library stack once City SMEs share recommendations; supplement with Azure Monitor integration.
+- Continue documenting assumptions, risk areas, and Azure service usage for SME review.
+- Provide list of Azure-compatible evaluation-metric libraries and monitoring solutions.
+- Students to draft implementation plan using exclusively Azure services, aligning with enterprise security and compliance requirements.
 
 ---
 
 ## Additional Notes
-- City cannot share existing project code or OpenAI usage.
-- Deliver tangible solution for City SMEs to review and adopt.
-- Goal: address focus areas above and extend with Agentic RAG capabilities.
+- City cannot share existing project code or OpenAI usage patterns.
+- All technology components must use Azure services to ensure enterprise compliance, security, and long-term support.
+- Deliver tangible Azure-based solution for City SMEs to review and adopt within municipal IT infrastructure.
+- Goal: address focus areas above and extend with Agentic RAG capabilities using Microsoft Semantic Kernel and Azure AI services.
+- Ensure all API integrations, data storage, and processing align with Azure enterprise security standards and City IT policies.
 

@@ -1,0 +1,18 @@
+链接检查报告
+================
+
+检查时间: 2026-01-23T23:52:49.581Z
+检查文件数: 16
+损坏链接数: 5
+
+损坏的链接:
+- docs\GUIDES\setup.md: [Issue](../../issues)
+- docs\LEGACY\Product Requirements Document (PRD).md: [📖 Main README](../README.md)
+- docs\REQUIREMENTS\PRD.md: [Architecture Document](./Architecture.md)
+- docs\REQUIREMENTS\PRD.md: [Project Brief](./ed-research-tool-brief.md)
+- docs\REQUIREMENTS\PRD.md: [README](../README.md)
+
+建议:
+- 定期运行链接检查
+- 优先使用相对路径
+- 避免链接到可能变更的外部资源

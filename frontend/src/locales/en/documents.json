@@ -1,0 +1,65 @@
+{
+  "title": "Documents",
+  "subtitle": "Manage your PDF documents",
+  "upload": {
+    "button": "Upload Document",
+    "title": "Upload PDF",
+    "pageTitle": "Upload Document",
+    "pageSubtitle": "Add a new document to the knowledge base",
+    "dropzone": "Drag and drop your PDF file here, or",
+    "browse": "Browse Files",
+    "titleLabel": "Document Title (Optional)",
+    "titlePlaceholder": "Enter document title...",
+    "quarter": "Quarter",
+    "selectQuarter": "Select Quarter",
+    "year": "Year",
+    "yearPlaceholder": "e.g. 2024",
+    "reportType": "Report Type",
+    "selectReportType": "Select Report Type",
+    "uploading": "Uploading...",
+    "submit": "Upload Document",
+    "reset": "Reset",
+    "success": "Document uploaded successfully! It will be processed and indexed shortly."
+  },
+  "filters": {
+    "searchPlaceholder": "Search documents...",
+    "quarter": "All Quarters",
+    "year": "All Years",
+    "reportType": "All Types",
+    "status": "All Statuses",
+    "clear": "Clear"
+  },
+  "table": {
+    "title": "Document",
+    "quarter": "Quarter",
+    "type": "Type",
+    "status": "Status",
+    "uploadDate": "Upload Date",
+    "actions": "Actions"
+  },
+  "status": {
+    "pending": "Pending",
+    "processing": "Processing",
+    "indexed": "Indexed",
+    "failed": "Failed"
+  },
+  "reportTypes": {
+    "ED_UPDATE": "ED Update",
+    "ECONOMIC_REPORT": "Economic Report",
+    "TOURISM": "Tourism",
+    "OTHER": "Other"
+  },
+  "actions": {
+    "download": "Download",
+    "delete": "Delete"
+  },
+  "empty": {
+    "title": "No documents found",
+    "description": "Upload your first document to get started."
+  },
+  "pagination": {
+    "showing": "Showing {{from}} to {{to}} of {{total}} documents",
+    "previous": "Previous",
+    "next": "Next"
+  }
+}

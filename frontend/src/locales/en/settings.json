@@ -1,0 +1,28 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your preferences",
+  "saveSuccess": "Settings saved successfully!",
+  "profile": {
+    "section": "Profile",
+    "displayName": "Display Name",
+    "email": "Email",
+    "department": "Department",
+    "jobTitle": "Title"
+  },
+  "language": {
+    "title": "Language"
+  },
+  "theme": {
+    "title": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "email": "Email Notifications",
+    "emailDescription": "Receive email notifications for important updates",
+    "browser": "Browser Notifications",
+    "browserDescription": "Receive push notifications in your browser"
+  }
+}

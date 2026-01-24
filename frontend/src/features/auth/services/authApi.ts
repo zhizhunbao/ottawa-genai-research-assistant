@@ -1,0 +1,73 @@
+/**
+ * 认证 API 服务
+ *
+ * 处理用户认证相关的 API 调用。
+ */
+
+import { apiService } from '@/shared/services/apiService'
+import type { User, LoginRequest, LoginResponse } from '@/features/auth/types'
+
+export const authApi = {
+  /**
+   * 用户登录
+   */
+  async login(credentials: LoginRequest): Promise<LoginResponse> {
+    const response = await apiService.post<LoginResponse>(
+      '/auth/login',
+      credentials,
+      { skipAuth: true }
+    )
+    if (!response.data) {
+      throw new Error(response.error || 'Login failed')
+    }
+    return response.data
+  },
+
+  /**
+   * 用户登出
+   */
+  async logout(): Promise<void> {
+    await apiService.post('/auth/logout')
+  },
+
+  /**
+   * 获取当前用户信息
+   */
+  async getCurrentUser(): Promise<User> {
+    const response = await apiService.get<User>('/auth/me')
+    if (!response.data) {
+      throw new Error(response.error || 'Failed to get user info')
+    }
+    return response.data
+  },
+
+  /**
+   * 刷新 token
+   */
+  async refreshToken(): Promise<{ token: string; expiresAt: string }> {
+    const response = await apiService.post<{ token: string; expiresAt: string }>(
+      '/auth/refresh'
+    )
+    if (!response.data) {
+      throw new Error(response.error || 'Failed to refresh token')
+    }
+    return response.data
+  },
+
+  /**
+   * Azure AD 登录回调处理
+   */
+  async handleAzureAdCallback(code: string): Promise<LoginResponse> {
+    const response = await apiService.post<LoginResponse>(
+      '/auth/azure-ad/callback',
+      { code },
+      { skipAuth: true }
+    )
+    if (!response.data) {
+      throw new Error(response.error || 'Azure AD authentication failed')
+    }
+    return response.data
+  },
+}
+
+export default authApi

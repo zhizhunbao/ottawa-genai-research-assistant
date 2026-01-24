@@ -1,0 +1,65 @@
+{
+  "title": "Documents",
+  "subtitle": "Gérer vos documents PDF",
+  "upload": {
+    "button": "Téléverser un document",
+    "title": "Téléverser un PDF",
+    "pageTitle": "Téléverser un document",
+    "pageSubtitle": "Ajouter un nouveau document à la base de connaissances",
+    "dropzone": "Glissez et déposez votre fichier PDF ici, ou",
+    "browse": "Parcourir les fichiers",
+    "titleLabel": "Titre du document (Optionnel)",
+    "titlePlaceholder": "Entrez le titre du document...",
+    "quarter": "Trimestre",
+    "selectQuarter": "Sélectionner le trimestre",
+    "year": "Année",
+    "yearPlaceholder": "ex. 2024",
+    "reportType": "Type de rapport",
+    "selectReportType": "Sélectionner le type de rapport",
+    "uploading": "Téléversement...",
+    "submit": "Téléverser le document",
+    "reset": "Réinitialiser",
+    "success": "Document téléversé avec succès ! Il sera traité et indexé sous peu."
+  },
+  "filters": {
+    "searchPlaceholder": "Rechercher des documents...",
+    "quarter": "Tous les trimestres",
+    "year": "Toutes les années",
+    "reportType": "Tous les types",
+    "status": "Tous les statuts",
+    "clear": "Effacer"
+  },
+  "table": {
+    "title": "Document",
+    "quarter": "Trimestre",
+    "type": "Type",
+    "status": "Statut",
+    "uploadDate": "Date de téléversement",
+    "actions": "Actions"
+  },
+  "status": {
+    "pending": "En attente",
+    "processing": "Traitement",
+    "indexed": "Indexé",
+    "failed": "Échec"
+  },
+  "reportTypes": {
+    "ED_UPDATE": "Mise à jour ED",
+    "ECONOMIC_REPORT": "Rapport économique",
+    "TOURISM": "Tourisme",
+    "OTHER": "Autre"
+  },
+  "actions": {
+    "download": "Télécharger",
+    "delete": "Supprimer"
+  },
+  "empty": {
+    "title": "Aucun document trouvé",
+    "description": "Téléversez votre premier document pour commencer."
+  },
+  "pagination": {
+    "showing": "Affichage de {{from}} à {{to}} sur {{total}} documents",
+    "previous": "Précédent",
+    "next": "Suivant"
+  }
+}
