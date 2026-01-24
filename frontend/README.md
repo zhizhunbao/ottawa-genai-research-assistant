@@ -1,59 +1,47 @@
-# Frontend Application
+# ottawa-genai-research-assistant-frontend
 
-Ottawa GenAI Research Assistant 前端应用。
+Ottawa 市政府企业级研究助手 - 前端应用。基于 AI 技术提供文档处理、知识库检索及自动化研究支持。
 
 ## 技术栈
 
-- **框架**: React 18 + TypeScript
-- **构建工具**: Vite
-- **状态管理**: Zustand
-- **HTTP 客户端**: Axios
-- **样式**: CSS Modules / Tailwind CSS
+- **i18next** ^25.8.0 - 核心依赖库
+- **lucide-react** ^0.563.0 - React 框架
+- **react** ^18.2.0 - React 框架
+- **react-dom** ^18.2.0 - React 框架
+- **react-i18next** ^16.5.3 - React 框架
+- **react-markdown** ^10.1.0 - React 框架
+- **react-router-dom** ^6.21.0 - React 框架
+- **zustand** ^4.4.0 - 核心依赖库
 
-## 项目结构
+## 核心功能
 
-```
-frontend/
-├── src/
-│   ├── app/                    # 应用入口
-│   │   └── App.tsx
-│   ├── features/               # 功能模块（按领域组织）
-│   │   ├── auth/              # 认证功能
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   └── services/
-│   │   └── research/          # 研究功能
-│   │       ├── components/
-│   │       ├── hooks/
-│   │       └── services/
-│   ├── shared/                 # 共享代码
-│   │   ├── components/        # 通用组件
-│   │   ├── hooks/             # 通用 hooks
-│   │   ├── utils/             # 工具函数
-│   │   └── types/             # 类型定义
-│   └── stores/                 # 状态管理
-├── public/
-├── package.json
-└── vite.config.ts
-```
+- **Analysis**: 数据分析与报告提取
+- **Auth**: 用户认证与权限管理
+- **Documents**: 文档处理与知识库管理
+- **Home**: 应用首页预览
+- **Research**: AI 研究与 RAG 核心逻辑
+- **Settings**: 系统配置与首选项
 
 ## 快速开始
 
+### 安装
+
 ```bash
-# 安装依赖
-cd frontend
 npm install
-
-# 运行开发服务器
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 运行测试
-npm test
 ```
 
-## 开发服务器
+### 运行
 
-启动后访问: http://localhost:3000
+```bash
+npm run dev
+```
+
+### 测试
+
+```bash
+npm run test
+```
+
+---
+
+*由 update-docs.js 自动生成 - 最后更新: 2026-01-24*

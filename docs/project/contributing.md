@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢您对 Unknown Project 项目的关注！我们欢迎所有形式的贡献。
+感谢您对 ottawa-genai-research-assistant 项目的关注！我们欢迎所有形式的贡献。
 
 ## 开发流程
 
@@ -50,7 +50,7 @@ docs: update API documentation
 ### 3. 测试要求
 
 - 为新功能添加测试用例
-- 确保所有测试通过：`npm test`
+- 确保所有测试通过：`npm run test`
 - 保持测试覆盖率不低于 80%
 
 ### 4. 文档更新
@@ -74,7 +74,7 @@ git checkout -b feature/your-feature-name
 # ...
 
 # 运行测试
-npm test
+npm run test
 
 # 代码检查
 npm run lint
@@ -180,7 +180,7 @@ npm install
 npm start
 
 # 运行测试
-npm test
+npm run test
 
 # 代码检查
 npm run lint

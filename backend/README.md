@@ -1,59 +1,39 @@
-# Backend Application
+# ottawa-genai-research-assistant-backend
 
-Ottawa GenAI Research Assistant 后端服务。
+Ottawa GenAI Research Assistant Backend API
 
 ## 技术栈
 
-- **框架**: FastAPI
-- **Python**: 3.11+
-- **ORM**: SQLAlchemy (async)
-- **验证**: Pydantic v2
-- **AI**: Azure OpenAI, Azure AI Search
+- **fastapi** latest - 高性能 API 框架
+- **uvicorn standard** latest - ASGI 服务器
 
-## 项目结构
+## 核心功能
 
-```
-backend/
-├── app/
-│   ├── main.py                # FastAPI 入口
-│   ├── core/                  # 核心配置
-│   │   ├── config.py          # 应用配置
-│   │   ├── database.py        # 数据库连接
-│   │   └── security.py        # 认证/授权
-│   ├── shared/                # 共享工具
-│   │   ├── exceptions.py      # 自定义异常
-│   │   ├── schemas.py         # 通用 schemas
-│   │   └── dependencies.py    # 依赖注入
-│   ├── users/                 # 用户功能模块
-│   │   ├── models.py
-│   │   ├── schemas.py
-│   │   ├── service.py
-│   │   └── routes.py
-│   └── research/              # 研究/RAG 功能模块
-│       ├── schemas.py
-│       ├── service.py
-│       └── routes.py
-└── tests/                     # 测试
-    └── conftest.py
-```
+- **Analysis**: 数据分析与报告提取
+- **Documents**: 文档处理与知识库管理
+- **Research**: AI 研究与 RAG 核心逻辑
+- **Users**: 用户个人资料管理
 
 ## 快速开始
 
+### 安装
+
 ```bash
-# 安装依赖
-cd backend
 uv sync
-
-# 运行开发服务器
-uv run uvicorn app.main:app --reload --port 8000
-
-# 运行测试
-uv run pytest tests/ -v
 ```
 
-## API 文档
+### 运行
 
-启动服务后访问:
+```bash
+uv run uvicorn app.main:app --reload
+```
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### 测试
+
+```bash
+uv run pytest
+```
+
+---
+
+_由 update-docs.js 自动生成 - 最后更新: 2026-01-24_

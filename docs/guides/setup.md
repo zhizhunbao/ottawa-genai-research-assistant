@@ -8,7 +8,7 @@
 
 - **Node.js** >= 16.0.0 ([下载地址](https://nodejs.org/))
 - **Git** ([下载地址](https://git-scm.com/))
-
+- **uv** ([安装指南](https://docs.astral.sh/uv/))
 
 ### 推荐工具
 
@@ -22,26 +22,118 @@
 
 ```bash
 git clone <repository-url>
-cd Unknown Project
+cd ottawa-genai-research-assistant
 ```
 
 ### 2. 安装依赖
 
 ```bash
-npm install
+uv sync
 ```
 
 ### 3. 环境配置
 
-暂无环境变量需要配置
+
+复制环境变量模板：
+
+```bash
+cp .env.example .env.local
+```
+
+编辑 `.env.local` 文件，配置以下变量：
+
+
+#### APP_NAME
+- **描述**: 配置项
+- **示例值**: `Ottawa GenAI Research Assistant`
+
+
+#### APP_ENV
+- **描述**: 配置项
+- **示例值**: `development`
+
+
+#### DEBUG
+- **描述**: 配置项
+- **示例值**: `true`
+
+
+#### HOST
+- **描述**: 配置项
+- **示例值**: `0.0.0.0`
+
+
+#### PORT
+- **描述**: 端口号
+- **示例值**: `8000`
+
+
+#### DATABASE_URL
+- **描述**: 服务地址
+- **示例值**: `sqlite+aiosqlite:///./app.db`
+
+
+#### SECRET_KEY
+- **描述**: 密钥/签名 Key
+- **示例值**: `your-secret-key-here-change-in-production`
+
+
+#### ACCESS_TOKEN_EXPIRE_MINUTES
+- **描述**: 配置项
+- **示例值**: `30`
+
+
+#### ALGORITHM
+- **描述**: 配置项
+- **示例值**: `HS256`
+
+
+#### AZURE_OPENAI_ENDPOINT
+- **描述**: 服务地址
+- **示例值**: `https://your-resource.openai.azure.com/`
+
+
+#### AZURE_OPENAI_API_KEY
+- **描述**: API 密钥
+- **示例值**: `your-api-key`
+
+
+#### AZURE_OPENAI_DEPLOYMENT
+- **描述**: 配置项
+- **示例值**: `gpt-4`
+
+
+#### AZURE_OPENAI_API_VERSION
+- **描述**: 配置项
+- **示例值**: `2024-02-15-preview`
+
+
+#### AZURE_SEARCH_ENDPOINT
+- **描述**: 服务地址
+- **示例值**: `https://your-search.search.windows.net`
+
+
+#### AZURE_SEARCH_API_KEY
+- **描述**: API 密钥
+- **示例值**: `your-search-api-key`
+
+
+#### AZURE_SEARCH_INDEX_NAME
+- **描述**: 配置项
+- **示例值**: `research-index`
+
+
+#### CORS_ORIGINS
+- **描述**: 配置项
+- **示例值**: `["http://localhost:3000","http://localhost:5173"]`
+
+
 
 ### 4. 启动开发服务器
 
 ```bash
-npm start
+uv run start
 ```
-
-
 
 ## 开发工作流
 
@@ -49,72 +141,13 @@ npm start
 
 1. **启动开发服务器**
    ```bash
-   npm start
+   uv run start
    ```
 
 2. **运行测试**
    ```bash
-   # 测试脚本待配置
+   uv run test
    ```
-
-3. **代码检查**
-   ```bash
-   # 代码检查脚本待配置
-   ```
-
-4. **代码格式化**
-   ```bash
-   # 格式化脚本待配置
-   ```
-
-### 构建和部署
-
-1. **构建生产版本**
-   ```bash
-   # 构建脚本待配置
-   ```
-
-2. **预览生产版本**
-   ```bash
-   # 预览脚本待配置
-   ```
-
-## 故障排除
-
-### 常见问题
-
-#### 依赖安装失败
-
-```bash
-# 清理缓存
-npm cache clean
-
-# 删除 node_modules 重新安装
-rm -rf node_modules
-npm install
-```
-
-#### 端口被占用
-
-```bash
-# 查找占用端口的进程
-lsof -i :3000
-
-# 杀死进程
-kill -9 <PID>
-```
-
-#### 环境变量问题
-
-1. 确认 `.env.local` 文件存在
-2. 检查变量名拼写是否正确
-3. 重启开发服务器
-
-### 获取帮助
-
-- 查看 [项目文档](../codemaps/index.md)
-- 提交 [Issue](https://github.com/zhizhunbao/ottawa-genai-research-assistant/issues)
-- 联系项目维护者
 
 ## VS Code 配置
 
@@ -125,22 +158,11 @@ kill -9 <PID>
   "recommendations": [
     "esbenp.prettier-vscode",
     "ms-vscode.vscode-typescript-next",
-    "bradlc.vscode-tailwindcss",
-    "ms-vscode.vscode-json"
+    "bradlc.vscode-tailwindcss"
   ]
-}
-```
-
-推荐的工作区设置：
-
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "typescript.preferences.importModuleSpecifier": "relative"
 }
 ```
 
 ---
 
-*由 update-docs.js 自动生成 - 2026-01-24T21:48:20.793Z*
+*由 update-docs.js 自动生成 - 2026-01-24T22:08:02.323Z*
