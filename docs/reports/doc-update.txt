@@ -1,14 +1,14 @@
 文档更新报告
 ================
 
-更新时间: 2026-01-23T23:43:59.395Z
+更新时间: 2026-01-24T21:48:20.794Z
 更新类型: 自动更新
 
 更新的文件:
 - README.md
-- docs/GUIDES/setup.md
-- docs/GUIDES/api.md
-- CONTRIBUTING.md
+- docs/guides/setup.md
+- docs/guides/api.md
+- docs/project/contributing.md
 
 数据源:
 - package.json - 项目信息和脚本

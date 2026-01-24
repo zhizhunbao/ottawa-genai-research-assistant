@@ -183,11 +183,7 @@ npm run type-check
 
 ## 相关文档
 
-- [系统架构](docs/ARCHITECTURE/system-architecture.md)
-- [产品需求文档](docs/REQUIREMENTS/PRD.md)
-- [设置指南](docs/GUIDES/setup.md)
-- [代码地图](docs/CODEMAPS/INDEX.md)
-
----
-
-_此配置文件供 Antigravity AI 助手使用，自动提供项目上下文_
+- [系统架构](docs/architecture/system-architecture.md)
+- [产品需求文档](docs/requirements/master_prd.md)
+- [设置指南](docs/guides/setup.md)
+- [代码地图](docs/codemaps/index.md)

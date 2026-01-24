@@ -1,68 +1,100 @@
 # 后端架构
 
-**最后更新:** 2026-01-23  
-**状态:** ⏳ 待实现
+**最后更新:** 2026-01-24
+**框架:** Python
+**入口点:** backend\app\main.py
 
----
-
-## 规划结构
+## 项目结构
 
 ```
 backend/
-├── app/
-│   ├── main.py              # FastAPI 入口
-│   ├── api/                 # API 路由
-│   │   ├── v1/
-│   │   │   ├── query.py     # 查询接口
-│   │   │   ├── documents.py # 文档接口
-│   │   │   └── auth.py      # 认证接口
-│   │   └── deps.py          # 依赖注入
-│   ├── core/                # 核心配置
-│   │   ├── config.py        # 应用配置
-│   │   └── security.py      # 安全配置
-│   ├── models/              # 数据模型
-│   │   ├── document.py
-│   │   └── query.py
-│   ├── services/            # 业务逻辑
-│   │   ├── rag_service.py   # RAG 流水线
-│   │   ├── document_service.py
-│   │   └── embedding_service.py
-│   └── utils/               # 工具函数
-├── tests/                   # 测试
-└── requirements.txt         # 依赖
+  app/
+    __init__.py
+    analysis/
+      routes.py
+      schemas.py
+      service.py
+    core/
+      __init__.py
+      config.py
+      database.py
+      dependencies.py
+      document_store.py
+      enums.py
+      exceptions.py
+      models.py
+      schemas.py
+      security.py
+      utils.py
+    documents/
+      __init__.py
+      routes.py
+      schemas.py
+      service.py
+    main.py
+    research/
+      __init__.py
+      routes.py
+      schemas.py
+      service.py
+    users/
+      __init__.py
+      models.py
+      routes.py
+      schemas.py
+      service.py
+  tests/
+    __init__.py
+    analysis/
+      __init__.py
+      test_routes.py
+      test_service.py
+    conftest.py
+    core/
+      __init__.py
+      test_document_store.py
+    documents/
+      __init__.py
+      test_routes.py
+      test_service.py
+    research/
+      __init__.py
+      test_routes.py
+      test_service.py
+    users/
+      __init__.py
+      test_routes.py
+      test_service.py
+
 ```
 
-## 技术栈
+## API 路由
 
-| 技术            | 版本   | 用途        |
-| --------------- | ------ | ----------- |
-| Python          | 3.12   | 运行时      |
-| FastAPI         | 0.104+ | Web 框架    |
-| Pydantic        | 2.x    | 数据验证    |
-| Semantic Kernel | 1.x    | AI 编排     |
-| uvicorn         | 0.24+  | ASGI 服务器 |
+| 文件 | 路径 | 用途 |
+|------|------|------|
+| routes.py | backend\app\analysis\routes.py | 路由定义 |
+| routes.py | backend\app\documents\routes.py | 路由定义 |
+| routes.py | backend\app\research\routes.py | 路由定义 |
+| routes.py | backend\app\users\routes.py | 路由定义 |
+| test_routes.py | backend\tests\analysis\test_routes.py | 路由定义 |
+| test_routes.py | backend\tests\documents\test_routes.py | 路由定义 |
+| test_routes.py | backend\tests\research\test_routes.py | 路由定义 |
+| test_routes.py | backend\tests\users\test_routes.py | 路由定义 |
 
-## 核心服务（规划）
-
-| 服务              | 职责                 |
-| ----------------- | -------------------- |
-| RAG Service       | 检索增强生成流水线   |
-| Document Service  | PDF 处理和分块       |
-| Embedding Service | 向量化服务           |
-| Vector Store      | Azure AI Search 集成 |
 
 ## 数据流
 
-```
-HTTP 请求 → FastAPI 路由 → 业务服务 → Azure 服务 → 响应返回
-```
+HTTP 请求 → 路由处理 → 业务逻辑 → 数据库操作 → 响应返回
 
-## 相关文档
+## 外部依赖
 
-- [前端架构](frontend.md)
-- [数据库设计](database.md)
-- [外部集成](integrations.md)
+暂无相关依赖
+
+## 相关领域
+
+- [前端架构](frontend.md) - 用户界面
+- [数据库结构](database.md) - 数据持久化
+- [外部集成](integrations.md) - 第三方 API
 
 ---
-
-_代码生成后此文档将自动更新_
+*由 generate-codemaps.js 自动生成 - 2026-01-24T21:48:20.750Z*

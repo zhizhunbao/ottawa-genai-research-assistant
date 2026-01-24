@@ -1,4 +1,4 @@
-# Ottawa GenAI Research Assistant
+# Unknown Project
 
 项目描述待添加
 
@@ -13,6 +13,8 @@
 ```bash
 npm install
 ```
+
+
 
 ### 运行项目
 
@@ -29,11 +31,12 @@ npm start
 
 ## 项目结构
 
-详细架构请参考 [架构文档](docs/CODEMAPS/INDEX.md)
+详细架构请参考 [架构文档](docs/codemaps/index.md)
 
 ### 主要目录
 
 - `docs/` - 项目文档
+
 
 ## 可用脚本
 
@@ -41,12 +44,11 @@ npm start
 
 ## 文档
 
-- **[📋 完整文档索引](docs/INDEX.md)** - 所有项目文档的导航入口
-- **[🎯 产品需求文档](docs/REQUIREMENTS/PRD.md)** - 完整的产品需求规格
-- **[🏗️ 系统架构](docs/ARCHITECTURE/system-architecture.md)** - 技术架构设计
-- **[🗺️ 代码地图](docs/CODEMAPS/INDEX.md)** - 自动生成的架构概览
-- **[📚 设置指南](docs/GUIDES/setup.md)** - 开发环境配置
-- **[🤝 贡献指南](CONTRIBUTING.md)** - 参与项目开发
+- [设置指南](docs/guides/setup.md) - 详细的开发环境设置
+- [API 参考](docs/guides/api.md) - API 接口文档
+- [贡献指南](docs/project/contributing.md) - 如何参与项目开发
+- [变更日志](docs/project/changelog.md) - 项目历史记录
+- [架构设计](docs/codemaps/index.md) - 系统架构概览
 
 ## 技术栈
 
@@ -64,4 +66,4 @@ MIT
 
 ---
 
-_此文档由 Kiro 自动生成和维护 - 最后更新: 2026-01-23_
+*由 update-docs.js 自动生成 - 最后更新: 2026-01-24*
