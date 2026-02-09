@@ -116,6 +116,8 @@ export function useAuth() {
     logout,
     refreshUser,
     clearError,
+    setError,
+    setLoading,
   }
 }
 

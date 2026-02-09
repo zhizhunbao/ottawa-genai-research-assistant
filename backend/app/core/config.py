@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     # Azure Key Vault (Production)
     azure_key_vault_url: str = ""
 
+    # Azure AD / Entra ID Authentication
+    azure_ad_tenant_id: str = ""
+    azure_ad_client_id: str = ""
+
     # CORS 配置
     cors_origins: List[str] = ["http://localhost:3000"]
 

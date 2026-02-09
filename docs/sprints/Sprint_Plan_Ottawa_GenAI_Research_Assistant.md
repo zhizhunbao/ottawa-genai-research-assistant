@@ -226,34 +226,34 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### US-101: Frontend Framework Migration
 
-**Story Points**: 8 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 8 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
-> **As a** developer,  
-> **I want to** migrate the frontend from Create React App to Vite,  
+> **As a** developer,
+> **I want to** migrate the frontend from Create React App to Vite,
 > **So that** I can eliminate dependency vulnerabilities and improve development experience.
 
 **Acceptance Criteria**:
 
-- [ ] Initialize new project structure with Vite
-- [ ] Migrate all existing components and routes
-- [ ] Maintain same functionality and UI
-- [ ] Build artifacts size ≤ CRA version
-- [ ] Dev server hot reload works correctly
-- [ ] No high-risk npm audit vulnerabilities
+- [x] Initialize new project structure with Vite
+- [x] Migrate all existing components and routes
+- [x] Maintain same functionality and UI
+- [x] Build artifacts size ≤ CRA version
+- [x] Dev server hot reload works correctly
+- [x] No high-risk npm audit vulnerabilities
 
 **Task Breakdown**:
 
 | #   | Task                                            | Hours | Owner       | Status |
 | --- | ----------------------------------------------- | ----- | ----------- | ------ |
-| 1   | Initialize Vite project with React + TypeScript | 2h    | Hye Ran Yoo | ⬜     |
-| 2   | Configure build settings and paths              | 3h    | Hye Ran Yoo | ⬜     |
-| 3   | Migrate core components                         | 8h    | Hye Ran Yoo | ⬜     |
-| 4   | Migrate routing configuration                   | 3h    | Hye Ran Yoo | ⬜     |
-| 5   | Update API integration layer                    | 4h    | Hye Ran Yoo | ⬜     |
-| 6   | Run security audit and fix vulnerabilities      | 2h    | Hye Ran Yoo | ⬜     |
-| 7   | Verify build artifacts and performance          | 2h    | Travis Yi   | ⬜     |
+| 1   | Initialize Vite project with React + TypeScript | 2h    | Hye Ran Yoo | ✅     |
+| 2   | Configure build settings and paths              | 3h    | Hye Ran Yoo | ✅     |
+| 3   | Migrate core components                         | 8h    | Hye Ran Yoo | ✅     |
+| 4   | Migrate routing configuration                   | 3h    | Hye Ran Yoo | ✅     |
+| 5   | Update API integration layer                    | 4h    | Hye Ran Yoo | ✅     |
+| 6   | Run security audit and fix vulnerabilities      | 2h    | Hye Ran Yoo | ✅     |
+| 7   | Verify build artifacts and performance          | 2h    | Travis Yi   | ✅     |
 
 **Dependencies**: None
 
@@ -261,22 +261,22 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### US-105: Azure Entra ID Authentication
 
-**Story Points**: 8 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 8 | **Priority**: P0 | **Status**: 🟡 In Progress
 
 **User Story**:
 
-> **As a** user,  
-> **I want to** log in via Azure Entra ID,  
+> **As a** user,
+> **I want to** log in via Azure Entra ID,
 > **So that** I can use enterprise single sign-on.
 
 **Acceptance Criteria**:
 
-- [ ] Create Azure AD App Registration
+- [ ] Create Azure AD App Registration (待用户在 Azure Portal 创建)
 - [ ] Configure Redirect URI
-- [ ] Frontend integrates MSAL.js
-- [ ] Backend validates JWT Token
-- [ ] Unauthenticated users redirect to login
-- [ ] **Remove** all Google OAuth code
+- [x] Frontend integrates MSAL.js
+- [x] Backend validates JWT Token
+- [x] Unauthenticated users redirect to login
+- [x] **Remove** all Google OAuth code (无需删除，项目未使用)
 
 **Task Breakdown**:
 
@@ -284,11 +284,11 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 | --- | --------------------------------------- | ----- | ----------- | ------ |
 | 1   | Create Azure AD App Registration        | 2h    | Travis Yi   | ⬜     |
 | 2   | Configure redirect URIs and permissions | 2h    | Travis Yi   | ⬜     |
-| 3   | Implement MSAL.js in frontend           | 6h    | Hye Ran Yoo | ⬜     |
-| 4   | Create authentication context/provider  | 4h    | Hye Ran Yoo | ⬜     |
-| 5   | Implement backend JWT validation        | 5h    | Peng Wang   | ⬜     |
-| 6   | Create protected route middleware       | 3h    | Peng Wang   | ⬜     |
-| 7   | Remove Google OAuth code                | 2h    | Hye Ran Yoo | ⬜     |
+| 3   | Implement MSAL.js in frontend           | 6h    | Hye Ran Yoo | ✅     |
+| 4   | Create authentication context/provider  | 4h    | Hye Ran Yoo | ✅     |
+| 5   | Implement backend JWT validation        | 5h    | Peng Wang   | ✅     |
+| 6   | Create protected route middleware       | 3h    | Peng Wang   | ✅     |
+| 7   | Remove Google OAuth code                | 2h    | Hye Ran Yoo | ✅     |
 | 8   | End-to-end authentication testing       | 3h    | Hye Ran Yoo | ⬜     |
 
 **Dependencies**: None

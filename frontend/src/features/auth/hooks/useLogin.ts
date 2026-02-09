@@ -2,12 +2,14 @@
  * 登录 Hook
  *
  * 提供登录页面的业务逻辑，包括表单验证、提交处理等。
+ * 支持 Azure AD SSO 登录。
  * 遵循 dev-frontend_patterns skill 规范。
  */
 
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useAzureLogin } from '@/features/auth/components/MsalAuthProvider'
 
 interface FormErrors {
   email?: string
@@ -16,33 +18,34 @@ interface FormErrors {
 
 export function useLogin() {
   const navigate = useNavigate()
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuth()
-  
+  const { login, isLoading, error, clearError, isAuthenticated, setError, setLoading } = useAuth()
+  const { login: azureLogin } = useAzureLogin()
+
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
   // 验证表单
   const validateForm = useCallback((email: string, password: string): FormErrors => {
     const errors: FormErrors = {}
-    
+
     if (!email.trim()) {
       errors.email = 'Email is required'
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       errors.email = 'Invalid email format'
     }
-    
+
     if (!password) {
       errors.password = 'Password is required'
     } else if (password.length < 6) {
       errors.password = 'Password must be at least 6 characters'
     }
-    
+
     return errors
   }, [])
 
-  // 提交表单
+  // 提交表单 (legacy email/password login)
   const handleSubmit = useCallback(async (email: string, password: string) => {
     const errors = validateForm(email, password)
-    
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
       return
@@ -50,7 +53,7 @@ export function useLogin() {
 
     clearError()
     setFormErrors({})
-    
+
     const result = await login({ email, password })
     if (result.success) {
       navigate('/chat')
@@ -65,10 +68,20 @@ export function useLogin() {
   }, [formErrors])
 
   // Azure AD 登录
-  const handleAzureAdLogin = useCallback(() => {
-    // TODO: Implement Azure AD SSO
-    alert('Azure AD login coming soon...')
-  }, [])
+  const handleAzureAdLogin = useCallback(async () => {
+    try {
+      setLoading(true)
+      clearError()
+      await azureLogin()
+      // Navigation happens automatically via MsalAuthProvider state sync
+      navigate('/chat')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Azure AD login failed'
+      setError(errorMessage)
+    } finally {
+      setLoading(false)
+    }
+  }, [azureLogin, clearError, setError, setLoading, navigate])
 
   // 如果已认证，重定向
   const redirectIfAuthenticated = useCallback(() => {
@@ -85,7 +98,7 @@ export function useLogin() {
     error,
     formErrors,
     isAuthenticated,
-    
+
     // 方法
     handleSubmit,
     handleInputChange,

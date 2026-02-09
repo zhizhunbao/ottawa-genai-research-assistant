@@ -14,14 +14,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import get_current_user_id
+from app.core.azure_auth import (
+    get_current_user_azure_ad,
+    get_current_user_id_azure_ad,
+    get_current_user_optional,
+)
 from app.core.config import settings
 
 
 # 数据库会话依赖
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
-# 当前用户 ID 依赖
+# 当前用户 ID 依赖 (legacy local auth)
 CurrentUserId = Annotated[str, Depends(get_current_user_id)]
+
+# Azure AD 用户依赖
+CurrentUserAzureAD = Annotated[dict, Depends(get_current_user_azure_ad)]
+CurrentUserIdAzureAD = Annotated[str, Depends(get_current_user_id_azure_ad)]
+OptionalCurrentUser = Annotated[Optional[dict], Depends(get_current_user_optional)]
 
 
 class PaginationParams:
