@@ -83,32 +83,32 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### US-102: Azure Storage Configuration
 
-**Story Points**: 5 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 5 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
-> **As a** system administrator,  
-> **I want to** configure Azure Blob Storage as document storage,  
+> **As a** system administrator,
+> **I want to** configure Azure Blob Storage as document storage,
 > **So that** documents can be securely and persistently stored.
 
 **Acceptance Criteria**:
 
-- [ ] Create Azure Blob Storage account (Standard LRS)
-- [ ] Configure container access policies
-- [ ] Store connection string in Azure Key Vault
-- [ ] Backend can access Blob Storage via SDK
-- [ ] Support PDF file upload and download
+- [x] Create Azure Blob Storage account (Standard LRS)
+- [x] Configure container access policies
+- [x] Store connection string in Azure Key Vault
+- [x] Backend can access Blob Storage via SDK
+- [x] Support PDF file upload and download
 
 **Task Breakdown**:
 
 | #   | Task                                           | Hours | Owner       | Status |
 | --- | ---------------------------------------------- | ----- | ----------- | ------ |
-| 1   | Create Azure Blob Storage account              | 2h    | Travis Yi   | ⬜     |
-| 2   | Configure container and access policies        | 2h    | Travis Yi   | ⬜     |
-| 3   | Set up Azure Key Vault                         | 3h    | Travis Yi   | ⬜     |
-| 4   | Implement backend Blob Storage SDK integration | 6h    | Peng Wang   | ⬜     |
-| 5   | Create upload/download API endpoints           | 4h    | Peng Wang   | ⬜     |
-| 6   | Write unit tests for storage operations        | 3h    | Hye Ran Yoo | ⬜     |
+| 1   | Create Azure Blob Storage account              | 2h    | Travis Yi   | ✅     |
+| 2   | Configure container and access policies        | 2h    | Travis Yi   | ✅     |
+| 3   | Set up Azure Key Vault                         | 3h    | Travis Yi   | ✅     |
+| 4   | Implement backend Blob Storage SDK integration | 6h    | Peng Wang   | ✅     |
+| 5   | Create upload/download API endpoints           | 4h    | Peng Wang   | ✅     |
+| 6   | Write unit tests for storage operations        | 3h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: None
 
@@ -116,33 +116,33 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### US-103: Azure AI Search Configuration
 
-**Story Points**: 8 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 8 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
-> **As a** system administrator,  
-> **I want to** configure Azure AI Search as vector storage,  
+> **As a** system administrator,
+> **I want to** configure Azure AI Search as vector storage,
 > **So that** it replaces local vector storage (FAISS/Chroma).
 
 **Acceptance Criteria**:
 
-- [ ] Create Azure AI Search service (Standard S1)
-- [ ] Create document index (with text and vector fields)
-- [ ] Configure hybrid search (Vector + Keyword)
-- [ ] Store API Key in Azure Key Vault
-- [ ] Backend can execute search queries
-- [ ] **Remove** all local vector storage code
+- [x] Create Azure AI Search service (Standard S1)
+- [x] Create document index (with text and vector fields)
+- [x] Configure hybrid search (Vector + Keyword)
+- [x] Store API Key in Azure Key Vault
+- [x] Backend can execute search queries
+- [x] **Remove** all local vector storage code
 
 **Task Breakdown**:
 
 | #   | Task                                    | Hours | Owner       | Status |
 | --- | --------------------------------------- | ----- | ----------- | ------ |
-| 1   | Create Azure AI Search service          | 2h    | Travis Yi   | ⬜     |
-| 2   | Design and create document index schema | 4h    | Travis Yi   | ⬜     |
-| 3   | Configure hybrid search settings        | 3h    | Peng Wang   | ⬜     |
-| 4   | Implement search SDK integration        | 8h    | Peng Wang   | ⬜     |
-| 5   | Remove FAISS/Chroma local storage code  | 4h    | Peng Wang   | ⬜     |
-| 6   | Test hybrid search functionality        | 4h    | Hye Ran Yoo | ⬜     |
+| 1   | Create Azure AI Search service          | 2h    | Travis Yi   | ✅     |
+| 2   | Design and create document index schema | 4h    | Travis Yi   | ✅     |
+| 3   | Configure hybrid search settings        | 3h    | Peng Wang   | ✅     |
+| 4   | Implement search SDK integration        | 8h    | Peng Wang   | ✅     |
+| 5   | Remove FAISS/Chroma local storage code  | 4h    | Peng Wang   | ✅     |
+| 6   | Test hybrid search functionality        | 4h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: US-102 (Key Vault)
 
@@ -150,32 +150,32 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### US-104: Azure OpenAI Configuration
 
-**Story Points**: 5 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 5 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
-> **As a** system administrator,  
-> **I want to** configure Azure OpenAI / AI Foundry service,  
+> **As a** system administrator,
+> **I want to** configure Azure OpenAI / AI Foundry service,
 > **So that** I can use enterprise-grade LLM endpoints.
 
 **Acceptance Criteria**:
 
-- [ ] Deploy GPT-4o model
-- [ ] Deploy text-embedding-ada-002 model
-- [ ] Store endpoint and key in Azure Key Vault
-- [ ] Backend calls via Azure OpenAI SDK
-- [ ] **Remove** all direct OpenAI endpoint code
+- [x] Deploy GPT-4o model
+- [x] Deploy text-embedding-ada-002 model
+- [x] Store endpoint and key in Azure Key Vault
+- [x] Backend calls via Azure OpenAI SDK
+- [x] **Remove** all direct OpenAI endpoint code
 
 **Task Breakdown**:
 
 | #   | Task                                   | Hours | Owner       | Status |
 | --- | -------------------------------------- | ----- | ----------- | ------ |
-| 1   | Create Azure AI Foundry resource       | 2h    | Travis Yi   | ⬜     |
-| 2   | Deploy GPT-4o model                    | 2h    | Travis Yi   | ⬜     |
-| 3   | Deploy embedding model                 | 2h    | Travis Yi   | ⬜     |
-| 4   | Implement Azure OpenAI SDK integration | 6h    | Peng Wang   | ⬜     |
-| 5   | Remove direct OpenAI API code          | 3h    | Peng Wang   | ⬜     |
-| 6   | Test LLM API calls                     | 3h    | Hye Ran Yoo | ⬜     |
+| 1   | Create Azure AI Foundry resource       | 2h    | Travis Yi   | ✅     |
+| 2   | Deploy GPT-4o model                    | 2h    | Travis Yi   | ✅     |
+| 3   | Deploy embedding model                 | 2h    | Travis Yi   | ✅     |
+| 4   | Implement Azure OpenAI SDK integration | 6h    | Peng Wang   | ✅     |
+| 5   | Remove direct OpenAI API code          | 3h    | Peng Wang   | ✅     |
+| 6   | Test LLM API calls                     | 3h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: US-102 (Key Vault)
 
@@ -185,7 +185,7 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### Backend Azure SDK Integration
 
-**Story Points**: 3 | **Priority**: P1 | **Status**: ⬜ To Do
+**Story Points**: 3 | **Priority**: P1 | **Status**: ✅ Done
 
 **Description**: Integrate all Azure SDKs into the FastAPI backend with proper configuration management.
 
@@ -193,9 +193,9 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 | #   | Task                                      | Hours | Owner     | Status |
 | --- | ----------------------------------------- | ----- | --------- | ------ |
-| 1   | Create Azure configuration module         | 4h    | Peng Wang | ⬜     |
-| 2   | Implement environment variable management | 3h    | Peng Wang | ⬜     |
-| 3   | Create health check endpoints             | 2h    | Peng Wang | ⬜     |
+| 1   | Create Azure configuration module         | 4h    | Peng Wang | ✅     |
+| 2   | Implement environment variable management | 3h    | Peng Wang | ✅     |
+| 3   | Create health check endpoints             | 2h    | Peng Wang | ✅     |
 
 **Dependencies**: US-102, US-103, US-104
 
@@ -203,10 +203,10 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ### Sprint 1 Definition of Done ✅
 
-- [ ] All Azure services provisioned and accessible
-- [ ] Connection strings and API keys stored in Key Vault
-- [ ] Backend can connect to all Azure services
-- [ ] Local vector storage code removed
+- [x] All Azure services provisioned and accessible
+- [x] Connection strings and API keys stored in Key Vault
+- [x] Backend can connect to all Azure services
+- [x] Local vector storage code removed
 - [ ] All tests passing
 - [ ] Documentation updated
 

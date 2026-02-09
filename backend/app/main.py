@@ -21,6 +21,7 @@ from app.users.routes import router as users_router
 from app.research.routes import router as research_router
 from app.analysis.routes import router as analysis_router
 from app.documents.routes import router as documents_router
+from app.health.routes import router as health_router
 
 
 @asynccontextmanager
@@ -57,6 +58,7 @@ app.include_router(users_router)
 app.include_router(research_router)
 app.include_router(analysis_router)
 app.include_router(documents_router)
+app.include_router(health_router)
 
 
 # 全局异常处理器
