@@ -467,6 +467,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 **Acceptance Criteria**:
 
 - [ ] User input returns results within 3 seconds
+- [ ] **Search latency < 500ms** (Azure AI Search query time)
 - [ ] Retrieval uses Top-5 hybrid search (Cosine + BM25)
 - [ ] Results sorted by relevance
 - [ ] Support English and French queries

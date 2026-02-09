@@ -301,6 +301,225 @@ This document describes the target production architecture for the Ottawa GenAI 
 
 ---
 
+## Chat History (Azure Cosmos DB)
+
+### Purpose
+Persist user chat sessions for conversation continuity across logins.
+
+### Data Model
+
+```json
+{
+  "id": "session-uuid",
+  "userId": "entra-id-user-oid",
+  "title": "Q1 2024 Employment Trends",
+  "createdAt": "2026-02-10T10:00:00Z",
+  "updatedAt": "2026-02-10T10:15:00Z",
+  "messages": [
+    {
+      "id": "msg-uuid",
+      "role": "user",
+      "content": "What was the employment rate in Q1 2024?",
+      "timestamp": "2026-02-10T10:00:00Z"
+    },
+    {
+      "id": "msg-uuid",
+      "role": "assistant",
+      "content": "According to the Q1 2024 report...",
+      "citations": [
+        {
+          "documentName": "Q1_2024_Economic_Update.pdf",
+          "pageNumber": 5,
+          "excerpt": "Employment rate increased to 62.3%..."
+        }
+      ],
+      "confidence": "high",
+      "timestamp": "2026-02-10T10:00:02Z"
+    }
+  ]
+}
+```
+
+### API Endpoints
+
+```
+GET    /api/v1/chat/sessions          - List user's chat sessions
+POST   /api/v1/chat/sessions          - Create new session
+GET    /api/v1/chat/sessions/{id}     - Get session with messages
+DELETE /api/v1/chat/sessions/{id}     - Delete session
+POST   /api/v1/chat/sessions/{id}/messages - Add message to session
+```
+
+### Partition Strategy
+- **Partition Key**: `userId` (for efficient user-scoped queries)
+- **TTL**: Optional 90-day retention policy
+
+---
+
+## Internationalization (i18n)
+
+### Architecture
+
+```
+Frontend (React)
+    │
+    ├── react-i18next
+    │       │
+    │       ├── /locales/en/translation.json
+    │       └── /locales/fr/translation.json
+    │
+    └── LanguageContext
+            │
+            └── localStorage (persist preference)
+```
+
+### Implementation
+- **Library**: react-i18next
+- **Language Detection**: Browser preference → User setting → Default (en)
+- **Persistence**: localStorage key `i18n-language`
+- **Scope**: UI labels only (LLM responses in query language)
+
+### Translation Files Structure
+
+```json
+{
+  "nav": {
+    "home": "Home / Accueil",
+    "chat": "Chat / Clavardage",
+    "reports": "Reports / Rapports"
+  },
+  "chat": {
+    "placeholder": "Ask a question... / Posez une question...",
+    "send": "Send / Envoyer"
+  }
+}
+```
+
+---
+
+## Visualization Components
+
+### Architecture
+
+```
+Backend (FastAPI)                    Frontend (React)
+    │                                     │
+    └── /api/v1/charts/data ────────────► Recharts
+            │                                 │
+            └── Extract numeric data          ├── LineChart
+                from RAG response             ├── BarChart
+                                              └── PieChart
+```
+
+### Chart Generation Flow
+1. RAG response includes structured data (JSON)
+2. Frontend detects `chartData` in response
+3. Recharts renders appropriate chart type
+4. Export functionality: PNG/PDF via html2canvas
+
+### Supported Chart Types
+
+| Type | Use Case | Data Format |
+|------|----------|-------------|
+| LineChart | Trends over time | `[{period, value}]` |
+| BarChart | Category comparison | `[{category, value}]` |
+| PieChart | Distribution | `[{label, value}]` |
+
+---
+
+## Statistics & Dashboard API
+
+### Endpoints
+
+```
+GET /api/v1/stats/overview
+GET /api/v1/stats/documents
+GET /api/v1/stats/queries?from=DATE&to=DATE
+GET /api/v1/stats/usage
+```
+
+### Response Format
+
+```json
+{
+  "overview": {
+    "totalDocuments": 48,
+    "indexedDocuments": 45,
+    "totalQueries": 1250,
+    "avgResponseTime": 1.8
+  },
+  "period": {
+    "from": "2026-01-01",
+    "to": "2026-02-08"
+  }
+}
+```
+
+### Data Sources
+- **Document stats**: Azure Blob Storage + AI Search index
+- **Query stats**: Application Insights custom metrics
+- **Usage stats**: Cosmos DB aggregations
+
+---
+
+## LLM Evaluation Service
+
+### Architecture
+
+```
+RAG Orchestrator
+    │
+    └── Response + Context
+            │
+            ▼
+    Evaluation Service
+            │
+            ├── GPT-4o (Evaluator)
+            │       │
+            │       └── 6-Dimension Scoring
+            │
+            └── Azure Cosmos DB
+                    │
+                    └── Evaluation Results
+```
+
+### 6-Dimension Evaluation
+
+| Dimension | Description | Prompt Strategy |
+|-----------|-------------|-----------------|
+| Coherence | Logical flow | "Rate the logical coherence 1-5" |
+| Relevancy | Query alignment | "Rate relevance to question 1-5" |
+| Completeness | Answer thoroughness | "Rate completeness 1-5" |
+| Grounding | Based on context (no hallucination) | "Rate grounding in sources 1-5" |
+| Helpfulness | Practical usefulness | "Rate helpfulness 1-5" |
+| Faithfulness | Citation accuracy | "Rate citation accuracy 1-5" |
+
+### Evaluation Data Model
+
+```json
+{
+  "id": "eval-uuid",
+  "queryId": "query-uuid",
+  "timestamp": "2026-02-10T10:00:00Z",
+  "scores": {
+    "coherence": 4.5,
+    "relevancy": 4.0,
+    "completeness": 3.5,
+    "grounding": 5.0,
+    "helpfulness": 4.0,
+    "faithfulness": 4.5
+  },
+  "overallScore": 4.25,
+  "alertTriggered": false
+}
+```
+
+### Sampling Strategy
+- **Production**: Evaluate 10% of queries (cost optimization)
+- **Alert Threshold**: Overall score < 3.5 triggers notification
+
+---
+
 ## Migration Path
 
 ### Phase 1: Infrastructure Setup (Current)
@@ -379,6 +598,6 @@ AZURE_KEY_VAULT_URL=https://xxx.vault.azure.net/
 
 ---
 
-**Document Maintained By**: Development Team  
-**Last Updated**: January 2026  
-**Next Review**: February 2026
+**Document Maintained By**: Development Team
+**Last Updated**: February 2026
+**Next Review**: March 2026
