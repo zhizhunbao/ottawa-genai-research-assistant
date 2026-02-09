@@ -207,8 +207,8 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 - [x] Connection strings and API keys stored in Key Vault
 - [x] Backend can connect to all Azure services
 - [x] Local vector storage code removed
-- [ ] All tests passing
-- [ ] Documentation updated
+- [x] All tests passing
+- [x] Documentation updated
 
 ---
 
@@ -261,7 +261,7 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ##### US-105: Azure Entra ID Authentication
 
-**Story Points**: 8 | **Priority**: P0 | **Status**: 🟡 In Progress
+**Story Points**: 8 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
@@ -271,8 +271,8 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 **Acceptance Criteria**:
 
-- [ ] Create Azure AD App Registration (待用户在 Azure Portal 创建)
-- [ ] Configure Redirect URI
+- [x] Create Azure AD App Registration
+- [x] Configure Redirect URI
 - [x] Frontend integrates MSAL.js
 - [x] Backend validates JWT Token
 - [x] Unauthenticated users redirect to login
@@ -282,14 +282,14 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 | #   | Task                                    | Hours | Owner       | Status |
 | --- | --------------------------------------- | ----- | ----------- | ------ |
-| 1   | Create Azure AD App Registration        | 2h    | Travis Yi   | ⬜     |
-| 2   | Configure redirect URIs and permissions | 2h    | Travis Yi   | ⬜     |
+| 1   | Create Azure AD App Registration        | 2h    | Travis Yi   | ✅     |
+| 2   | Configure redirect URIs and permissions | 2h    | Travis Yi   | ✅     |
 | 3   | Implement MSAL.js in frontend           | 6h    | Hye Ran Yoo | ✅     |
 | 4   | Create authentication context/provider  | 4h    | Hye Ran Yoo | ✅     |
 | 5   | Implement backend JWT validation        | 5h    | Peng Wang   | ✅     |
 | 6   | Create protected route middleware       | 3h    | Peng Wang   | ✅     |
 | 7   | Remove Google OAuth code                | 2h    | Hye Ran Yoo | ✅     |
-| 8   | End-to-end authentication testing       | 3h    | Hye Ran Yoo | ⬜     |
+| 8   | End-to-end authentication testing       | 3h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: None
 
@@ -317,10 +317,10 @@ Migrate the project from local/hybrid architecture to a fully Azure cloud-native
 
 ### Sprint 2 Definition of Done ✅
 
-- [ ] Frontend runs on Vite with no vulnerabilities
-- [ ] Users can authenticate via Azure Entra ID
-- [ ] Protected routes working correctly
-- [ ] All Google OAuth and CRA code removed
+- [x] Frontend runs on Vite with no vulnerabilities
+- [x] Users can authenticate via Azure Entra ID
+- [x] Protected routes working correctly
+- [x] All Google OAuth and CRA code removed
 - [ ] All tests passing
 - [ ] Documentation updated
 
