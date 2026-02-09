@@ -41,13 +41,21 @@ class Settings(BaseSettings):
     # Azure OpenAI
     azure_openai_endpoint: str = ""
     azure_openai_api_key: str = ""
-    azure_openai_deployment: str = "gpt-4"
     azure_openai_api_version: str = "2024-02-15-preview"
+    azure_openai_chat_deployment: str = "gpt-4o-mini"
+    azure_openai_embedding_deployment: str = "text-embedding-ada-002"
 
     # Azure AI Search
     azure_search_endpoint: str = ""
     azure_search_api_key: str = ""
     azure_search_index_name: str = "research-index"
+
+    # Azure Blob Storage
+    azure_storage_connection_string: str = ""
+    azure_storage_container_name: str = "documents"
+
+    # Azure Key Vault (Production)
+    azure_key_vault_url: str = ""
 
     # CORS 配置
     cors_origins: List[str] = ["http://localhost:3000"]

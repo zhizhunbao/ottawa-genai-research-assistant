@@ -27,10 +27,27 @@ class DocumentService:
         flattened.update(data)
         return flattened
 
-    async def upload(self, data: DocumentCreate, owner_id: Optional[str] = None) -> Dict[str, Any]:
-        """上传并创建文档记录"""
+    async def upload(
+        self,
+        data: DocumentCreate,
+        owner_id: Optional[str] = None,
+        blob_info: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        上传并创建文档记录
+
+        Args:
+            data: 文档创建数据
+            owner_id: 所有者 ID
+            blob_info: Azure Blob Storage 信息 (blob_name, blob_url)
+        """
         doc_data = data.model_dump()
-        
+
+        # 添加 Blob Storage 信息
+        if blob_info:
+            doc_data["blob_name"] = blob_info.get("blob_name")
+            doc_data["blob_url"] = blob_info.get("blob_url")
+
         result = await self.doc_store.create(
             doc_type=DocumentType.UPLOADED_FILE,
             data=doc_data,

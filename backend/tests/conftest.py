@@ -4,14 +4,18 @@ Pytest 配置和共享 Fixtures
 遵循 dev-tdd_workflow skill 的测试模式。
 """
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional, TYPE_CHECKING
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.database import Base, get_db
+from app.core.dependencies import get_search_service_optional
 from app.main import app
+
+if TYPE_CHECKING:
+    from app.core.azure_search import AzureSearchService
 
 
 # 测试数据库引擎
@@ -41,7 +45,12 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
 
+    def override_get_search_service_optional() -> Optional["AzureSearchService"]:
+        """测试时返回 None，使用 mock 数据"""
+        return None
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_search_service_optional] = override_get_search_service_optional
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

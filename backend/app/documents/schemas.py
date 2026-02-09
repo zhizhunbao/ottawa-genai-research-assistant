@@ -39,11 +39,22 @@ class DocumentResponse(DocumentBase):
     owner_id: Optional[str] = Field(None, description="ID of the owner user")
     status: DocumentStatus = Field(..., description="Processing status")
     file_name: str = Field(..., description="Stored file name")
+    blob_name: Optional[str] = Field(None, description="Azure Blob Storage name")
+    blob_url: Optional[str] = Field(None, description="Azure Blob Storage URL")
     created_at: datetime = Field(..., description="Upload timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
         from_attributes = True
+
+
+class DocumentUploadResponse(BaseModel):
+    """文件上传响应"""
+    id: str = Field(..., description="Document ID")
+    file_name: str = Field(..., description="Original file name")
+    blob_name: str = Field(..., description="Azure Blob name")
+    blob_url: str = Field(..., description="Azure Blob URL")
+    status: DocumentStatus = Field(..., description="Processing status")
 
 
 class DocumentListResponse(BaseModel):
