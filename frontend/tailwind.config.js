@@ -7,6 +7,21 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 品牌色 - 使用 bg-brand-primary, text-brand-primary 等
+        brand: {
+          primary: '#004890',
+          'primary-light': '#0066cc',
+          'primary-dark': '#003366',
+          secondary: '#667eea',
+          'secondary-light': '#764ba2',
+        },
+        // 金色
+        gold: {
+          DEFAULT: '#ffd700',
+          light: '#ffe44d',
+          dark: '#ffb000',
+        },
+        // 兼容旧代码
         primary: {
           50: '#f5f3ff',
           100: '#ede9fe',
@@ -23,6 +38,7 @@ export default {
           500: '#764ba2',
           600: '#6b4190',
         },
+        // 兼容旧代码 - 建议迁移到 brand
         ottawa: {
           blue: '#004890',
           'blue-light': '#0066cc',
@@ -71,6 +87,9 @@ export default {
         'soft': '0 8px 32px rgba(0, 0, 0, 0.1)',
         'glow': '0 0 40px rgba(102, 126, 234, 0.3)',
         'glow-lg': '0 0 60px rgba(102, 126, 234, 0.4)',
+        'brand': '0 4px 12px rgba(0, 72, 144, 0.2)',
+        'card': '0 2px 8px rgba(0, 0, 0, 0.08)',
+        'dropdown': '0 10px 25px rgba(0, 0, 0, 0.15)',
       },
       backdropBlur: {
         xs: '2px',
