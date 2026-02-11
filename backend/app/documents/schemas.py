@@ -5,17 +5,18 @@
 遵循 dev-backend_patterns skill 规范。
 """
 
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
 from datetime import datetime
-from app.core.enums import DocumentStatus, DocumentType
+
+from pydantic import BaseModel, Field
+
+from app.core.enums import DocumentStatus
 
 
 class DocumentBase(BaseModel):
     """文档基础模型"""
     title: str = Field(..., description="The title of the document")
-    description: Optional[str] = Field(None, description="Detailed description")
-    tags: List[str] = Field(default_factory=list, description="Categorization tags")
+    description: str | None = Field(None, description="Detailed description")
+    tags: list[str] = Field(default_factory=list, description="Categorization tags")
 
 
 class DocumentCreate(DocumentBase):
@@ -27,20 +28,20 @@ class DocumentCreate(DocumentBase):
 
 class DocumentUpdate(BaseModel):
     """更新文档请求"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[DocumentStatus] = None
-    tags: Optional[List[str]] = None
+    title: str | None = None
+    description: str | None = None
+    status: DocumentStatus | None = None
+    tags: list[str] | None = None
 
 
 class DocumentResponse(DocumentBase):
     """文档响应模型"""
     id: str = Field(..., description="Unique document ID")
-    owner_id: Optional[str] = Field(None, description="ID of the owner user")
+    owner_id: str | None = Field(None, description="ID of the owner user")
     status: DocumentStatus = Field(..., description="Processing status")
     file_name: str = Field(..., description="Stored file name")
-    blob_name: Optional[str] = Field(None, description="Azure Blob Storage name")
-    blob_url: Optional[str] = Field(None, description="Azure Blob Storage URL")
+    blob_name: str | None = Field(None, description="Azure Blob Storage name")
+    blob_url: str | None = Field(None, description="Azure Blob Storage URL")
     created_at: datetime = Field(..., description="Upload timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -59,5 +60,5 @@ class DocumentUploadResponse(BaseModel):
 
 class DocumentListResponse(BaseModel):
     """文档列表响应"""
-    items: List[DocumentResponse]
+    items: list[DocumentResponse]
     total: int

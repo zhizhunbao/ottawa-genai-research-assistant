@@ -4,11 +4,12 @@ Azure Blob Storage 服务单元测试
 测试 AzureBlobStorageService 的核心功能。
 """
 
-import pytest
 from io import BytesIO
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
-from app.core.azure_storage import AzureBlobStorageService, AzureBlobStorageError
+import pytest
+
+from app.core.azure_storage import AzureBlobStorageService
 
 
 class TestAzureBlobStorageService:

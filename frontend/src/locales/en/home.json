@@ -1,7 +1,7 @@
 {
   "hero": {
-    "title": "Ottawa GenAI Research Assistant",
-    "titleHighlight": "GenAI",
+    "title": "Ottawa",
+    "titleHighlight": "GenAI Research",
     "subtitle": "An AI-powered research assistant helping the Economic Development team quickly gain insights, generate reports, and improve decision-making efficiency.",
     "startChat": "Start Chat",
     "uploadDocs": "Upload Documents"
@@ -50,7 +50,7 @@
     "signIn": "Sign In",
     "signUp": "Sign Up",
     "getStarted": "Get Started",
-    "startChat": "Start Research",
+    "startChat": "Start Chat",
     "startSession": "Start Session",
     "uploadDocs": "Upload Documents",
     "learnMore": "Learn More"

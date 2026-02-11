@@ -1,0 +1,57 @@
+"""
+Azure Blob Storage Service
+
+实现 StorageService 协议。
+"""
+
+from typing import Optional
+
+from azure.storage.blob.aio import BlobServiceClient
+
+from .base import AzureServiceBase, StorageService
+from .config import AzureStorageConfig
+from .exceptions import StorageError
+
+
+class AzureStorageService(AzureServiceBase, StorageService):
+    """Azure Blob Storage 服务"""
+
+    def __init__(self, config: AzureStorageConfig):
+        super().__init__("storage")
+        self._config = config
+        self._client = BlobServiceClient.from_connection_string(
+            config.connection_string
+        )
+        self._container = self._client.get_container_client(config.container_name)
+
+    async def health_check(self) -> bool:
+        # TODO: 检查容器存在
+        pass
+
+    async def upload(
+        self,
+        name: str,
+        content: bytes,
+        content_type: str = "application/octet-stream",
+    ) -> str:
+        # TODO: 上传 blob，返回 URL
+        pass
+
+    async def download(self, name: str) -> Optional[bytes]:
+        # TODO: 下载 blob
+        pass
+
+    async def delete(self, name: str) -> bool:
+        # TODO: 删除 blob
+        pass
+
+    async def exists(self, name: str) -> bool:
+        # TODO: 检查 blob 是否存在
+        pass
+
+    async def list_blobs(self, prefix: str = "") -> list[str]:
+        # TODO: 列出 blobs
+        pass
+
+    async def close(self):
+        await self._client.close()

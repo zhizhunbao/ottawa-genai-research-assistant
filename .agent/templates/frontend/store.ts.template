@@ -1,0 +1,216 @@
+/**
+ * {{FeatureName}} Store
+ *
+ * Zustand store for {{feature_name}} state management.
+ * Created: {{date}}
+ */
+
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+
+import { {{feature_name}}Api } from '../services/{{feature_name}}Api';
+import type { {{FeatureName}}Data } from '../types';
+
+interface {{FeatureName}}State {
+  // Data
+  items: {{FeatureName}}Data[];
+  selectedItem: {{FeatureName}}Data | null;
+  total: number;
+
+  // UI State
+  isLoading: boolean;
+  error: string | null;
+
+  // Filters
+  filters: {
+    search: string;
+    page: number;
+    pageSize: number;
+  };
+}
+
+interface {{FeatureName}}Actions {
+  // Data Actions
+  fetchItems: () => Promise<void>;
+  fetchItem: (id: string) => Promise<void>;
+  createItem: (data: Partial<{{FeatureName}}Data>) => Promise<{{FeatureName}}Data>;
+  updateItem: (id: string, data: Partial<{{FeatureName}}Data>) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+
+  // Selection
+  selectItem: (item: {{FeatureName}}Data | null) => void;
+  clearSelection: () => void;
+
+  // Filters
+  setSearch: (search: string) => void;
+  setPage: (page: number) => void;
+  setPageSize: (pageSize: number) => void;
+  resetFilters: () => void;
+
+  // State
+  setError: (error: string | null) => void;
+  reset: () => void;
+}
+
+type {{FeatureName}}Store = {{FeatureName}}State & {{FeatureName}}Actions;
+
+const initialState: {{FeatureName}}State = {
+  items: [],
+  selectedItem: null,
+  total: 0,
+  isLoading: false,
+  error: null,
+  filters: {
+    search: '',
+    page: 1,
+    pageSize: 20,
+  },
+};
+
+export const use{{FeatureName}}Store = create<{{FeatureName}}Store>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        ...initialState,
+
+        // Fetch all items
+        fetchItems: async () => {
+          set({ isLoading: true, error: null });
+          try {
+            const { filters } = get();
+            const skip = (filters.page - 1) * filters.pageSize;
+            const response = await {{feature_name}}Api.list({
+              skip,
+              limit: filters.pageSize,
+              search: filters.search || undefined,
+            });
+            set({
+              items: response.items,
+              total: response.total,
+              isLoading: false,
+            });
+          } catch (error) {
+            set({
+              error: error instanceof Error ? error.message : 'Failed to fetch',
+              isLoading: false,
+            });
+          }
+        },
+
+        // Fetch single item
+        fetchItem: async (id: string) => {
+          set({ isLoading: true, error: null });
+          try {
+            const item = await {{feature_name}}Api.get(id);
+            set({ selectedItem: item, isLoading: false });
+          } catch (error) {
+            set({
+              error: error instanceof Error ? error.message : 'Failed to fetch',
+              isLoading: false,
+            });
+          }
+        },
+
+        // Create item
+        createItem: async (data) => {
+          set({ isLoading: true, error: null });
+          try {
+            const newItem = await {{feature_name}}Api.create(data);
+            set((state) => ({
+              items: [newItem, ...state.items],
+              total: state.total + 1,
+              isLoading: false,
+            }));
+            return newItem;
+          } catch (error) {
+            set({
+              error: error instanceof Error ? error.message : 'Failed to create',
+              isLoading: false,
+            });
+            throw error;
+          }
+        },
+
+        // Update item
+        updateItem: async (id, data) => {
+          set({ isLoading: true, error: null });
+          try {
+            const updated = await {{feature_name}}Api.update(id, data);
+            set((state) => ({
+              items: state.items.map((item) =>
+                item.id === id ? updated : item
+              ),
+              selectedItem:
+                state.selectedItem?.id === id ? updated : state.selectedItem,
+              isLoading: false,
+            }));
+          } catch (error) {
+            set({
+              error: error instanceof Error ? error.message : 'Failed to update',
+              isLoading: false,
+            });
+            throw error;
+          }
+        },
+
+        // Delete item
+        deleteItem: async (id) => {
+          set({ isLoading: true, error: null });
+          try {
+            await {{feature_name}}Api.delete(id);
+            set((state) => ({
+              items: state.items.filter((item) => item.id !== id),
+              total: state.total - 1,
+              selectedItem:
+                state.selectedItem?.id === id ? null : state.selectedItem,
+              isLoading: false,
+            }));
+          } catch (error) {
+            set({
+              error: error instanceof Error ? error.message : 'Failed to delete',
+              isLoading: false,
+            });
+            throw error;
+          }
+        },
+
+        // Selection
+        selectItem: (item) => set({ selectedItem: item }),
+        clearSelection: () => set({ selectedItem: null }),
+
+        // Filters
+        setSearch: (search) =>
+          set((state) => ({
+            filters: { ...state.filters, search, page: 1 },
+          })),
+        setPage: (page) =>
+          set((state) => ({
+            filters: { ...state.filters, page },
+          })),
+        setPageSize: (pageSize) =>
+          set((state) => ({
+            filters: { ...state.filters, pageSize, page: 1 },
+          })),
+        resetFilters: () =>
+          set({ filters: initialState.filters }),
+
+        // State
+        setError: (error) => set({ error }),
+        reset: () => set(initialState),
+      }),
+      {
+        name: '{{feature_name}}-storage',
+        partialize: (state) => ({
+          filters: state.filters,
+        }),
+      }
+    ),
+    { name: '{{FeatureName}}Store' }
+  )
+);
+
+// Selectors
+export const select{{FeatureName}}Items = (state: {{FeatureName}}Store) => state.items;
+export const select{{FeatureName}}Loading = (state: {{FeatureName}}Store) => state.isLoading;
+export const select{{FeatureName}}Error = (state: {{FeatureName}}Store) => state.error;
+export const select{{FeatureName}}Selected = (state: {{FeatureName}}Store) => state.selectedItem;

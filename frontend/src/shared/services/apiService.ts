@@ -189,6 +189,31 @@ export const apiService = {
   },
 
   /**
+   * PATCH 请求
+   */
+  async patch<T>(
+    path: string,
+    body?: unknown,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const url = buildUrl(path)
+    const token = config?.skipAuth ? null : getAuthToken()
+
+    const response = await fetchWithTimeout(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...config?.headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      ...config,
+    })
+
+    return handleResponse<T>(response)
+  },
+
+  /**
    * DELETE 请求
    */
   async delete<T>(

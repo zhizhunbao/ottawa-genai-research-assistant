@@ -1,11 +1,10 @@
 """Health check service for Azure resources."""
 
-import time
 import logging
-from typing import Optional
+import time
 
 from app.core.config import settings
-from app.health.schemas import HealthStatus, ServiceHealth, HealthCheckResponse
+from app.health.schemas import HealthCheckResponse, HealthStatus, ServiceHealth
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,62 @@
+{
+  "{{feature_name}}": {
+    "title": "{{FeatureName}}",
+    "description": "Manage your {{feature_name}}",
+
+    "list": {
+      "title": "{{FeatureName}} List",
+      "empty": "No {{feature_name}} found",
+      "loading": "Loading {{feature_name}}...",
+      "error": "Failed to load {{feature_name}}"
+    },
+
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter name",
+      "nameRequired": "Name is required",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description (optional)"
+    },
+
+    "actions": {
+      "create": "Create {{FeatureName}}",
+      "edit": "Edit {{FeatureName}}",
+      "delete": "Delete {{FeatureName}}",
+      "view": "View Details",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+
+    "messages": {
+      "createSuccess": "{{FeatureName}} created successfully",
+      "updateSuccess": "{{FeatureName}} updated successfully",
+      "deleteSuccess": "{{FeatureName}} deleted successfully",
+      "createError": "Failed to create {{feature_name}}",
+      "updateError": "Failed to update {{feature_name}}",
+      "deleteError": "Failed to delete {{feature_name}}"
+    },
+
+    "confirmDelete": {
+      "title": "Delete {{FeatureName}}",
+      "message": "Are you sure you want to delete this {{feature_name}}? This action cannot be undone."
+    },
+
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Search by name...",
+      "status": "Status",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
+    }
+  }
+}

@@ -7,11 +7,12 @@
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.analysis.schemas import AnalysisRequest, AnalysisResponse, ChartData, SpeakingNotes
+
+from app.analysis.schemas import AnalysisRequest, ChartData, SpeakingNotes
 from app.analysis.service import AnalysisService
-from app.core.schemas import ApiResponse
-from app.core.document_store import DocumentStore
 from app.core.database import get_db
+from app.core.document_store import DocumentStore
+from app.core.schemas import ApiResponse
 
 router = APIRouter(prefix="/api/v1/analysis", tags=["analysis"])
 

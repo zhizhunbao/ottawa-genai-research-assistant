@@ -82,7 +82,7 @@ class TestResearchRoutes:
         assert response.status_code == 200
         data = response.json()
         results = data["data"]["results"]
-        
+
         if len(results) > 0:
             first_result = results[0]
             assert "id" in first_result
@@ -225,16 +225,16 @@ class TestResearchRoutes:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        
+
         # 验证响应结构
         assert "success" in data
         assert "data" in data
-        
+
         # 验证数据结构
         chat_response = data["data"]
         assert "message" in chat_response
         assert "sources" in chat_response
-        
+
         # 验证消息结构
         message = chat_response["message"]
         assert "role" in message

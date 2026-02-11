@@ -5,17 +5,18 @@
 测试 RAG 搜索和聊天功能。
 """
 
-import pytest
 from unittest.mock import patch
 
-from app.research.service import ResearchService
+import pytest
+
+from app.core.enums import ChatRole
+from app.core.exceptions import ExternalServiceError
 from app.research.schemas import (
     ChatMessage,
     ChatRequest,
     SearchQuery,
 )
-from app.core.enums import ChatRole
-from app.core.exceptions import ExternalServiceError
+from app.research.service import ResearchService
 
 
 class TestResearchService:
@@ -210,7 +211,7 @@ class TestResearchService:
             # Act & Assert
             with pytest.raises(ExternalServiceError) as exc_info:
                 await research_service.search(query)
-            
+
             assert "Azure AI Search" in str(exc_info.value.message)
 
     @pytest.mark.asyncio
@@ -231,7 +232,7 @@ class TestResearchService:
             # Act & Assert
             with pytest.raises(ExternalServiceError) as exc_info:
                 await research_service.chat(request)
-            
+
             assert "Azure OpenAI" in str(exc_info.value.message)
 
 

@@ -5,11 +5,10 @@
 遵循 dev-backend_patterns skill 规范。
 """
 
-from typing import List, Optional
-from datetime import datetime
-from app.analysis.schemas import AnalysisRequest, AnalysisResponse, ChartData, SpeakingNotes
-from app.core.enums import AnalysisType, DocumentType
+from app.analysis.schemas import AnalysisRequest, ChartData, SpeakingNotes
 from app.core.document_store import DocumentStore
+from app.core.enums import DocumentType
+
 
 class AnalysisService:
     """分析服务类"""
@@ -17,7 +16,7 @@ class AnalysisService:
     def __init__(self, document_store: DocumentStore):
         self.doc_store = document_store
 
-    async def generate_chart(self, request: AnalysisRequest, user_id: Optional[str] = None) -> ChartData:
+    async def generate_chart(self, request: AnalysisRequest, user_id: str | None = None) -> ChartData:
         """生成图表数据内容并保存"""
         # TODO: 集成 LLM 提取数值并格式化为图表数据
         chart_data = ChartData(
@@ -25,7 +24,7 @@ class AnalysisService:
             datasets=[{"label": "Employment", "data": [100, 120, 115, 130]}],
             title=f"Analysis for: {request.query}"
         )
-        
+
         # 科学地通过 DocumentStore 保存结果
         await self.doc_store.create(
             doc_type=DocumentType.CHART_RESULT,
@@ -33,10 +32,10 @@ class AnalysisService:
             owner_id=user_id,
             tags=["automated-analysis", "chart"]
         )
-        
+
         return chart_data
 
-    async def generate_speaking_notes(self, request: AnalysisRequest, user_id: Optional[str] = None) -> SpeakingNotes:
+    async def generate_speaking_notes(self, request: AnalysisRequest, user_id: str | None = None) -> SpeakingNotes:
         """生成发言稿并保存"""
         # TODO: 集成 LLM 总结文档内容
         notes = SpeakingNotes(

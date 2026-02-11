@@ -1,0 +1,56 @@
+project: ottawa-genai-research-assistant
+started_at: 2026-02-04T00:00:00
+current_phase: testing # 字符串 key，下一个待执行阶段
+
+phases:
+  requirements:
+    status: completed
+    completed_at: 2026-02-04T00:00:00
+    output: docs/requirements/master_prd.md
+  prd:
+    status: completed
+    completed_at: 2026-02-04T00:00:00
+    output: docs/requirements/master_prd.md
+  ux_design:
+    status: skipped
+    skipped_at: 2026-02-10T19:46:00
+    note: "前端已使用 shadcn/ui，设计方向已定，无需正式 UX 文档"
+  architecture:
+    status: completed
+    completed_at: 2026-02-05T00:00:00
+    output: docs/architecture/system-architecture.md
+  stories:
+    status: completed
+    completed_at: 2026-02-06T00:00:00
+    output: docs/sprints/Sprint_Plan_Ottawa_GenAI_Research_Assistant.md
+    note: "Sprint 计划已替代正式 stories 文档"
+  database:
+    status: completed
+    completed_at: 2026-02-06T00:00:00
+    output: docs/codemaps/database.md
+    note: "数据库 codemap 已替代正式 database 设计文档"
+  backend:
+    status: in_progress
+    started_at: 2026-02-10T22:30:00
+    output: backend/app/
+    note: >
+      Sprint 1-4 全部后端任务完成。
+      实现了 US-301: 基于 LLM (GPT-4o) 的图表数据自动提取服务。
+  frontend:
+    status: in_progress
+    started_at: 2026-02-10T22:30:00
+    output: frontend/src/
+    note: >
+      Sprint 4 前端功能对齐完成。
+      集成了 Recharts 并支持实时图表渲染（US-301）。
+  testing:
+    status: pending
+  review:
+    status: pending
+  deployment:
+    status: pending
+
+config:
+  parallel_frontend_backend: true
+  auto_check: true
+  docs_dir: docs

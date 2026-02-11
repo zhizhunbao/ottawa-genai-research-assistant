@@ -8,7 +8,6 @@
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 import bcrypt
 from fastapi import Depends, HTTPException, status
@@ -17,14 +16,13 @@ from jose import JWTError, jwt
 
 from app.core.config import settings
 
-
 # Bearer token 安全方案
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码
-    
+
     使用 bcrypt 直接验证，避免 passlib 兼容性问题。
     """
     return bcrypt.checkpw(
@@ -35,7 +33,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """生成密码哈希
-    
+
     使用 bcrypt 直接生成，避免 passlib 兼容性问题。
     """
     return bcrypt.hashpw(
@@ -46,7 +44,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     data: dict,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """创建 JWT 访问令牌"""
     to_encode = data.copy()
@@ -71,9 +69,15 @@ def decode_access_token(token: str) -> dict:
 
 
 async def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> str:
     """获取当前用户 ID 依赖"""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="缺失认证令牌",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     token = credentials.credentials
     payload = decode_access_token(token)
     user_id = payload.get("sub")

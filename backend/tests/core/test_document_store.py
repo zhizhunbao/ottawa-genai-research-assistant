@@ -7,9 +7,9 @@
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.document_store import DocumentStore
 from app.core.enums import DocumentStatus, DocumentType
-from app.core.models import UniversalDocument
 
 
 class TestDocumentStore:
@@ -105,7 +105,7 @@ class TestDocumentStore:
         # Assert
         assert updated is not None
         assert updated["data"] == new_data
-        
+
         # 验证数据库中已保存
         db_doc = await store.get_by_id(doc_id)
         assert db_doc["data"] == new_data

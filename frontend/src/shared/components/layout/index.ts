@@ -1,13 +1,11 @@
 /**
  * Layout Components Index
  *
- * 导出所有布局相关组件，方便统一导入。
- * 遵循 dev-frontend_patterns skill 规范。
+ * 精简版：只导出 Header, Footer, MainLayout, PageContainer。
+ * 已删除: DashboardLayout, AppSidebar (不再需要 Sidebar 导航)。
  */
 
 export { Header } from './Header'
 export { Footer } from './Footer'
 export { MainLayout } from './MainLayout'
-export { DashboardLayout } from './DashboardLayout'
-export { AuthLayout } from './AuthLayout'
 export { PageContainer } from './PageContainer'

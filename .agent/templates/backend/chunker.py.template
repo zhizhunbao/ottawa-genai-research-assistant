@@ -1,0 +1,66 @@
+"""
+Text Chunker
+
+文本分块策略，用于 RAG 文档处理。
+"""
+
+from dataclasses import dataclass
+from typing import Iterator
+
+
+@dataclass
+class Chunk:
+    """文本块"""
+    content: str
+    index: int
+    metadata: dict
+
+
+class TextChunker:
+    """文本分块器"""
+
+    def __init__(
+        self,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        separator: str = "\n\n",
+    ):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.separator = separator
+
+    def chunk(self, text: str, metadata: dict = None) -> list[Chunk]:
+        """
+        将文本分块
+
+        Args:
+            text: 输入文本
+            metadata: 附加元数据
+
+        Returns:
+            Chunk 列表
+        """
+        # TODO: 实现分块逻辑
+        pass
+
+    def chunk_by_separator(self, text: str) -> Iterator[str]:
+        """按分隔符分块"""
+        # TODO: 实现
+        pass
+
+    def chunk_by_size(self, text: str) -> Iterator[str]:
+        """按大小分块（带重叠）"""
+        # TODO: 实现
+        pass
+
+
+class SemanticChunker(TextChunker):
+    """语义分块器 - 基于句子边界"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # TODO: 初始化句子分割器
+
+    def chunk(self, text: str, metadata: dict = None) -> list[Chunk]:
+        # TODO: 基于语义边界分块
+        pass

@@ -5,23 +5,23 @@ FastAPI 应用入口模块。
 遵循 dev-backend_patterns 和 dev-tdd_workflow skill 规范。
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.analysis.routes import router as analysis_router
+from app.chat.routes import router as chat_router
 from app.core.config import settings
 from app.core.database import init_db
-from app.core.exceptions import AppException
-from app.users import models as user_models
-from app.core import models as shared_models
-from app.users.routes import router as users_router
-from app.research.routes import router as research_router
-from app.analysis.routes import router as analysis_router
+from app.core.exceptions import AppError
 from app.documents.routes import router as documents_router
+from app.evaluation.routes import router as evaluation_router
 from app.health.routes import router as health_router
+from app.research.routes import router as research_router
+from app.users.routes import router as users_router
 
 
 @asynccontextmanager
@@ -59,11 +59,13 @@ app.include_router(research_router)
 app.include_router(analysis_router)
 app.include_router(documents_router)
 app.include_router(health_router)
+app.include_router(chat_router)
+app.include_router(evaluation_router)
 
 
 # 全局异常处理器
-@app.exception_handler(AppException)
-async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+@app.exception_handler(AppError)
+async def app_exception_handler(request: Request, exc: AppError) -> JSONResponse:
     """处理自定义应用异常"""
     return JSONResponse(
         status_code=exc.status_code,

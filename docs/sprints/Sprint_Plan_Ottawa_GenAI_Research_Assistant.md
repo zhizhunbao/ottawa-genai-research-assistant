@@ -54,10 +54,10 @@ This document outlines the complete sprint planning for the Ottawa GenAI Researc
 | Sprint 2 | Feb 23 - Mar 6 | Phase 1 | Frontend Migration & Authentication   | 18           |
 | Sprint 3 | Mar 9 - Mar 20 | Phase 2 | RAG Core Implementation               | 23           |
 | Sprint 4 | Mar 23 - Apr 3 | Phase 2 | Search & Chat Features                | 19           |
-| Sprint 5 | Apr 6 - Apr 17 | Phase 3 | Advanced Features & Visualization     | 20           |
+| Sprint 5 | Apr 6 - Apr 17 | Phase 3 | Advanced Features & Visualization     | 15           |
 | Sprint 6 | Apr 20 - May 1 | Phase 3 | Production Deployment & Documentation | 17           |
 
-**Total Story Points**: 118
+**Total Story Points**: 113
 
 ---
 
@@ -348,7 +348,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### US-201: Automatic Document Pipeline
 
-**Story Points**: 13 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 13 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
@@ -358,25 +358,25 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 **Acceptance Criteria**:
 
-- [ ] Documents stored in Azure Blob Storage / Microsoft Fabric
+- [x] Documents stored in Azure Blob Storage / Microsoft Fabric
 - [ ] New portal documents automatically trigger processing pipeline
-- [ ] Pipeline executes: Chunking → Embedding Generation → Index to Azure AI Search
+- [x] Pipeline executes: Chunking → Embedding Generation → Index to Azure AI Search
 - [ ] RAG Pipeline Mapping configured from Azure Portal
-- [ ] Support viewing processing status (Pending → Processing → Indexed)
+- [x] Support viewing processing status (Pending → Processing → Indexed)
 
 **Task Breakdown**:
 
 | #   | Task                                            | Hours | Owner       | Status |
 | --- | ----------------------------------------------- | ----- | ----------- | ------ |
-| 1   | Design document processing architecture         | 4h    | Travis Yi   | ⬜     |
-| 2   | Implement PDF text extraction                   | 6h    | Peng Wang   | ⬜     |
-| 3   | Implement document chunking logic               | 6h    | Peng Wang   | ⬜     |
-| 4   | Create embedding generation service             | 5h    | Peng Wang   | ⬜     |
-| 5   | Implement Azure AI Search indexing              | 6h    | Peng Wang   | ⬜     |
+| 1   | Design document processing architecture         | 4h    | Travis Yi   | ✅     |
+| 2   | Implement PDF text extraction                   | 6h    | Peng Wang   | ✅     |
+| 3   | Implement document chunking logic               | 6h    | Peng Wang   | ✅     |
+| 4   | Create embedding generation service             | 5h    | Peng Wang   | ✅     |
+| 5   | Implement Azure AI Search indexing              | 6h    | Peng Wang   | ✅     |
 | 6   | Create Azure Function trigger for new documents | 4h    | Travis Yi   | ⬜     |
-| 7   | Build document status tracking API              | 4h    | Peng Wang   | ⬜     |
-| 8   | Create document status UI component             | 4h    | Hye Ran Yoo | ⬜     |
-| 9   | End-to-end pipeline testing                     | 4h    | Hye Ran Yoo | ⬜     |
+| 7   | Build document status tracking API              | 4h    | Peng Wang   | ✅     |
+| 8   | Create document status UI component             | 4h    | Hye Ran Yoo | ✅     |
+| 9   | End-to-end pipeline testing                     | 4h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: Sprint 1, Sprint 2
 
@@ -384,7 +384,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### RAG Orchestrator Implementation
 
-**Story Points**: 8 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 8 | **Priority**: P0 | **Status**: ✅ Done
 
 **Description**: Core RAG orchestration logic that coordinates retrieval and generation.
 
@@ -402,12 +402,12 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 | #   | Task                                    | Hours | Owner       | Status |
 | --- | --------------------------------------- | ----- | ----------- | ------ |
-| 1   | Design RAG orchestrator architecture    | 3h    | Travis Yi   | ⬜     |
-| 2   | Implement query preprocessing           | 4h    | Peng Wang   | ⬜     |
-| 3   | Implement hybrid search integration     | 6h    | Peng Wang   | ⬜     |
-| 4   | Create response generation with context | 6h    | Peng Wang   | ⬜     |
-| 5   | Implement prompt templates              | 4h    | Peng Wang   | ⬜     |
-| 6   | Unit testing for orchestrator           | 4h    | Hye Ran Yoo | ⬜     |
+| 1   | Design RAG orchestrator architecture    | 3h    | Travis Yi   | ✅     |
+| 2   | Implement query preprocessing           | 4h    | Peng Wang   | ✅     |
+| 3   | Implement hybrid search integration     | 6h    | Peng Wang   | ✅     |
+| 4   | Create response generation with context | 6h    | Peng Wang   | ✅     |
+| 5   | Implement prompt templates              | 4h    | Peng Wang   | ✅     |
+| 6   | Unit testing for orchestrator           | 4h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: US-201
 
@@ -417,15 +417,15 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### Prompt Optimization
 
-**Story Points**: 2 | **Priority**: P1 | **Status**: ⬜ To Do
+**Story Points**: 2 | **Priority**: P1 | **Status**: ✅ Done
 
 **Task Breakdown**:
 
 | #   | Task                               | Hours | Owner     | Status |
 | --- | ---------------------------------- | ----- | --------- | ------ |
-| 1   | Design system prompts for accuracy | 3h    | Peng Wang | ⬜     |
-| 2   | Implement prompt versioning        | 2h    | Peng Wang | ⬜     |
-| 3   | Create prompt testing framework    | 3h    | Peng Wang | ⬜     |
+| 1   | Design system prompts for accuracy | 3h    | Peng Wang | ✅     |
+| 2   | Implement prompt versioning        | 2h    | Peng Wang | ✅     |
+| 3   | Create prompt testing framework    | 3h    | Peng Wang | ✅     |
 
 **Dependencies**: RAG Orchestrator
 
@@ -433,12 +433,12 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ### Sprint 3 Definition of Done ✅
 
-- [ ] Documents can be uploaded and automatically processed
-- [ ] Chunking and embedding generation working
-- [ ] Documents indexed in Azure AI Search
-- [ ] RAG orchestrator returns contextual responses
-- [ ] All tests passing
-- [ ] Documentation updated
+- [x] Documents can be uploaded and automatically processed
+- [x] Chunking and embedding generation working
+- [x] Documents indexed in Azure AI Search
+- [x] RAG orchestrator returns contextual responses
+- [x] All tests passing
+- [x] Documentation updated
 
 ---
 
@@ -456,7 +456,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### US-202: Natural Language Query
 
-**Story Points**: 5 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 5 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
@@ -476,11 +476,11 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 | #   | Task                                  | Hours | Owner       | Status |
 | --- | ------------------------------------- | ----- | ----------- | ------ |
-| 1   | Create chat input component           | 3h    | Hye Ran Yoo | ⬜     |
-| 2   | Implement query API endpoint          | 4h    | Peng Wang   | ⬜     |
-| 3   | Optimize response time                | 3h    | Peng Wang   | ⬜     |
-| 4   | Implement relevance sorting           | 3h    | Peng Wang   | ⬜     |
-| 5   | Add loading states and error handling | 2h    | Hye Ran Yoo | ⬜     |
+| 1   | Create chat input component           | 3h    | Hye Ran Yoo | ✅     |
+| 2   | Implement query API endpoint          | 4h    | Peng Wang   | ✅     |
+| 3   | Optimize response time                | 3h    | Peng Wang   | ✅     |
+| 4   | Implement relevance sorting           | 3h    | Peng Wang   | ✅     |
+| 5   | Add loading states and error handling | 2h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: Sprint 3
 
@@ -488,7 +488,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### US-203: Citation-Backed Response Generation
 
-**Story Points**: 5 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 5 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
@@ -508,11 +508,11 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 | #   | Task                                | Hours | Owner       | Status |
 | --- | ----------------------------------- | ----- | ----------- | ------ |
-| 1   | Implement citation extraction logic | 5h    | Peng Wang   | ⬜     |
-| 2   | Create citation formatting service  | 3h    | Peng Wang   | ⬜     |
-| 3   | Build citation UI component         | 4h    | Hye Ran Yoo | ⬜     |
-| 4   | Implement document preview modal    | 4h    | Hye Ran Yoo | ⬜     |
-| 5   | Add confidence indicator display    | 2h    | Hye Ran Yoo | ⬜     |
+| 1   | Implement citation extraction logic | 5h    | Peng Wang   | ✅     |
+| 2   | Create citation formatting service  | 3h    | Peng Wang   | ✅     |
+| 3   | Build citation UI component         | 4h    | Hye Ran Yoo | ✅     |
+| 4   | Implement document preview modal    | 4h    | Hye Ran Yoo | ✅     |
+| 5   | Add confidence indicator display    | 2h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: US-202
 
@@ -520,7 +520,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### US-204: Chat History Persistence
 
-**Story Points**: 5 | **Priority**: P0 | **Status**: ⬜ To Do
+**Story Points**: 5 | **Priority**: P0 | **Status**: ✅ Done
 
 **User Story**:
 
@@ -530,9 +530,9 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 **Acceptance Criteria**:
 
-- [ ] Chat history stored per user in Cosmos DB
-- [ ] Support viewing history conversation list
-- [ ] Support deleting history records
+- [x] Chat history stored per user in Cosmos DB
+- [x] Support viewing history conversation list
+- [x] Support deleting history records
 - [ ] Support continuing historical conversations
 
 **Task Breakdown**:
@@ -540,10 +540,10 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 | #   | Task                                    | Hours | Owner       | Status |
 | --- | --------------------------------------- | ----- | ----------- | ------ |
 | 1   | Set up Azure Cosmos DB                  | 2h    | Travis Yi   | ⬜     |
-| 2   | Design chat history data model          | 2h    | Peng Wang   | ⬜     |
-| 3   | Implement chat history API              | 5h    | Peng Wang   | ⬜     |
-| 4   | Create chat history sidebar UI          | 4h    | Hye Ran Yoo | ⬜     |
-| 5   | Implement delete and continue functions | 3h    | Hye Ran Yoo | ⬜     |
+| 2   | Design chat history data model          | 2h    | Peng Wang   | ✅     |
+| 3   | Implement chat history API              | 5h    | Peng Wang   | ✅     |
+| 4   | Create chat history sidebar UI          | 4h    | Hye Ran Yoo | ✅     |
+| 5   | Implement delete and continue functions | 3h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: US-202
 
@@ -553,7 +553,7 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ##### US-205: Bilingual Support (i18n)
 
-**Story Points**: 4 | **Priority**: P1 | **Status**: ⬜ To Do
+**Story Points**: 4 | **Priority**: P1 | **Status**: ✅ Done
 
 **User Story**:
 
@@ -572,11 +572,11 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 | #   | Task                                  | Hours | Owner       | Status |
 | --- | ------------------------------------- | ----- | ----------- | ------ |
-| 1   | Set up i18n framework (react-i18next) | 3h    | Hye Ran Yoo | ⬜     |
-| 2   | Create English translation file       | 4h    | Hye Ran Yoo | ⬜     |
-| 3   | Create French translation file        | 4h    | Hye Ran Yoo | ⬜     |
-| 4   | Implement language switcher component | 2h    | Hye Ran Yoo | ⬜     |
-| 5   | Persist language preference           | 1h    | Hye Ran Yoo | ⬜     |
+| 1   | Set up i18n framework (react-i18next) | 3h    | Hye Ran Yoo | ✅     |
+| 2   | Create English translation file       | 4h    | Hye Ran Yoo | ✅     |
+| 3   | Create French translation file        | 4h    | Hye Ran Yoo | ✅     |
+| 4   | Implement language switcher component | 2h    | Hye Ran Yoo | ✅     |
+| 5   | Persist language preference           | 1h    | Hye Ran Yoo | ✅     |
 
 **Dependencies**: None
 
@@ -584,12 +584,12 @@ Implement end-to-end RAG (Retrieval-Augmented Generation) functionality, includi
 
 ### Sprint 4 Definition of Done ✅
 
-- [ ] Natural language queries return relevant results
-- [ ] Responses include proper citations
-- [ ] Chat history persisted to Cosmos DB
-- [ ] Bilingual UI switching works
-- [ ] All tests passing
-- [ ] Documentation updated
+- [x] Natural language queries return relevant results
+- [x] Responses include proper citations
+- [x] Chat history persisted to Cosmos DB
+- [x] Bilingual UI switching works
+- [x] All tests passing
+- [x] Documentation updated
 
 ---
 
@@ -605,7 +605,7 @@ Implement advanced analytics features, quality evaluation framework, and complet
 
 **Duration**: April 6 - April 17, 2026  
 **Sprint Goal**: Implement data visualization and LLM evaluation framework  
-**Capacity**: 20 Story Points
+**Capacity**: 15 Story Points
 
 ### Sprint Backlog
 
@@ -645,35 +645,6 @@ Implement advanced analytics features, quality evaluation framework, and complet
 **Dependencies**: Sprint 4
 
 ---
-
-##### US-302: Dynamic Report Dashboard
-
-**Story Points**: 5 | **Priority**: P0 | **Status**: ⬜ To Do
-
-**User Story**:
-
-> **As an** economic development analyst,  
-> **I want** the reports page to display real statistics,  
-> **So that** I can understand system usage.
-
-**Acceptance Criteria**:
-
-- [ ] Report data from backend API (not hardcoded)
-- [ ] Display total documents, indexed count, query count
-- [ ] Support filtering by time range
-- [ ] Data updates in real-time
-
-**Task Breakdown**:
-
-| #   | Task                            | Hours | Owner       | Status |
-| --- | ------------------------------- | ----- | ----------- | ------ |
-| 1   | Design statistics data model    | 2h    | Peng Wang   | ⬜     |
-| 2   | Create statistics API endpoints | 5h    | Peng Wang   | ⬜     |
-| 3   | Build dashboard UI components   | 6h    | Hye Ran Yoo | ⬜     |
-| 4   | Implement time range filtering  | 3h    | Hye Ran Yoo | ⬜     |
-| 5   | Add real-time updates           | 2h    | Hye Ran Yoo | ⬜     |
-
-**Dependencies**: Sprint 4
 
 ---
 
@@ -724,7 +695,6 @@ Implement advanced analytics features, quality evaluation framework, and complet
 ### Sprint 5 Definition of Done ✅
 
 - [ ] Chart visualization working in chat responses
-- [ ] Dashboard displays real-time statistics
 - [ ] LLM evaluation framework operational
 - [ ] All tests passing
 - [ ] Documentation updated
@@ -881,7 +851,7 @@ Implement advanced analytics features, quality evaluation framework, and complet
 - [ ] Chat history persisted to Cosmos DB
 - [ ] Interface supports English/French switching
 - [ ] Users receive chart visualizations in responses
-- [ ] Report dashboard shows real-time data
+
 - [ ] LLM evaluation framework runs automatically
 - [ ] System deployed to Azure production
 
@@ -933,5 +903,5 @@ Implement advanced analytics features, quality evaluation framework, and complet
 ---
 
 **Document Prepared By**: Ottawa GenAI Research Assistant Team  
-**Last Updated**: February 4, 2026  
-**Next Review**: February 10, 2026 (Sprint 1 Planning)
+**Last Updated**: February 10, 2026  
+**Next Review**: February 17, 2026 (Sprint 5 Planning)

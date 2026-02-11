@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "文档维护检查",
+  "description": "定期触发文档质量检查和维护任务，确保文档质量",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "执行完整的文档维护流程：1) 运行 `node .kiro/scripts/validate-docs.js` 验证文档质量 2) 运行 `node .kiro/scripts/generate-codemaps.js` 更新代码地图 3) 运行 `node .kiro/scripts/update-docs.js` 更新文档 4) 检查并修复发现的问题 5) 生成维护报告"
+  }
+}

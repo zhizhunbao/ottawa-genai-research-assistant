@@ -1,0 +1,13 @@
+{
+  "name": "Code Quality Check on Save",
+  "version": "1.0.0",
+  "description": "Automatically check code quality when Python files are saved",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["*.py"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run code quality check: uv run python .skills/dev-code_quality_check/scripts/code_quality_checker.py {{file_path}}. Report any issues found (function size > 50 lines, file size > 800 lines, nesting depth > 4 levels). Only report if issues found."
+  }
+}

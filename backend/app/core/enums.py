@@ -5,40 +5,43 @@
 遵循 dev-backend_patterns skill 规范。
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class DocumentType(str, Enum):
+class DocumentType(StrEnum):
     """通用文档类型"""
     PDF_CHUNK = "pdf_chunk"
     UPLOADED_FILE = "uploaded_file"
     CHART_RESULT = "chart_result"
     SPEAKING_NOTE = "speaking_note"
     RESEARCH_HISTORY = "research_history"
+    EVALUATION_RESULT = "evaluation_result"
 
 
-class DocumentStatus(str, Enum):
+class DocumentStatus(StrEnum):
     """通用文档状态"""
     ACTIVE = "active"
     ARCHIVED = "archived"
     PROCESSING = "processing"
+    INDEXED = "indexed"
+    FAILED = "failed"
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """用户角色"""
     ADMIN = "admin"
     USER = "user"
     ANALYST = "analyst"
 
 
-class AnalysisType(str, Enum):
+class AnalysisType(StrEnum):
     """分析类型"""
     CHART = "chart"
     SUMMARY = "summary"
     SPEAKING_NOTES = "speaking_notes"
 
 
-class ChartType(str, Enum):
+class ChartType(StrEnum):
     """图表类型"""
     BAR = "bar"
     LINE = "line"
@@ -46,7 +49,7 @@ class ChartType(str, Enum):
     SCATTER = "scatter"
 
 
-class ChatRole(str, Enum):
+class ChatRole(StrEnum):
     """对话角色"""
     USER = "user"
     ASSISTANT = "assistant"

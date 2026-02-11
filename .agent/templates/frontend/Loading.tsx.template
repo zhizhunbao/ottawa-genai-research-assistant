@@ -1,0 +1,82 @@
+/**
+ * Loading Component
+ *
+ * 加载状态展示
+ */
+
+interface LoadingProps {
+  size?: 'sm' | 'md' | 'lg';
+  text?: string;
+  fullscreen?: boolean;
+  className?: string;
+}
+
+const sizeClasses = {
+  sm: 'w-4 h-4',
+  md: 'w-8 h-8',
+  lg: 'w-12 h-12',
+};
+
+export function Loading({
+  size = 'md',
+  text,
+  fullscreen = false,
+  className = '',
+}: LoadingProps) {
+  const content = (
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+      {/* Spinner */}
+      <div
+        className={`
+          ${sizeClasses[size]}
+          border-2 border-muted border-t-primary rounded-full animate-spin
+        `}
+      />
+      {text && <p className="text-sm text-muted-foreground">{text}</p>}
+    </div>
+  );
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
+        {content}
+      </div>
+    );
+  }
+
+  return content;
+}
+
+// ============================================
+// Skeleton Loading
+// ============================================
+
+interface SkeletonProps {
+  className?: string;
+}
+
+export function Skeleton({ className = '' }: SkeletonProps) {
+  return <div className={`animate-pulse bg-muted rounded ${className}`} />;
+}
+
+export function SkeletonText({ lines = 3 }: { lines?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton
+          key={i}
+          className={`h-4 ${i === lines - 1 ? 'w-3/4' : 'w-full'}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function SkeletonCard() {
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      <Skeleton className="h-6 w-1/2" />
+      <SkeletonText lines={2} />
+    </div>
+  );
+}

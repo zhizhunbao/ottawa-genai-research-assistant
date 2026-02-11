@@ -49,7 +49,6 @@ build/
 coverage/
 
 # 📁 IDE and Editor Files
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -64,8 +63,6 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
-# 🤖 AI context files
-agents.md
 
 # 📊 Logs and Databases
 *.log
@@ -115,9 +112,6 @@ backend/uploads/*
 secrets.json
 
 
-.kiro/
-.skills/
 .github/
-.agent/
 .cursorignore
 create_migration_package.py

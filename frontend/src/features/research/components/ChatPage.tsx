@@ -1,21 +1,23 @@
 /**
  * 聊天页面组件
  *
- * 组合子组件构成完整的聊天界面。
- * 遵循 dev-frontend_patterns skill 规范。
+ * ChatSidebar (会话列表 + 删除/重命名) + 主聊天区 (MessageList + ChatInput)。
+ * 未认证时自动触发 AuthDialog。
+ * 对应 Sprint 4 US-202 / US-203 / US-204。
  */
 
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FormEvent } from 'react'
+import { FormEvent, useEffect } from 'react'
 import type { ChatSession, ChatMessage } from '@/features/research/types'
+import { useAuthDialog } from '@/features/auth/hooks/useAuthDialog'
 import { ChatSidebar } from './ChatSidebar'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
+import { Button } from '@/shared/components/ui'
+import { LogIn } from 'lucide-react'
 
 interface ChatPageProps {
   isAuthenticated: boolean
-  user?: { displayName?: string; email?: string } | null
   messages: ChatMessage[]
   sessions: ChatSession[]
   currentSession: ChatSession | null
@@ -25,11 +27,12 @@ interface ChatPageProps {
   onFormSubmit: (e: FormEvent<HTMLFormElement>) => void
   onNewSession: () => void
   onSwitchSession: (sessionId: string) => void
+  onDeleteSession?: (sessionId: string) => void
+  onRenameSession?: (sessionId: string, title: string) => void
 }
 
 export function ChatPage({
   isAuthenticated,
-  user,
   messages,
   sessions,
   currentSession,
@@ -39,34 +42,45 @@ export function ChatPage({
   onFormSubmit,
   onNewSession,
   onSwitchSession,
+  onDeleteSession,
+  onRenameSession,
 }: ChatPageProps) {
-  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation('common')
+  const { openAuthDialog } = useAuthDialog()
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      openAuthDialog('login')
+    }
+  }, [isAuthenticated, openAuthDialog])
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-indigo-50">
+      <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{tCommon('messages.error')}</h2>
-          <p className="text-gray-600 mb-6">Please sign in to use the chat.</p>
-          <Link to="/login" className="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg">
-            {tCommon('nav.login')}
-          </Link>
+          <h2 className="text-2xl font-bold text-foreground mb-4">{t('nav.chat')}</h2>
+          <p className="text-muted-foreground mb-6">Please sign in to use the chat.</p>
+          <Button onClick={() => openAuthDialog('login')} className="gap-2">
+            <LogIn size={18} />
+            {t('nav.login')}
+          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="flex flex-1 h-full bg-background overflow-hidden">
       <ChatSidebar
         sessions={sessions}
         currentSessionId={currentSession?.id || null}
-        user={user}
         onNewSession={onNewSession}
         onSwitchSession={onSwitchSession}
+        onDeleteSession={onDeleteSession}
+        onRenameSession={onRenameSession}
       />
-      <main className="flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 overflow-y-auto">
           <MessageList messages={messages} />
         </div>
         <ChatInput

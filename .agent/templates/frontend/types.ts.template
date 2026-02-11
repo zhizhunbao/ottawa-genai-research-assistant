@@ -1,0 +1,81 @@
+/**
+ * {{FeatureName}} Types
+ *
+ * TypeScript 类型定义
+ */
+
+// ============================================
+// Base Types
+// ============================================
+
+export interface BaseEntity {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// {{FeatureName}} Types
+// ============================================
+
+export interface {{FeatureName}} extends BaseEntity {
+  // TODO: 定义字段
+  name: string;
+  description?: string;
+}
+
+export interface {{FeatureName}}Create {
+  name: string;
+  description?: string;
+}
+
+export interface {{FeatureName}}Update {
+  name?: string;
+  description?: string;
+}
+
+// ============================================
+// API Response Types
+// ============================================
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+export interface ApiError {
+  message: string;
+  code?: string;
+  details?: Record<string, unknown>;
+}
+
+// ============================================
+// Query Types
+// ============================================
+
+export interface {{FeatureName}}Query {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+// ============================================
+// State Types
+// ============================================
+
+export interface {{FeatureName}}State {
+  items: {{FeatureName}}[];
+  selectedId: string | null;
+  isLoading: boolean;
+  error: string | null;
+}

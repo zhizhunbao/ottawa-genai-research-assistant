@@ -5,14 +5,12 @@
 遵循 dev-backend_patterns skill 的 Service 层模式。
 """
 
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_password_hash, verify_password
-from app.core.enums import UserRole
 from app.core.exceptions import ConflictError, NotFoundError, UnauthorizedError
+from app.core.security import get_password_hash, verify_password
 from app.users.models import User
 from app.users.schemas import UserCreate, UserUpdate
 
@@ -31,7 +29,7 @@ class UserService:
             raise NotFoundError("用户", user_id)
         return user
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> User | None:
         """根据邮箱获取用户"""
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()

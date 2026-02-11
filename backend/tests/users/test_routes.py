@@ -9,8 +9,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.users.models import User
 from app.core.security import get_password_hash
+from app.users.models import User
 
 
 class TestUserRoutes:

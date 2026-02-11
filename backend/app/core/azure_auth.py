@@ -6,13 +6,11 @@ Supports both Azure AD tokens and legacy local tokens.
 """
 
 import logging
-from typing import Optional
-from functools import lru_cache
 
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt, JWTError, jwk
+from jose import JWTError, jwk, jwt
 from jose.exceptions import JWKError
 
 from app.core.config import settings
@@ -42,7 +40,7 @@ class AzureADTokenValidator:
         self.client_id = client_id
         self.issuer = f"https://login.microsoftonline.com/{tenant_id}/v2.0"
         self.jwks_uri = f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
-        self._jwks_cache: Optional[dict] = None
+        self._jwks_cache: dict | None = None
 
     async def _get_jwks(self) -> dict:
         """Fetch JWKS (JSON Web Key Set) from Azure AD."""
@@ -62,7 +60,7 @@ class AzureADTokenValidator:
                 detail="Unable to validate token: Azure AD unavailable",
             )
 
-    def _get_public_key(self, token: str, jwks: dict) -> Optional[str]:
+    def _get_public_key(self, token: str, jwks: dict) -> str | None:
         """Get the public key for the token from JWKS."""
         try:
             # Decode token header to get kid
@@ -137,10 +135,10 @@ class AzureADTokenValidator:
 
 
 # Singleton instance
-_azure_ad_validator: Optional[AzureADTokenValidator] = None
+_azure_ad_validator: AzureADTokenValidator | None = None
 
 
-def get_azure_ad_validator() -> Optional[AzureADTokenValidator]:
+def get_azure_ad_validator() -> AzureADTokenValidator | None:
     """Get Azure AD validator instance (singleton)."""
     global _azure_ad_validator
 
@@ -160,7 +158,7 @@ def get_azure_ad_validator() -> Optional[AzureADTokenValidator]:
 
 
 async def get_current_user_azure_ad(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> dict:
     """
     Get current user from Azure AD token.
@@ -194,7 +192,7 @@ async def get_current_user_azure_ad(
 
 
 async def get_current_user_id_azure_ad(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> str:
     """Get current user ID from Azure AD token."""
     user = await get_current_user_azure_ad(credentials)
@@ -210,8 +208,8 @@ async def get_current_user_id_azure_ad(
 
 
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> Optional[dict]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> dict | None:
     """
     Get current user if authenticated, None otherwise.
 

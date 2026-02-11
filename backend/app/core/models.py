@@ -6,57 +6,59 @@
 遵循 dev-tdd_workflow skill 规范。
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import JSON, DateTime, String, Enum as SqlEnum
+from sqlalchemy import JSON, DateTime, String
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.core.enums import DocumentStatus, DocumentType
 from app.core.utils import generate_uuid
 
+
 class UniversalDocument(Base):
     """通用文档/数据实体"""
     __tablename__ = "universal_documents"
 
     id: Mapped[str] = mapped_column(
-        String(36), 
-        primary_key=True, 
+        String(36),
+        primary_key=True,
         default=generate_uuid
     )
-    
+
     # 业务类型
     type: Mapped[DocumentType] = mapped_column(SqlEnum(DocumentType), index=True, nullable=False)
-    
+
     # 核心数据：JSON 格式存储所有多变的业务负载
-    data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
-    
+    data: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+
     # 归属者：管理或具体用户 ID
-    owner_id: Mapped[Optional[str]] = mapped_column(String(36), index=True, nullable=True)
-    
+    owner_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+
     # 状态
     status: Mapped[DocumentStatus] = mapped_column(
-        SqlEnum(DocumentStatus), 
-        default=DocumentStatus.ACTIVE, 
+        SqlEnum(DocumentStatus),
+        default=DocumentStatus.ACTIVE,
         index=True
     )
-    
+
     # 标签系统：用于分类 and 检索
-    tags: Mapped[List[str]] = mapped_column(JSON, default=list)
-    
+    tags: Mapped[list[str]] = mapped_column(JSON, default=list)
+
     # 时间戳 (UTC)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC)
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为标准字典"""
         return {
             "id": self.id,

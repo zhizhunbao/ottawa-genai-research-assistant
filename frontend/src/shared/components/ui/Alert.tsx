@@ -1,32 +1,36 @@
-/**
- * Alert 组件
- *
- * 用于显示各类提示信息的告警组件。
- * 遵循 dev-frontend_patterns skill 规范。
- */
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-import React from 'react'
-import { cn } from '@/shared/utils/cn'
+import { cn } from "@/lib/utils"
+
+const alertVariants = cva(
+  "relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7",
+  {
+    variants: {
+      variant: {
+        default: "bg-background text-foreground",
+        destructive:
+          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
 
 const Alert = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { variant?: 'default' | 'destructive' | 'success' | 'warning' }
->(({ className, variant = 'default', ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
+>(({ className, variant, ...props }, ref) => (
   <div
     ref={ref}
     role="alert"
-    className={cn(
-      'relative w-full rounded-2xl border p-5 [&>svg~*]:pl-8 [&>svg]:absolute [&>svg]:left-5 [&>svg]:top-5 [&>svg]:text-slate-900',
-      variant === 'default' && 'bg-slate-50 text-slate-900 border-slate-200',
-      variant === 'destructive' && 'border-red-500/50 text-red-700 bg-red-50 [&>svg]:text-red-700',
-      variant === 'success' && 'border-emerald-500/50 text-emerald-700 bg-emerald-50 [&>svg]:text-emerald-700',
-      variant === 'warning' && 'border-amber-500/50 text-amber-700 bg-amber-50 [&>svg]:text-amber-700',
-      className
-    )}
+    className={cn(alertVariants({ variant }), className)}
     {...props}
   />
 ))
-Alert.displayName = 'Alert'
+Alert.displayName = "Alert"
 
 const AlertTitle = React.forwardRef<
   HTMLParagraphElement,
@@ -34,11 +38,11 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn('mb-1 font-bold leading-none tracking-tight text-lg', className)}
+    className={cn("mb-1 font-medium leading-none tracking-tight", className)}
     {...props}
   />
 ))
-AlertTitle.displayName = 'AlertTitle'
+AlertTitle.displayName = "AlertTitle"
 
 const AlertDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -46,10 +50,10 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('text-sm [&_p]:leading-relaxed font-medium opacity-90', className)}
+    className={cn("text-sm [&_p]:leading-relaxed", className)}
     {...props}
   />
 ))
-AlertDescription.displayName = 'AlertDescription'
+AlertDescription.displayName = "AlertDescription"
 
 export { Alert, AlertTitle, AlertDescription }

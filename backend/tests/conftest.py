@@ -4,7 +4,8 @@ Pytest 配置和共享 Fixtures
 遵循 dev-tdd_workflow skill 的测试模式。
 """
 
-from typing import AsyncGenerator, Optional, TYPE_CHECKING
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Optional
 
 import pytest
 from httpx import AsyncClient

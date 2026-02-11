@@ -1,30 +1,38 @@
 /**
  * MainLayout - 主布局组件
  *
- * 包含 Header、主内容区域和 Footer 的完整页面布局。
- * 用于公开页面（首页）和一般页面。
- * 遵循 dev-frontend_patterns skill 规范。
+ * 包含 Header、PageContainer、Footer 的完整页面布局。
+ * - 默认所有内容页面自动套 PageContainer（max-width + padding）。
+ * - /chat 路由：全屏布局，无 PageContainer、无 Footer。
+ * - /（首页）：全宽 landing page，无 PageContainer，有 Footer。
  */
 
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
+import { PageContainer } from './PageContainer'
 
-interface MainLayoutProps {
-  /** 是否显示 Footer */
-  showFooter?: boolean
-  /** 自定义主内容区域的类名 */
-  className?: string
-}
+/** 不需要 PageContainer 的路由（全宽或特殊布局） */
+const FULL_WIDTH_ROUTES = ['/', '/chat']
 
-export function MainLayout({ showFooter = true, className = '' }: MainLayoutProps) {
+export function MainLayout() {
+  const location = useLocation()
+  const isChatPage = location.pathname === '/chat'
+  const usePageContainer = !FULL_WIDTH_ROUTES.includes(location.pathname)
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white">
+    <div className={`flex flex-col bg-background ${isChatPage ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <Header />
-      <main className={`flex-1 ${className}`}>
-        <Outlet />
+      <main className={`flex-1 ${isChatPage ? 'overflow-hidden' : ''}`}>
+        {usePageContainer ? (
+          <PageContainer>
+            <Outlet />
+          </PageContainer>
+        ) : (
+          <Outlet />
+        )}
       </main>
-      {showFooter && <Footer />}
+      {!isChatPage && <Footer />}
     </div>
   )
 }

@@ -4,11 +4,11 @@ Azure AI Search 服务单元测试
 测试 AzureSearchService 的核心功能。
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
 
-from app.core.azure_search import AzureSearchService, AzureSearchError
+import pytest
+
+from app.core.azure_search import AzureSearchService
 
 
 class TestAzureSearchService:

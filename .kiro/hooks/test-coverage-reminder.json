@@ -1,0 +1,12 @@
+{
+  "name": "Test Coverage Reminder",
+  "version": "1.0.0",
+  "description": "Remind to check test coverage after agent stops",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "If we just wrote or modified code, remind me to:\n\n1. Run tests: `uv run pytest`\n2. Check coverage: `uv run pytest --cov=app`\n3. Ensure 80%+ coverage\n\nOnly remind if code changes were made in this session."
+  }
+}

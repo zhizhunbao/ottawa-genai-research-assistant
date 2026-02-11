@@ -5,17 +5,13 @@
 遵循 dev-backend_patterns skill 规范。
 """
 
-from datetime import datetime, timezone
-from typing import Optional
-from uuid import uuid4
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.core.utils import generate_uuid
-
-
 
 
 class User(Base):
@@ -38,7 +34,7 @@ class User(Base):
         String(255),
         nullable=False,
     )
-    name: Mapped[Optional[str]] = mapped_column(
+    name: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
     )
@@ -54,12 +50,12 @@ class User(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )

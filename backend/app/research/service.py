@@ -2,13 +2,16 @@
 研究服务层
 
 包含 RAG 和 AI 搜索相关的业务逻辑。
-遵循 dev-backend_patterns skill 的 Service 层模式。
+对应 US-301: Chart Visualization (添加图表数据提取)
 """
 
 import logging
-from typing import List, Optional, TYPE_CHECKING
+import re
+from typing import TYPE_CHECKING, Optional
 
-from app.core.config import settings
+from app.core.enums import ChatRole
+from app.core.exceptions import ExternalServiceError
+from app.research.chart_service import ChartData
 from app.research.schemas import (
     ChatMessage,
     ChatRequest,
@@ -17,14 +20,16 @@ from app.research.schemas import (
     SearchResponse,
     SearchResult,
 )
-from app.core.enums import ChatRole
-from app.core.exceptions import ExternalServiceError
 
 if TYPE_CHECKING:
-    from app.core.azure_search import AzureSearchService
     from app.core.azure_openai import AzureOpenAIService
+    from app.core.azure_search import AzureSearchService
 
 logger = logging.getLogger(__name__)
+
+# 查询预处理常量
+MAX_QUERY_LENGTH = 500
+QUERY_CLEANUP_PATTERN = re.compile(r"\s+")
 
 
 class ResearchService:
@@ -48,31 +53,40 @@ class ResearchService:
 
     def _validate_config(self) -> None:
         """验证必要的配置"""
-        # 配置验证将在实际调用时进行
         pass
 
-    async def search(self, query: SearchQuery) -> SearchResponse:
-        """
-        执行语义搜索
+    def preprocess_query(self, query: str) -> str:
+        """查询预处理: 清理空白、截断过长查询"""
+        cleaned = QUERY_CLEANUP_PATTERN.sub(" ", query).strip()
+        if len(cleaned) > MAX_QUERY_LENGTH:
+            cleaned = cleaned[:MAX_QUERY_LENGTH]
+        return cleaned
 
-        如果配置了 Azure Search，使用真实搜索；否则返回模拟数据。
-        """
+    async def search(self, query: SearchQuery) -> SearchResponse:
+        """执行语义搜索，支持混合搜索 (Vector + BM25)"""
         try:
+            # 查询预处理
+            processed_query = SearchQuery(
+                query=self.preprocess_query(query.query),
+                top_k=query.top_k,
+                filters=query.filters,
+            )
+
             if self._search_service:
-                results = await self._azure_search(query)
+                results = await self._azure_search(processed_query)
             else:
                 logger.warning("Azure Search not configured, using mock data")
-                results = await self._mock_search(query)
+                results = await self._mock_search(processed_query)
 
             return SearchResponse(
-                query=query.query,
+                query=query.query,  # 返回原始查询
                 results=results,
                 total=len(results),
             )
         except Exception as e:
             raise ExternalServiceError("Azure AI Search", str(e)) from e
 
-    async def _azure_search(self, query: SearchQuery) -> List[SearchResult]:
+    async def _azure_search(self, query: SearchQuery) -> list[SearchResult]:
         """
         使用 Azure AI Search 执行搜索
 
@@ -131,7 +145,7 @@ class ResearchService:
 
         return results
 
-    async def _mock_search(self, query: SearchQuery) -> List[SearchResult]:
+    async def _mock_search(self, query: SearchQuery) -> list[SearchResult]:
         """模拟搜索结果（开发用）"""
         return [
             SearchResult(
@@ -155,7 +169,8 @@ class ResearchService:
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """处理聊天请求（RAG 增强）"""
         try:
-            sources: List[SearchResult] = []
+            sources: list[SearchResult] = []
+            query_text = ""
 
             # 如果启用 RAG，先进行搜索
             if request.use_rag and request.messages:
@@ -164,7 +179,8 @@ class ResearchService:
                     None,
                 )
                 if last_user_message:
-                    search_query = SearchQuery(query=last_user_message.content)
+                    query_text = last_user_message.content
+                    search_query = SearchQuery(query=query_text)
                     search_response = await self.search(search_query)
                     sources = search_response.results
 
@@ -175,41 +191,97 @@ class ResearchService:
                 logger.warning("Azure OpenAI not configured, using mock response")
                 response_message = await self._mock_chat(request.messages, sources)
 
+            # 计算置信度 (US-203)
+            confidence = self._compute_confidence(sources)
+
+            # 尝试提取图表数据 (US-301)
+            chart_data = await self._extract_chart_data(sources, query_text)
+
             return ChatResponse(
                 message=response_message,
                 sources=sources,
+                confidence=confidence,
+                chart=chart_data,
             )
         except Exception as e:
             raise ExternalServiceError("Azure OpenAI", str(e)) from e
 
+    async def _extract_chart_data(
+        self,
+        sources: list[SearchResult],
+        query: str,
+    ) -> ChartData | None:
+        """从搜索结果中提取图表数据 (US-301)
+
+        Args:
+            sources: 搜索结果列表
+            query: 用户查询
+
+        Returns:
+            图表数据，如果无法提取则返回 None
+        """
+        if not sources or not query:
+            return None
+
+        # 合并所有来源的内容
+        combined_content = "\n".join(s.content for s in sources[:5])
+
+        try:
+            # 使用带 LLM 支持的提取器
+            from app.research.chart_service import ChartDataExtractor
+            extractor = ChartDataExtractor(openai_service=self._openai_service)
+            return await extractor.extract_chart_data_llm(combined_content, query)
+        except Exception as e:
+            logger.warning(f"Failed to extract chart data: {e}")
+            return None
+
+    def _compute_confidence(self, sources: list[SearchResult]) -> float:
+        """根据检索到的 sources 的平均分计算置信度
+
+        Args:
+            sources: 检索到的文档列表
+
+        Returns:
+            0-1 之间的置信度分数
+        """
+        if not sources:
+            return 0.3  # 无来源时给低置信度
+        avg_score = sum(s.score for s in sources) / len(sources)
+        # 将 0-1 范围的分数映射为 0.1-1.0 的置信度
+        return max(0.1, min(1.0, avg_score))
+
     async def _openai_chat(
         self,
-        messages: List[ChatMessage],
-        sources: List[SearchResult],
+        messages: list[ChatMessage],
+        sources: list[SearchResult],
     ) -> ChatMessage:
-        """使用 Azure OpenAI 生成聊天回复"""
-        # 获取最后一条用户消息
+        """使用 Azure OpenAI 生成聊天回复（RAG 增强）"""
         last_message = messages[-1] if messages else None
         query = last_message.content if last_message else "你好"
 
-        # 构建上下文
-        context = []
-        for source in sources[:5]:  # 最多使用 5 个来源
-            context.append(f"[{source.title}]: {source.content}")
+        # 将 SearchResult 转为结构化 dict（支持 citation）
+        structured_sources = [
+            {
+                "title": s.title,
+                "content": s.content,
+                "page_number": (s.metadata or {}).get("page_number", "N/A"),
+                "score": s.score,
+                "source": s.source or "",
+            }
+            for s in sources[:5]
+        ]
 
         # 构建聊天历史
-        chat_history = []
-        for msg in messages[:-1]:  # 排除最后一条（当前问题）
-            chat_history.append({
-                "role": msg.role.value,
-                "content": msg.content,
-            })
+        chat_history = [
+            {"role": msg.role.value, "content": msg.content}
+            for msg in messages[:-1]
+        ] or None
 
-        # 调用 RAG chat
+        # 调用 RAG chat（使用结构化 sources）
         response = await self._openai_service.rag_chat(
             query=query,
-            context=context,
-            chat_history=chat_history if chat_history else None,
+            sources=structured_sources,
+            chat_history=chat_history,
             temperature=0.7,
         )
 
@@ -220,8 +292,8 @@ class ResearchService:
 
     async def _mock_chat(
         self,
-        messages: List[ChatMessage],
-        sources: List[SearchResult],
+        messages: list[ChatMessage],
+        sources: list[SearchResult],
     ) -> ChatMessage:
         """模拟聊天响应（开发用）"""
         last_message = messages[-1] if messages else None

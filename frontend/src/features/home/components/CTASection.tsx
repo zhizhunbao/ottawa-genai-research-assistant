@@ -1,12 +1,14 @@
 /**
  * CTASection - 底部行动呼吁区
  *
- * 遵循 dev-frontend_patterns 规范。
+ * 使用 shadcn/ui Button 组件替代原生 Link 样式按钮。
+ * 遵循 US-107 布局规范和 shadcn/ui 迁移计划。
  */
 
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { MessageSquare, Upload } from 'lucide-react'
+import { MessageSquare, ArrowRight } from 'lucide-react'
+import { Button } from '@/shared/components/ui'
 
 interface CTASectionProps {
   isAuthenticated: boolean
@@ -32,15 +34,28 @@ export function CTASection({ isAuthenticated }: CTASectionProps) {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Link to={isAuthenticated ? '/chat' : '/login'} className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-12 py-5 bg-white text-[#004890] font-bold rounded-2xl hover:scale-105 transition-all shadow-xl cursor-pointer no-underline hover:no-underline">
-              <MessageSquare size={20} />
-              {isAuthenticated ? t('cta.startChat') : t('cta.startSession')}
-            </Link>
+            <Button
+              asChild
+              size="lg"
+              className="w-full sm:w-auto px-12 py-5 h-auto bg-white text-[#004890] font-bold rounded-2xl hover:scale-105 transition-all shadow-xl hover:bg-white/95"
+            >
+              <Link to="/chat">
+                <MessageSquare size={20} />
+                {isAuthenticated ? t('cta.startChat') : t('cta.startSession')}
+              </Link>
+            </Button>
             
-            <Link to="/documents/upload" className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-12 py-5 bg-transparent border-2 border-white/40 text-white font-bold rounded-2xl hover:bg-white/10 transition-all cursor-pointer no-underline hover:no-underline">
-              <Upload size={20} />
-              {t('cta.uploadDocs')}
-            </Link>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto px-12 py-5 h-auto bg-transparent border-2 border-white/40 text-white font-bold rounded-2xl hover:bg-white/10 transition-all hover:text-white"
+            >
+              <Link to="/chat">
+                <ArrowRight size={20} />
+                {t('cta.learnMore', 'Learn More')}
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

@@ -7,7 +7,6 @@
 """
 
 from functools import lru_cache
-from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -62,7 +61,7 @@ class Settings(BaseSettings):
     azure_ad_client_id: str = ""
 
     # CORS 配置
-    cors_origins: List[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:3000"]
 
     @property
     def is_production(self) -> bool:

@@ -6,21 +6,27 @@
 遵循 dev-tdd_workflow skill 规范。
 """
 
-from functools import lru_cache
-from typing import Annotated, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Annotated, Optional
 
 from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.security import get_current_user_id
+if TYPE_CHECKING:
+    from app.core.azure_openai import AzureOpenAIService
+    from app.core.azure_search import AzureSearchService
+    from app.core.azure_storage import AzureBlobStorageService
+    from app.core.document_pipeline import DocumentPipeline
+
 from app.core.azure_auth import (
     get_current_user_azure_ad,
     get_current_user_id_azure_ad,
     get_current_user_optional,
 )
 from app.core.config import settings
-
+from app.core.database import get_db
+from app.core.security import get_current_user_id
 
 # 数据库会话依赖
 DbSession = Annotated[AsyncSession, Depends(get_db)]
@@ -31,7 +37,7 @@ CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 # Azure AD 用户依赖
 CurrentUserAzureAD = Annotated[dict, Depends(get_current_user_azure_ad)]
 CurrentUserIdAzureAD = Annotated[str, Depends(get_current_user_id_azure_ad)]
-OptionalCurrentUser = Annotated[Optional[dict], Depends(get_current_user_optional)]
+OptionalCurrentUser = Annotated[dict | None, Depends(get_current_user_optional)]
 
 
 class PaginationParams:
@@ -52,10 +58,10 @@ Pagination = Annotated[PaginationParams, Depends()]
 
 
 # Azure Blob Storage 依赖
-_blob_storage_instance: Optional["AzureBlobStorageService"] = None
+_blob_storage_instance: AzureBlobStorageService | None = None
 
 
-def get_blob_storage() -> "AzureBlobStorageService":
+def get_blob_storage() -> AzureBlobStorageService:
     """
     获取 Azure Blob Storage 服务实例（单例）
 
@@ -86,10 +92,10 @@ BlobStorage = Annotated["AzureBlobStorageService", Depends(get_blob_storage)]
 
 
 # Azure AI Search 依赖
-_search_service_instance: Optional["AzureSearchService"] = None
+_search_service_instance: AzureSearchService | None = None
 
 
-def get_search_service() -> "AzureSearchService":
+def get_search_service() -> AzureSearchService:
     """
     获取 Azure AI Search 服务实例（单例）
 
@@ -119,7 +125,7 @@ def get_search_service() -> "AzureSearchService":
     return _search_service_instance
 
 
-def get_search_service_optional() -> Optional["AzureSearchService"]:
+def get_search_service_optional() -> AzureSearchService | None:
     """
     获取 Azure AI Search 服务实例（可选，单例）
 
@@ -141,10 +147,10 @@ OptionalSearchService = Annotated[Optional["AzureSearchService"], Depends(get_se
 
 
 # Azure OpenAI 依赖
-_openai_service_instance: Optional["AzureOpenAIService"] = None
+_openai_service_instance: AzureOpenAIService | None = None
 
 
-def get_openai_service() -> "AzureOpenAIService":
+def get_openai_service() -> AzureOpenAIService:
     """
     获取 Azure OpenAI 服务实例（单例）
 
@@ -176,7 +182,7 @@ def get_openai_service() -> "AzureOpenAIService":
     return _openai_service_instance
 
 
-def get_openai_service_optional() -> Optional["AzureOpenAIService"]:
+def get_openai_service_optional() -> AzureOpenAIService | None:
     """
     获取 Azure OpenAI 服务实例（可选，单例）
 
@@ -195,3 +201,55 @@ def get_openai_service_optional() -> Optional["AzureOpenAIService"]:
 # OpenAI 依赖类型
 OpenAIService = Annotated["AzureOpenAIService", Depends(get_openai_service)]
 OptionalOpenAIService = Annotated[Optional["AzureOpenAIService"], Depends(get_openai_service_optional)]
+
+
+# Document Pipeline 依赖
+_document_pipeline_instance: DocumentPipeline | None = None
+
+
+def get_document_pipeline() -> DocumentPipeline:
+    """
+    获取 DocumentPipeline 服务实例（单例）
+
+    需要 Azure OpenAI 和 Azure Search 均已配置。
+
+    Returns:
+        DocumentPipeline: 文档处理管道实例
+
+    Raises:
+        ValueError: 如果 Azure OpenAI 或 Azure Search 未配置
+    """
+    global _document_pipeline_instance
+
+    if _document_pipeline_instance is None:
+        from app.core.document_pipeline import DocumentPipeline
+
+        openai_service = get_openai_service()
+        search_service = get_search_service()
+
+        _document_pipeline_instance = DocumentPipeline(
+            openai_service=openai_service,
+            search_service=search_service,
+        )
+
+    return _document_pipeline_instance
+
+
+def get_document_pipeline_optional() -> DocumentPipeline | None:
+    """
+    获取 DocumentPipeline 服务实例（可选，单例）
+
+    如果 Azure 服务未配置则返回 None。
+
+    Returns:
+        DocumentPipeline | None
+    """
+    try:
+        return get_document_pipeline()
+    except ValueError:
+        return None
+
+
+# Pipeline 依赖类型
+DocumentPipelineDep = Annotated["DocumentPipeline", Depends(get_document_pipeline)]
+OptionalDocumentPipeline = Annotated[Optional["DocumentPipeline"], Depends(get_document_pipeline_optional)]

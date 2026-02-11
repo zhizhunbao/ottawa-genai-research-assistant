@@ -1,4 +1,8 @@
 {
+  "welcome": {
+    "title": "Welcome to Ottawa GenAI Research",
+    "subtitle": "Ask questions about Ottawa's economic development reports and data. I'll search through the documents and provide cited answers."
+  },
   "title": "Research Assistant",
   "placeholder": "Ask a question about Economic Development reports...",
   "send": "Send",
@@ -9,7 +13,12 @@
     "title": "Sources",
     "document": "Document",
     "page": "Page",
-    "relevance": "Relevance"
+    "section": "Section",
+    "relevance": "Relevance",
+    "excerpt": "Original Text",
+    "noExcerpt": "No excerpt available.",
+    "preview": "Source Preview",
+    "viewDocument": "View Document"
   },
   "confidence": {
     "label": "Confidence",
@@ -38,5 +47,10 @@
     "topics": "Topics",
     "apply": "Apply Filters",
     "clear": "Clear"
+  },
+  "actions": {
+    "copy": "Copy",
+    "copied": "Copied!",
+    "close": "Close"
   }
 }

@@ -6,11 +6,14 @@
 遵循 dev-tdd_workflow skill 规范。
 """
 
-from typing import Any, Dict, List, Optional
-from sqlalchemy import select, delete
+from typing import Any
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.models import UniversalDocument
+
 from app.core.enums import DocumentStatus, DocumentType
+from app.core.models import UniversalDocument
+
 
 class DocumentStore:
     """通用文档存储服务实现"""
@@ -19,13 +22,13 @@ class DocumentStore:
         self.db = db
 
     async def create(
-        self, 
-        doc_type: DocumentType, 
-        data: Dict[str, Any], 
-        owner_id: Optional[str] = None,
+        self,
+        doc_type: DocumentType,
+        data: dict[str, Any],
+        owner_id: str | None = None,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-        tags: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        tags: list[str] | None = None
+    ) -> dict[str, Any]:
         """创建/保存新文档"""
         new_doc = UniversalDocument(
             type=doc_type,
@@ -38,7 +41,7 @@ class DocumentStore:
         await self.db.flush()  # 获取生成的 ID
         return new_doc.to_dict()
 
-    async def get_by_id(self, doc_id: str) -> Optional[Dict[str, Any]]:
+    async def get_by_id(self, doc_id: str) -> dict[str, Any] | None:
         """按 ID 查询文档"""
         stmt = select(UniversalDocument).where(UniversalDocument.id == doc_id)
         result = await self.db.execute(stmt)
@@ -46,26 +49,26 @@ class DocumentStore:
         return doc.to_dict() if doc else None
 
     async def list_by_type(
-        self, 
-        doc_type: DocumentType, 
-        owner_id: Optional[str] = None,
+        self,
+        doc_type: DocumentType,
+        owner_id: str | None = None,
         limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """按类型和所有者列表显示"""
         stmt = select(UniversalDocument).where(UniversalDocument.type == doc_type)
         if owner_id:
             stmt = stmt.where(UniversalDocument.owner_id == owner_id)
-        
+
         stmt = stmt.order_by(UniversalDocument.created_at.desc()).limit(limit)
         result = await self.db.execute(stmt)
         return [doc.to_dict() for doc in result.scalars().all()]
 
-    async def update_data(self, doc_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def update_data(self, doc_id: str, data: dict[str, Any]) -> dict[str, Any] | None:
         """更新文档的 data (JSON) 内容"""
         stmt = select(UniversalDocument).where(UniversalDocument.id == doc_id)
         result = await self.db.execute(stmt)
         doc = result.scalar_one_or_none()
-        
+
         if doc:
             doc.data = data
             await self.db.flush()
@@ -77,3 +80,15 @@ class DocumentStore:
         stmt = delete(UniversalDocument).where(UniversalDocument.id == doc_id)
         result = await self.db.execute(stmt)
         return result.rowcount > 0
+
+    async def update_status(self, doc_id: str, new_status: str) -> bool:
+        """更新文档处理状态"""
+        stmt = select(UniversalDocument).where(UniversalDocument.id == doc_id)
+        result = await self.db.execute(stmt)
+        doc = result.scalar_one_or_none()
+
+        if doc:
+            doc.status = new_status
+            await self.db.flush()
+            return True
+        return False

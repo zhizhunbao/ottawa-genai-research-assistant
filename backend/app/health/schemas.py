@@ -1,12 +1,11 @@
 """Health check response schemas."""
 
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 
-class HealthStatus(str, Enum):
+class HealthStatus(StrEnum):
     """Health status enum."""
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
@@ -17,8 +16,8 @@ class ServiceHealth(BaseModel):
     """Individual service health status."""
     name: str
     status: HealthStatus
-    message: Optional[str] = None
-    latency_ms: Optional[float] = None
+    message: str | None = None
+    latency_ms: float | None = None
 
 
 class HealthCheckResponse(BaseModel):

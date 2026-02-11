@@ -6,26 +6,23 @@ Azure AI Search 服务
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import ResourceNotFoundError
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import (
-    SearchIndex,
+    HnswAlgorithmConfiguration,
+    SearchableField,
     SearchField,
     SearchFieldDataType,
-    SimpleField,
-    SearchableField,
-    VectorSearch,
-    HnswAlgorithmConfiguration,
-    VectorSearchProfile,
     SearchIndex,
+    SimpleField,
+    VectorSearch,
+    VectorSearchProfile,
 )
 from azure.search.documents.models import VectorizedQuery
-from azure.core.exceptions import ResourceNotFoundError
-
-from app.core.config import settings
 
 
 class AzureSearchError(Exception):
@@ -177,13 +174,13 @@ class AzureSearchService:
         doc_id: str,
         title: str,
         content: str,
-        content_vector: List[float],
+        content_vector: list[float],
         source: str,
         document_id: str,
         page_number: int = 0,
         chunk_index: int = 0,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         索引单个文档块
 
@@ -224,8 +221,8 @@ class AzureSearchService:
 
     async def index_documents_batch(
         self,
-        documents: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        documents: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         批量索引文档
 
@@ -254,11 +251,11 @@ class AzureSearchService:
     async def search(
         self,
         query: str,
-        query_vector: Optional[List[float]] = None,
+        query_vector: list[float] | None = None,
         top_k: int = 5,
-        filters: Optional[str] = None,
-        select: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: str | None = None,
+        select: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         执行混合搜索 (向量 + 关键词)
 
@@ -273,7 +270,7 @@ class AzureSearchService:
             搜索结果列表
         """
         try:
-            search_kwargs: Dict[str, Any] = {
+            search_kwargs: dict[str, Any] = {
                 "search_text": query,
                 "top": top_k,
                 "include_total_count": True,

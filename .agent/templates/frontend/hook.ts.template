@@ -1,0 +1,114 @@
+/**
+ * use{{FeatureName}} Hook
+ *
+ * 管理 {{feature_name}} 的数据获取和状态。
+ * Created: {{date}}
+ */
+
+import { useState, useCallback, useEffect } from 'react';
+
+import { {{feature_name}}Api } from '../services/{{feature_name}}Api';
+import type { {{FeatureName}}Data, {{FeatureName}}ListResponse } from '../types';
+
+interface Use{{FeatureName}}Options {
+  /** 是否自动加载 */
+  autoFetch?: boolean;
+  /** 初始页码 */
+  initialPage?: number;
+  /** 每页数量 */
+  pageSize?: number;
+}
+
+interface Use{{FeatureName}}Return {
+  /** 数据列表 */
+  items: {{FeatureName}}Data[];
+  /** 总数 */
+  total: number;
+  /** 当前页 */
+  page: number;
+  /** 是否加载中 */
+  isLoading: boolean;
+  /** 错误信息 */
+  error: Error | null;
+  /** 刷新数据 */
+  refresh: () => Promise<void>;
+  /** 加载指定页 */
+  loadPage: (page: number) => Promise<void>;
+  /** 创建 */
+  create: (data: Partial<{{FeatureName}}Data>) => Promise<{{FeatureName}}Data>;
+  /** 更新 */
+  update: (id: string, data: Partial<{{FeatureName}}Data>) => Promise<{{FeatureName}}Data>;
+  /** 删除 */
+  remove: (id: string) => Promise<void>;
+}
+
+export function use{{FeatureName}}(options: Use{{FeatureName}}Options = {}): Use{{FeatureName}}Return {
+  const { autoFetch = true, initialPage = 1, pageSize = 20 } = options;
+
+  const [items, setItems] = useState<{{FeatureName}}Data[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(initialPage);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async (pageNum: number) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const skip = (pageNum - 1) * pageSize;
+      const response = await {{feature_name}}Api.list({ skip, limit: pageSize });
+      setItems(response.items);
+      setTotal(response.total);
+      setPage(pageNum);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pageSize]);
+
+  const refresh = useCallback(async () => {
+    await fetchData(page);
+  }, [fetchData, page]);
+
+  const loadPage = useCallback(async (pageNum: number) => {
+    await fetchData(pageNum);
+  }, [fetchData]);
+
+  const create = useCallback(async (data: Partial<{{FeatureName}}Data>) => {
+    const result = await {{feature_name}}Api.create(data);
+    await refresh();
+    return result;
+  }, [refresh]);
+
+  const update = useCallback(async (id: string, data: Partial<{{FeatureName}}Data>) => {
+    const result = await {{feature_name}}Api.update(id, data);
+    await refresh();
+    return result;
+  }, [refresh]);
+
+  const remove = useCallback(async (id: string) => {
+    await {{feature_name}}Api.delete(id);
+    await refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (autoFetch) {
+      fetchData(initialPage);
+    }
+  }, [autoFetch, fetchData, initialPage]);
+
+  return {
+    items,
+    total,
+    page,
+    isLoading,
+    error,
+    refresh,
+    loadPage,
+    create,
+    update,
+    remove,
+  };
+}

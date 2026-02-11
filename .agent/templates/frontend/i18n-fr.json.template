@@ -1,0 +1,62 @@
+{
+  "{{feature_name}}": {
+    "title": "{{FeatureName}}",
+    "description": "Gérer vos {{feature_name}}",
+
+    "list": {
+      "title": "Liste des {{FeatureName}}",
+      "empty": "Aucun {{feature_name}} trouvé",
+      "loading": "Chargement des {{feature_name}}...",
+      "error": "Échec du chargement des {{feature_name}}"
+    },
+
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "Entrez le nom",
+      "nameRequired": "Le nom est requis",
+      "description": "Description",
+      "descriptionPlaceholder": "Entrez la description (optionnel)"
+    },
+
+    "actions": {
+      "create": "Créer {{FeatureName}}",
+      "edit": "Modifier {{FeatureName}}",
+      "delete": "Supprimer {{FeatureName}}",
+      "view": "Voir les détails",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    },
+
+    "messages": {
+      "createSuccess": "{{FeatureName}} créé avec succès",
+      "updateSuccess": "{{FeatureName}} mis à jour avec succès",
+      "deleteSuccess": "{{FeatureName}} supprimé avec succès",
+      "createError": "Échec de la création du {{feature_name}}",
+      "updateError": "Échec de la mise à jour du {{feature_name}}",
+      "deleteError": "Échec de la suppression du {{feature_name}}"
+    },
+
+    "confirmDelete": {
+      "title": "Supprimer {{FeatureName}}",
+      "message": "Êtes-vous sûr de vouloir supprimer ce {{feature_name}} ? Cette action est irréversible."
+    },
+
+    "filters": {
+      "search": "Rechercher",
+      "searchPlaceholder": "Rechercher par nom...",
+      "status": "Statut",
+      "all": "Tous",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+
+    "table": {
+      "name": "Nom",
+      "description": "Description",
+      "status": "Statut",
+      "createdAt": "Créé le",
+      "actions": "Actions"
+    }
+  }
+}

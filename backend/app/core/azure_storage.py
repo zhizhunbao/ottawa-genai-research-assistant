@@ -5,19 +5,17 @@ Azure Blob Storage 服务
 遵循 dev-backend_patterns skill 规范。
 """
 
-import uuid
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional, BinaryIO, List
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import BinaryIO
 
+from azure.core.exceptions import AzureError, ResourceNotFoundError
 from azure.storage.blob import (
-    BlobServiceClient,
-    BlobClient,
-    ContainerClient,
-    generate_blob_sas,
     BlobSasPermissions,
+    BlobServiceClient,
+    generate_blob_sas,
 )
-from azure.core.exceptions import ResourceNotFoundError, AzureError
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +108,7 @@ class AzureBlobStorageService:
             logger.error(f"Failed to upload file {filename}: {e}")
             raise AzureBlobStorageError(f"Upload failed: {e}")
 
-    async def download_file(self, blob_name: str) -> Optional[bytes]:
+    async def download_file(self, blob_name: str) -> bytes | None:
         """
         下载文件内容
 
@@ -163,7 +161,7 @@ class AzureBlobStorageService:
         self,
         blob_name: str,
         expiry_hours: int = 1
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         生成带 SAS 的临时访问 URL
 
@@ -196,7 +194,7 @@ class AzureBlobStorageService:
                 blob_name=blob_name,
                 account_key=account_key,
                 permission=BlobSasPermissions(read=True),
-                expiry=datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
+                expiry=datetime.now(UTC) + timedelta(hours=expiry_hours)
             )
 
             return f"{blob_client.url}?{sas_token}"
@@ -205,7 +203,7 @@ class AzureBlobStorageService:
             logger.error(f"Failed to generate SAS URL for {blob_name}: {e}")
             return None
 
-    def _extract_account_key(self) -> Optional[str]:
+    def _extract_account_key(self) -> str | None:
         """从连接字符串提取 account key"""
         try:
             parts = dict(
@@ -217,7 +215,7 @@ class AzureBlobStorageService:
         except Exception:
             return None
 
-    async def list_files(self, prefix: str = "") -> List[dict]:
+    async def list_files(self, prefix: str = "") -> list[dict]:
         """
         列出容器中的文件
 

@@ -4,14 +4,15 @@
 测试文件上传到 Azure Blob Storage 的完整流程。
 """
 
-import pytest
 from io import BytesIO
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from httpx import AsyncClient
 
-from app.main import app
 from app.core.dependencies import get_blob_storage
 from app.documents.routes import get_document_service
+from app.main import app
 
 
 class TestDocumentUploadEndpoint:

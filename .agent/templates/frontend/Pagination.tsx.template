@@ -1,0 +1,168 @@
+/**
+ * Pagination Component
+ *
+ * 分页组件
+ */
+
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  siblingsCount?: number;
+  showFirstLast?: boolean;
+  className?: string;
+}
+
+export function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+  siblingsCount = 1,
+  showFirstLast = true,
+  className = '',
+}: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  const range = getPageRange(page, totalPages, siblingsCount);
+
+  return (
+    <nav className={`flex items-center gap-1 ${className}`}>
+      {/* First */}
+      {showFirstLast && (
+        <PageButton
+          onClick={() => onPageChange(1)}
+          disabled={page === 1}
+        >
+          ««
+        </PageButton>
+      )}
+
+      {/* Previous */}
+      <PageButton
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+      >
+        «
+      </PageButton>
+
+      {/* Page Numbers */}
+      {range.map((p, i) =>
+        p === '...' ? (
+          <span key={`ellipsis-${i}`} className="px-2">
+            ...
+          </span>
+        ) : (
+          <PageButton
+            key={p}
+            onClick={() => onPageChange(p as number)}
+            active={p === page}
+          >
+            {p}
+          </PageButton>
+        )
+      )}
+
+      {/* Next */}
+      <PageButton
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+      >
+        »
+      </PageButton>
+
+      {/* Last */}
+      {showFirstLast && (
+        <PageButton
+          onClick={() => onPageChange(totalPages)}
+          disabled={page === totalPages}
+        >
+          »»
+        </PageButton>
+      )}
+    </nav>
+  );
+}
+
+// ============================================
+// PageButton
+// ============================================
+
+interface PageButtonProps {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+}
+
+function PageButton({ children, onClick, disabled, active }: PageButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        min-w-[2rem] h-8 px-2 rounded text-sm
+        ${active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+      `}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ============================================
+// Helper: Get Page Range
+// ============================================
+
+function getPageRange(
+  current: number,
+  total: number,
+  siblings: number
+): (number | '...')[] {
+  const range: (number | '...')[] = [];
+
+  const left = Math.max(1, current - siblings);
+  const right = Math.min(total, current + siblings);
+
+  if (left > 1) {
+    range.push(1);
+    if (left > 2) range.push('...');
+  }
+
+  for (let i = left; i <= right; i++) {
+    range.push(i);
+  }
+
+  if (right < total) {
+    if (right < total - 1) range.push('...');
+    range.push(total);
+  }
+
+  return range;
+}
+
+// ============================================
+// Hook: usePagination
+// ============================================
+
+import { useState, useMemo } from 'react';
+
+export function usePagination<T>(items: T[], pageSize = 10) {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.ceil(items.length / pageSize);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+  }, [items, page, pageSize]);
+
+  return {
+    page,
+    setPage,
+    totalPages,
+    paginatedItems,
+    hasNext: page < totalPages,
+    hasPrev: page > 1,
+  };
+}

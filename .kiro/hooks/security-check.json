@@ -1,0 +1,13 @@
+{
+  "name": "Security Check on Save",
+  "version": "1.0.0",
+  "description": "Check for security issues when code files are saved",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["*.py", "*.ts", "*.tsx", "*.js", "*.jsx"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run security scan: uv run python .skills/dev-security_scan/scripts/security_scanner.py {{file_path}}. Report CRITICAL and HIGH issues only. If no issues found, say 'Security check passed ✓'"
+  }
+}

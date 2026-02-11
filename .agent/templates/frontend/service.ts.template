@@ -1,0 +1,68 @@
+/**
+ * {{FeatureName}} API Service
+ *
+ * API 请求封装。
+ * Created: {{date}}
+ */
+
+import { apiService } from '@/shared/services/apiService';
+
+import type { {{FeatureName}}Data, {{FeatureName}}ListResponse, {{FeatureName}}CreateRequest, {{FeatureName}}UpdateRequest } from '../types';
+
+const BASE_URL = '/api/v1/{{feature_name}}';
+
+interface ListParams {
+  skip?: number;
+  limit?: number;
+  search?: string;
+}
+
+export const {{feature_name}}Api = {
+  /**
+   * 获取列表
+   */
+  async list(params: ListParams = {}): Promise<{{FeatureName}}ListResponse> {
+    const { skip = 0, limit = 20, search } = params;
+    const queryParams = new URLSearchParams({
+      skip: String(skip),
+      limit: String(limit),
+      ...(search && { search }),
+    });
+
+    const response = await apiService.get<{{FeatureName}}ListResponse>(
+      `${BASE_URL}?${queryParams}`
+    );
+    return response.data;
+  },
+
+  /**
+   * 获取单个
+   */
+  async get(id: string): Promise<{{FeatureName}}Data> {
+    const response = await apiService.get<{{FeatureName}}Data>(`${BASE_URL}/${id}`);
+    return response.data;
+  },
+
+  /**
+   * 创建
+   */
+  async create(data: {{FeatureName}}CreateRequest): Promise<{{FeatureName}}Data> {
+    const response = await apiService.post<{{FeatureName}}Data>(BASE_URL, data);
+    return response.data;
+  },
+
+  /**
+   * 更新
+   */
+  async update(id: string, data: {{FeatureName}}UpdateRequest): Promise<{{FeatureName}}Data> {
+    const response = await apiService.put<{{FeatureName}}Data>(`${BASE_URL}/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * 删除
+   */
+  async delete(id: string): Promise<void> {
+    await apiService.delete(`${BASE_URL}/${id}`);
+  },
+};

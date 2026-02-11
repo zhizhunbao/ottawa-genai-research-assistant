@@ -1,9 +1,10 @@
 """Health check endpoint tests."""
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.health.schemas import HealthStatus, ServiceHealth, HealthCheckResponse
+import pytest
+
+from app.health.schemas import HealthCheckResponse, HealthStatus, ServiceHealth
 from app.health.service import HealthCheckService
 
 

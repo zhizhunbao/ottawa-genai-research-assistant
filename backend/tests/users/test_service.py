@@ -5,13 +5,14 @@
 使用 Arrange-Act-Assert 结构。
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.users.service import UserService
-from app.users.schemas import UserCreate, UserUpdate
-from app.users.models import User
+import pytest
+
 from app.core.exceptions import ConflictError, NotFoundError, UnauthorizedError
+from app.users.models import User
+from app.users.schemas import UserCreate, UserUpdate
+from app.users.service import UserService
 
 
 class TestUserService:
@@ -76,7 +77,7 @@ class TestUserService:
         # Act & Assert
         with pytest.raises(NotFoundError) as exc_info:
             await user_service.get_by_id("nonexistent")
-        
+
         assert "用户" in str(exc_info.value.message)
 
     # ==================== get_by_email 测试 ====================
@@ -138,7 +139,7 @@ class TestUserService:
         )
 
         # Act
-        result = await user_service.create(user_data)
+        await user_service.create(user_data)
 
         # Assert
         mock_db.add.assert_called_once()
@@ -165,7 +166,7 @@ class TestUserService:
         # Act & Assert
         with pytest.raises(ConflictError) as exc_info:
             await user_service.create(user_data)
-        
+
         assert "已被注册" in str(exc_info.value.message)
 
     # ==================== update 测试 ====================
@@ -183,7 +184,7 @@ class TestUserService:
         update_data = UserUpdate(name="Updated Name")
 
         # Act
-        result = await user_service.update("user-123", update_data)
+        await user_service.update("user-123", update_data)
 
         # Assert
         mock_db.flush.assert_called_once()
@@ -208,7 +209,7 @@ class TestUserService:
         update_data = UserUpdate(password="newpassword123")
 
         # Act
-        result = await user_service.update("user-123", update_data)
+        await user_service.update("user-123", update_data)
 
         # Assert
         mock_hash.assert_called_once_with("newpassword123")
@@ -268,7 +269,7 @@ class TestUserService:
         # Act & Assert
         with pytest.raises(UnauthorizedError) as exc_info:
             await user_service.authenticate("nonexistent@example.com", "password")
-        
+
         assert "密码错误" in str(exc_info.value.message)
 
     @pytest.mark.asyncio
@@ -311,5 +312,5 @@ class TestUserService:
         # Act & Assert
         with pytest.raises(UnauthorizedError) as exc_info:
             await user_service.authenticate("test@example.com", "password123")
-        
+
         assert "禁用" in str(exc_info.value.message)

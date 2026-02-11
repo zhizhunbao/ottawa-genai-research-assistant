@@ -5,11 +5,12 @@
 遵循 dev-terminology skill 的命名规范。
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from app.analysis.service import AnalysisService
+import pytest
+
 from app.analysis.schemas import AnalysisRequest, ChartData, SpeakingNotes
+from app.analysis.service import AnalysisService
 from app.core.enums import AnalysisType, ChartType, DocumentType
 
 

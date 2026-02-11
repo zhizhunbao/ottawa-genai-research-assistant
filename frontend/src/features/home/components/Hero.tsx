@@ -1,12 +1,14 @@
 /**
  * Hero - 首页 Hero 区域
  *
- * 遵循 dev-frontend_patterns 规范。
+ * 使用 shadcn/ui Button 组件替代原生 Link 样式按钮。
+ * 遵循 US-107 布局规范和 shadcn/ui 迁移计划。
  */
 
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { MessageSquare, Upload, ArrowRight } from 'lucide-react'
+import { MessageSquare, ArrowRight } from 'lucide-react'
+import { Button } from '@/shared/components/ui'
 
 interface HeroProps {
   isAuthenticated: boolean
@@ -35,17 +37,18 @@ export function Hero({ isAuthenticated, stats }: HeroProps) {
           {t('hero.subtitle')}
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-5 justify-center items-center mb-20">
-          <Link to="/chat" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[#004890] font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer no-underline hover:no-underline">
-            <MessageSquare size={22} />
-            {isAuthenticated ? t('cta.startChat') : t('cta.startSession')}
-            <ArrowRight size={20} />
-          </Link>
-          
-          <Link to="/documents/upload" className="inline-flex items-center gap-3 px-10 py-5 bg-transparent border-2 border-white/30 text-white font-bold rounded-xl hover:bg-white/10 backdrop-blur-sm transition-all hover:-translate-y-0.5 cursor-pointer no-underline hover:no-underline">
-            <Upload size={20} />
-            {t('hero.uploadDocs')}
-          </Link>
+        <div className="flex justify-center mb-20">
+          <Button
+            asChild
+            size="lg"
+            className="px-12 py-5 h-auto bg-white text-[#004890] font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all hover:bg-white/95"
+          >
+            <Link to="/chat">
+              <MessageSquare size={22} />
+              {isAuthenticated ? t('cta.startChat') : t('cta.startSession')}
+              <ArrowRight size={20} />
+            </Link>
+          </Button>
         </div>
 
         <div className="flex flex-wrap justify-center gap-6 max-w-5xl mx-auto px-4">

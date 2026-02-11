@@ -72,6 +72,7 @@ export interface QueryResponse {
   answer: string
   sources: Source[]
   confidence: number
+  chart?: ChartData
   metrics: QueryMetrics
   responseTimeMs: number
 }
@@ -92,6 +93,16 @@ export enum MessageRole {
   SYSTEM = 'system'
 }
 
+/** 图表数据（来自后端 ChartData schema） */
+export interface ChartData {
+  type: 'line' | 'bar' | 'pie'
+  title?: string
+  xKey?: string
+  yKeys?: string[]
+  data: Record<string, unknown>[]
+  stacked?: boolean
+}
+
 /** 聊天消息 */
 export interface ChatMessage {
   id: string
@@ -101,10 +112,7 @@ export interface ChatMessage {
   sources?: Source[]
   confidence?: number
   isLoading?: boolean
-  metadata?: {
-    chartData?: Record<string, unknown>[]
-    chartTitle?: string
-  }
+  chart?: ChartData
 }
 
 /** 聊天会话 */

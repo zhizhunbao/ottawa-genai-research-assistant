@@ -7,9 +7,9 @@
 
 from fastapi import APIRouter, Depends
 
-from app.core.security import create_access_token
 from app.core.dependencies import CurrentUserId, DbSession
 from app.core.schemas import ApiResponse
+from app.core.security import create_access_token
 from app.users.schemas import (
     TokenResponse,
     UserCreate,
@@ -17,9 +17,7 @@ from app.users.schemas import (
     UserResponse,
     UserUpdate,
 )
-from app.core.exceptions import ExternalServiceError
 from app.users.service import UserService
-
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 

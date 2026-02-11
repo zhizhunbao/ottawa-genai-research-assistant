@@ -1,0 +1,80 @@
+"""
+Data Processor
+
+数据处理器模式：输入 → 处理 → 输出
+"""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import TypeVar, Generic, Any
+from enum import Enum
+
+
+class ProcessStatus(Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+@dataclass
+class ProcessResult[T]:
+    """处理结果"""
+    status: ProcessStatus
+    data: T | None = None
+    error: str | None = None
+    metadata: dict | None = None
+
+
+InputT = TypeVar("InputT")
+OutputT = TypeVar("OutputT")
+
+
+class Processor(ABC, Generic[InputT, OutputT]):
+    """处理器基类"""
+
+    @abstractmethod
+    async def process(self, input_data: InputT) -> ProcessResult[OutputT]:
+        """处理数据"""
+        pass
+
+    async def validate(self, input_data: InputT) -> bool:
+        """验证输入"""
+        return True
+
+    async def pre_process(self, input_data: InputT) -> InputT:
+        """预处理"""
+        return input_data
+
+    async def post_process(self, result: OutputT) -> OutputT:
+        """后处理"""
+        return result
+
+    async def run(self, input_data: InputT) -> ProcessResult[OutputT]:
+        """执行完整处理流程"""
+        try:
+            if not await self.validate(input_data):
+                return ProcessResult(ProcessStatus.FAILED, error="Validation failed")
+
+            processed_input = await self.pre_process(input_data)
+            result = await self.process(processed_input)
+
+            if result.status == ProcessStatus.COMPLETED and result.data:
+                result.data = await self.post_process(result.data)
+
+            return result
+        except Exception as e:
+            return ProcessResult(ProcessStatus.FAILED, error=str(e))
+
+
+# ============================================
+# Example: Document Processor
+# ============================================
+
+# class DocumentProcessor(Processor[bytes, str]):
+#     async def validate(self, input_data: bytes) -> bool:
+#         return len(input_data) < 10 * 1024 * 1024  # 10MB
+#
+#     async def process(self, input_data: bytes) -> ProcessResult[str]:
+#         # TODO: 提取文本
+#         return ProcessResult(ProcessStatus.COMPLETED, data="extracted text")

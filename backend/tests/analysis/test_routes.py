@@ -109,11 +109,11 @@ class TestAnalysisRoutes:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        
+
         # 验证 ApiResponse 结构
         assert "success" in data
         assert "data" in data
-        
+
         # 验证 ChartData 结构
         chart_data = data["data"]
         assert "labels" in chart_data
@@ -190,7 +190,7 @@ class TestAnalysisRoutes:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        
+
         # 验证 SpeakingNotes 结构
         notes = data["data"]
         assert isinstance(notes["title"], str)

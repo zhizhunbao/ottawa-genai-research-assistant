@@ -5,11 +5,13 @@
 测试文档的业务逻辑，模拟数据库和存储。
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from app.documents.service import DocumentService
-from app.documents.schemas import DocumentCreate, DocumentUpdate
+
 from app.core.enums import DocumentStatus, DocumentType
+from app.documents.schemas import DocumentCreate
+from app.documents.service import DocumentService
 
 
 class TestDocumentService:
@@ -81,7 +83,7 @@ class TestDocumentService:
         # Assert
         assert len(results) == 2
         mock_doc_store.list_by_type.assert_called_with(
-            doc_type=DocumentType.UPLOADED_FILE, 
+            doc_type=DocumentType.UPLOADED_FILE,
             owner_id=owner_id,
             limit=100
         )

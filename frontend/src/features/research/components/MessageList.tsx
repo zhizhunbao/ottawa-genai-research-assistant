@@ -1,8 +1,7 @@
 /**
  * 消息列表组件
  *
- * 显示聊天消息和来源引用。
- * 遵循 dev-frontend_patterns skill 规范。
+ * 空状态显示居中的欢迎语，有消息时滚动显示消息。
  */
 
 import { useTranslation } from 'react-i18next'
@@ -19,15 +18,15 @@ export function MessageList({ messages }: MessageListProps) {
 
   if (messages.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="text-center max-w-sm animate-in fade-in zoom-in duration-500">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary-500 to-secondary-500 shadow-glow flex items-center justify-center mx-auto mb-8 transform hover:scale-110 transition-transform cursor-default">
-            <Search className="w-10 h-10 text-white" />
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center max-w-md px-6 animate-in fade-in zoom-in duration-500">
+          <div className="w-16 h-16 rounded-2xl bg-primary shadow-lg flex items-center justify-center mx-auto mb-6">
+            <Search className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">
-            {t('welcome.title', { name: 'Ottawa GenAI' })}
+          <h2 className="text-xl font-bold text-foreground mb-2 tracking-tight">
+            {t('welcome.title')}
           </h2>
-          <p className="text-gray-500 leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {t('welcome.subtitle')}
           </p>
         </div>
@@ -36,7 +35,7 @@ export function MessageList({ messages }: MessageListProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto px-4 py-8">
       {messages.map((message) => (
         <MessageItem key={message.id} message={message} />
       ))}

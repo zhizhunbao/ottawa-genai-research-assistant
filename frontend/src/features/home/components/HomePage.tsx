@@ -2,7 +2,7 @@
  * HomePage - 首页页面组件
  *
  * 聚合首页各子区域组件：Hero, FeatureSection, HowItWorksSection, CTASection。
- * 遵循 dev-frontend_patterns 规范，保持组件逻辑简洁。
+ * 遵循 US-107 布局规范和 shadcn/ui 迁移计划。
  */
 
 import { LucideIcon } from 'lucide-react'
@@ -20,9 +20,10 @@ interface HomePageProps {
 
 export function HomePage({ isAuthenticated, features, stats }: HomePageProps) {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-background">
       {/* 核心展示区 */}
       <Hero isAuthenticated={isAuthenticated} stats={stats} />
+      
       
       {/* 功能特性区 */}
       <FeatureSection features={features} />

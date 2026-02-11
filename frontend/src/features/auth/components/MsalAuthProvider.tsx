@@ -5,6 +5,7 @@
  * Provides Azure AD authentication functionality.
  */
 
+/* eslint-disable react-refresh/only-export-components */
 import { ReactNode, useEffect } from 'react'
 import {
   MsalProvider,

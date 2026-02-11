@@ -1,0 +1,50 @@
+"""
+{{feature_name}} Schemas
+
+Pydantic 模型，用于请求/响应验证。
+Created: {{date}}
+"""
+
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+
+class {{FeatureName}}Base(BaseModel):
+    """{{FeatureName}} 基础模型"""
+
+    name: str = Field(..., min_length=1, max_length=255, description="名称")
+    description: Optional[str] = Field(None, max_length=1000, description="描述")
+
+
+class {{FeatureName}}Create({{FeatureName}}Base):
+    """创建 {{FeatureName}} 的请求模型"""
+    pass
+
+
+class {{FeatureName}}Update(BaseModel):
+    """更新 {{FeatureName}} 的请求模型"""
+
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=1000)
+
+
+class {{FeatureName}}Response({{FeatureName}}Base):
+    """{{FeatureName}} 响应模型"""
+
+    id: str = Field(..., description="唯一标识符")
+    created_at: datetime = Field(..., description="创建时间")
+    updated_at: datetime = Field(..., description="更新时间")
+
+    class Config:
+        from_attributes = True
+
+
+class {{FeatureName}}List(BaseModel):
+    """{{FeatureName}} 列表响应模型"""
+
+    items: List[{{FeatureName}}Response] = Field(default_factory=list)
+    total: int = Field(..., ge=0, description="总数")
+    skip: int = Field(..., ge=0, description="跳过数量")
+    limit: int = Field(..., ge=1, le=100, description="返回数量")

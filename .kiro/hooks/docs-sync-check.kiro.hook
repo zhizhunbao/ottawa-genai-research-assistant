@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "name": "文档同步检查",
+  "description": "代码变更时自动检查文档是否需要更新，确保文档与代码保持同步",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.{ts",
+      "tsx",
+      "js",
+      "jsx",
+      "py}",
+      "package.json",
+      ".env.example"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "检查文档是否需要更新。如果是重要的代码结构变更（新增/删除功能、API变更、依赖更新），请运行 `node .kiro/scripts/generate-codemaps.js` 更新代码地图。如果是 package.json 或 .env.example 变更，请运行 `node .kiro/scripts/update-docs.js` 更新相关文档。变更超过30%时请主动提醒用户。"
+  }
+}

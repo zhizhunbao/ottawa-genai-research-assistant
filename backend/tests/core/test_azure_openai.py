@@ -4,10 +4,11 @@ Azure OpenAI 服务单元测试
 测试 AzureOpenAIService 的核心功能。
 """
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.core.azure_openai import AzureOpenAIService, AzureOpenAIError
+import pytest
+
+from app.core.azure_openai import AzureOpenAIError, AzureOpenAIService
 
 
 class TestAzureOpenAIService:
@@ -243,8 +244,8 @@ class TestAzureOpenAIService:
 
         call_kwargs = mock_clients["async_instance"].chat.completions.create.call_args[1]
         messages = call_kwargs["messages"]
-        # Should include: system + history (2) + current query (1) = 4 messages
-        assert len(messages) == 4
+        # system(1) + rag_context(1) + history(2) + current query(1) = 5
+        assert len(messages) == 5
 
     @pytest.mark.asyncio
     async def test_rag_chat_empty_context(self, openai_service, mock_clients):

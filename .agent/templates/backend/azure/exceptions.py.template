@@ -1,0 +1,124 @@
+"""
+Azure 服务异常定义
+
+统一的异常层次结构，便于错误处理。
+"""
+
+from typing import Optional
+
+
+class AzureServiceError(Exception):
+    """Azure 服务基础异常"""
+
+    def __init__(
+        self,
+        message: str,
+        service: str = "azure",
+        operation: Optional[str] = None,
+        cause: Optional[Exception] = None,
+    ):
+        self.service = service
+        self.operation = operation
+        self.cause = cause
+        super().__init__(message)
+
+    def __str__(self) -> str:
+        parts = [f"[{self.service}]"]
+        if self.operation:
+            parts.append(f"({self.operation})")
+        parts.append(str(self.args[0]))
+        return " ".join(parts)
+
+
+# ============================================
+# OpenAI Exceptions
+# ============================================
+
+class OpenAIError(AzureServiceError):
+    """Azure OpenAI 服务异常"""
+
+    def __init__(self, message: str, **kwargs):
+        super().__init__(message, service="openai", **kwargs)
+
+
+class OpenAIRateLimitError(OpenAIError):
+    """速率限制异常"""
+    pass
+
+
+class OpenAIContentFilterError(OpenAIError):
+    """内容过滤异常"""
+    pass
+
+
+class OpenAITokenLimitError(OpenAIError):
+    """Token 超限异常"""
+    pass
+
+
+# ============================================
+# Search Exceptions
+# ============================================
+
+class SearchError(AzureServiceError):
+    """Azure Search 服务异常"""
+
+    def __init__(self, message: str, **kwargs):
+        super().__init__(message, service="search", **kwargs)
+
+
+class SearchIndexNotFoundError(SearchError):
+    """索引不存在异常"""
+    pass
+
+
+class SearchQueryError(SearchError):
+    """查询异常"""
+    pass
+
+
+# ============================================
+# Storage Exceptions
+# ============================================
+
+class StorageError(AzureServiceError):
+    """Azure Storage 服务异常"""
+
+    def __init__(self, message: str, **kwargs):
+        super().__init__(message, service="storage", **kwargs)
+
+
+class BlobNotFoundError(StorageError):
+    """Blob 不存在异常"""
+    pass
+
+
+class BlobUploadError(StorageError):
+    """上传异常"""
+    pass
+
+
+class BlobSizeLimitError(StorageError):
+    """文件大小超限异常"""
+    pass
+
+
+# ============================================
+# Configuration Exceptions
+# ============================================
+
+class ConfigurationError(AzureServiceError):
+    """配置异常"""
+
+    def __init__(self, message: str, **kwargs):
+        super().__init__(message, service="config", **kwargs)
+
+
+class ServiceNotConfiguredError(ConfigurationError):
+    """服务未配置异常"""
+
+    def __init__(self, service_name: str):
+        super().__init__(
+            f"Service '{service_name}' is not configured. "
+            f"Please check environment variables."
+        )

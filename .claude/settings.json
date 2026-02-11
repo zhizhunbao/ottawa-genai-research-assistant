@@ -1,0 +1,14 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "deny": []
+  },
+  "commands": {
+    "directory": ".claude/commands"
+  }
+}

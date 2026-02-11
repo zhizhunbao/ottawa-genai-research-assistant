@@ -1,0 +1,107 @@
+/**
+ * FileInput Component
+ *
+ * 通用文件输入组件：拖拽/点击选择
+ */
+
+import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+interface FileInputProps {
+  accept?: string;
+  multiple?: boolean;
+  maxSize?: number; // bytes
+  onFiles: (files: File[]) => void;
+  onError?: (error: string) => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+export function FileInput({
+  accept = '*/*',
+  multiple = false,
+  maxSize = 10 * 1024 * 1024, // 10MB
+  onFiles,
+  onError,
+  disabled = false,
+  className = '',
+}: FileInputProps) {
+  const { t } = useTranslation();
+  const [isDragging, setIsDragging] = useState(false);
+
+  const validateFiles = useCallback(
+    (files: File[]): File[] => {
+      return files.filter((file) => {
+        if (maxSize && file.size > maxSize) {
+          onError?.(t('fileTooLarge', { name: file.name }));
+          return false;
+        }
+        return true;
+      });
+    },
+    [maxSize, onError, t]
+  );
+
+  const handleFiles = useCallback(
+    (fileList: FileList | null) => {
+      if (!fileList) return;
+      const files = validateFiles(Array.from(fileList));
+      if (files.length > 0) {
+        onFiles(files);
+      }
+    },
+    [validateFiles, onFiles]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      if (!disabled) {
+        handleFiles(e.dataTransfer.files);
+      }
+    },
+    [disabled, handleFiles]
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  return (
+    <div
+      className={`
+        border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+        transition-colors
+        ${isDragging ? 'border-primary bg-primary/5' : 'border-muted'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary'}
+        ${className}
+      `}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
+      <input
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        disabled={disabled}
+        onChange={(e) => handleFiles(e.target.files)}
+        className="hidden"
+        id="file-input"
+      />
+      <label htmlFor="file-input" className="cursor-pointer">
+        {/* TODO: Add icon */}
+        <p>{t('dropOrClick')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('maxFileSize', { size: Math.round(maxSize / 1024 / 1024) })}
+        </p>
+      </label>
+    </div>
+  );
+}

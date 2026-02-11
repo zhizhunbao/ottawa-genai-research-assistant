@@ -25,8 +25,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@/features/*": ["src/features/*"],
       "@/shared/*": ["src/shared/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/features/*": ["src/features/*"],
       "@/stores/*": ["src/stores/*"]
     }
   },

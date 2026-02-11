@@ -1,13 +1,78 @@
 /**
  * UI 组件导出
- * 遵循 dev-frontend_patterns skill 规范。
+ * shadcn/ui 组件 + 业务组件
+ *
+ * 精简版：已移除 Sidebar 相关组件。
  */
 
-export { Button } from './Button'
-export { Input } from './Input'
-export { ErrorBoundary } from './ErrorBoundary'
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './Card'
-export { Alert, AlertTitle, AlertDescription } from './Alert'
-export { Label } from './Label'
-export { StatsCard } from './StatsCard'
-export { ActivityList } from './ActivityList'
+// shadcn/ui 基础组件
+export { Button, buttonVariants } from './button'
+export { Input } from './input'
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card'
+export { Alert, AlertTitle, AlertDescription } from './alert'
+export { Label } from './label'
+export { Textarea } from './textarea'
+
+// shadcn/ui 增强组件
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './dialog'
+
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from './dropdown-menu'
+
+export { Avatar, AvatarImage, AvatarFallback } from './avatar'
+export { Badge, badgeVariants } from './badge'
+export { Separator } from './separator'
+export { Skeleton } from './skeleton'
+export { Toaster } from './sonner'
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
+export { ScrollArea, ScrollBar } from './scroll-area'
+export { Switch } from './switch'
+export {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from './tooltip'
+
+// Sheet 组件
+export {
+  Sheet,
+  SheetPortal,
+  SheetOverlay,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from './sheet'
+
+// 业务组件
+export { ErrorBoundary } from './error-boundary'

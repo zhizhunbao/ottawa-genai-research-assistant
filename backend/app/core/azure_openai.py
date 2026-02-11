@@ -5,12 +5,10 @@ Azure OpenAI 服务
 遵循 dev-backend_patterns skill 规范。
 """
 
-from typing import List, Optional, AsyncIterator
+from collections.abc import AsyncIterator
 
-from openai import AzureOpenAI, AsyncAzureOpenAI
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
-
-from app.core.config import settings
+from openai import AsyncAzureOpenAI, AzureOpenAI
+from openai.types.chat import ChatCompletion
 
 
 class AzureOpenAIError(Exception):
@@ -64,7 +62,7 @@ class AzureOpenAIService:
             api_version=api_version,
         )
 
-    async def create_embedding(self, text: str) -> List[float]:
+    async def create_embedding(self, text: str) -> list[float]:
         """
         为文本生成 embedding 向量
 
@@ -85,8 +83,8 @@ class AzureOpenAIService:
 
     async def create_embeddings_batch(
         self,
-        texts: List[str],
-    ) -> List[List[float]]:
+        texts: list[str],
+    ) -> list[list[float]]:
         """
         批量生成 embedding 向量
 
@@ -107,10 +105,10 @@ class AzureOpenAIService:
 
     async def chat_completion(
         self,
-        messages: List[dict],
+        messages: list[dict],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        max_tokens: int | None = None,
+        system_prompt: str | None = None,
     ) -> str:
         """
         生成 chat completion
@@ -149,10 +147,10 @@ class AzureOpenAIService:
 
     async def chat_completion_stream(
         self,
-        messages: List[dict],
+        messages: list[dict],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        max_tokens: int | None = None,
+        system_prompt: str | None = None,
     ) -> AsyncIterator[str]:
         """
         流式生成 chat completion
@@ -192,45 +190,57 @@ class AzureOpenAIService:
     async def rag_chat(
         self,
         query: str,
-        context: List[str],
-        chat_history: Optional[List[dict]] = None,
+        context: list[str] | None = None,
+        sources: list[dict] | None = None,
+        chat_history: list[dict] | None = None,
         temperature: float = 0.7,
     ) -> str:
         """
         RAG 增强的聊天
 
+        支持两种上下文格式:
+        - context: 纯文本列表（向后兼容）
+        - sources: 结构化搜索结果（推荐，支持 citation）
+
         Args:
             query: 用户问题
-            context: 检索到的相关文档内容
+            context: 检索到的相关文档内容（纯文本列表）
+            sources: 结构化搜索结果列表（含 title, content, page_number）
             chat_history: 聊天历史
             temperature: 温度参数
 
         Returns:
             助手回复
         """
-        # 构建 RAG 系统提示词
-        system_prompt = """You are a helpful assistant for the Ottawa GenAI Research Assistant.
-Your task is to answer questions based on the provided context.
+        from app.core.rag_prompts import build_system_messages
 
-Instructions:
-- Answer in the same language as the user's question
-- Use the provided context to give accurate answers
-- If the context doesn't contain relevant information, say so honestly
-- Be concise but thorough
-- Cite sources when possible
-
-Context:
-"""
-        system_prompt += "\n---\n".join(context) if context else "No relevant context found."
-
-        # 构建消息
-        messages = []
-        if chat_history:
-            messages.extend(chat_history)
-        messages.append({"role": "user", "content": query})
+        # 优先使用结构化 sources，fallback 到纯文本 context
+        if sources:
+            messages = build_system_messages(
+                query=query,
+                sources=sources,
+                chat_history=chat_history,
+            )
+        elif context:
+            # 向后兼容：将纯文本转为简单 sources 格式
+            simple_sources = [
+                {"title": f"Source {i+1}", "content": text, "score": 0.0}
+                for i, text in enumerate(context)
+            ]
+            messages = build_system_messages(
+                query=query,
+                sources=simple_sources,
+                chat_history=chat_history,
+            )
+        else:
+            messages = build_system_messages(
+                query=query,
+                sources=[],
+                chat_history=chat_history,
+            )
 
         return await self.chat_completion(
-            messages=messages,
+            messages=messages[1:],  # 去掉第一个 system（由 chat_completion 处理）
             temperature=temperature,
-            system_prompt=system_prompt,
+            system_prompt=messages[0]["content"] if messages else None,
         )

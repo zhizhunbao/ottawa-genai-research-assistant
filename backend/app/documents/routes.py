@@ -3,29 +3,33 @@
 
 定义文档上传、列表查询、删除等 API 端点。
 遵循 dev-backend_patterns skill 规范。
+遵循 step-06-backend.md Story 开发循环。
 """
 
+import logging
 from io import BytesIO
-from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.document_store import DocumentStore
-from app.core.schemas import ApiResponse
-from app.core.exceptions import NotFoundError
-from app.core.dependencies import get_blob_storage
 from app.core.azure_storage import AzureBlobStorageService
+from app.core.database import get_db
+from app.core.dependencies import get_blob_storage, get_document_pipeline_optional
+from app.core.document_store import DocumentStore
+from app.core.enums import DocumentStatus
+from app.core.exceptions import NotFoundError
+from app.core.schemas import ApiResponse
 from app.documents.schemas import (
     DocumentCreate,
-    DocumentResponse,
     DocumentListResponse,
+    DocumentResponse,
     DocumentUpdate,
     DocumentUploadResponse,
 )
 from app.documents.service import DocumentService
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
@@ -107,11 +111,13 @@ async def update_document(
 
 @router.post("/upload", response_model=ApiResponse[DocumentUploadResponse])
 async def upload_pdf_file(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="PDF file to upload"),
-    title: Optional[str] = None,
-    description: Optional[str] = None,
+    title: str | None = None,
+    description: str | None = None,
     service: DocumentService = Depends(get_document_service),
     blob_storage: AzureBlobStorageService = Depends(get_blob_storage),
+    pipeline=Depends(get_document_pipeline_optional),
 ) -> ApiResponse[DocumentUploadResponse]:
     """
     上传 PDF 文件到 Azure Blob Storage
@@ -119,6 +125,7 @@ async def upload_pdf_file(
     - 仅支持 PDF 文件
     - 最大文件大小: 50MB
     - 文件将存储到 Azure Blob Storage
+    - 上传后自动触发 RAG 管道处理（后台任务）
     """
     # 验证文件类型
     if file.content_type not in ALLOWED_CONTENT_TYPES:
@@ -168,16 +175,72 @@ async def upload_pdf_file(
     )
 
     result = await service.upload(doc_data, blob_info=upload_result)
+    document_id = result["id"]
+
+    # 触发 RAG 管道处理（后台任务）
+    if pipeline:
+        background_tasks.add_task(
+            _run_document_pipeline,
+            pipeline=pipeline,
+            service=service,
+            document_id=document_id,
+            pdf_bytes=content,
+            metadata={
+                "title": title or file.filename,
+                "source": file.filename,
+                "blob_name": upload_result.get("blob_name", ""),
+            },
+        )
+        logger.info(f"Pipeline task queued for document {document_id}")
+    else:
+        logger.warning("Document pipeline not configured, skipping RAG processing")
 
     return ApiResponse.ok(
         DocumentUploadResponse(
-            id=result["id"],
+            id=document_id,
             file_name=file.filename,
             blob_name=upload_result["blob_name"],
             blob_url=upload_result["blob_url"],
             status=result["status"],
         )
     )
+
+
+async def _run_document_pipeline(
+    pipeline,
+    service: DocumentService,
+    document_id: str,
+    pdf_bytes: bytes,
+    metadata: dict,
+) -> None:
+    """
+    后台执行文档 RAG 管道
+
+    处理流程: PDF → Extract → Chunk → Embed → Index
+    完成后更新文档状态为 INDEXED 或 FAILED。
+    """
+    try:
+        result = await pipeline.process(
+            document_id=document_id,
+            pdf_bytes=pdf_bytes,
+            metadata=metadata,
+        )
+
+        if result.status == "success":
+            logger.info(
+                f"Pipeline completed for {document_id}: "
+                f"{result.indexed_chunks}/{result.total_chunks} chunks indexed"
+            )
+            await service.update_status(document_id, DocumentStatus.INDEXED)
+        else:
+            logger.error(f"Pipeline failed for {document_id}: {result.error}")
+            await service.update_status(document_id, DocumentStatus.FAILED)
+    except Exception as e:
+        logger.error(f"Pipeline exception for {document_id}: {e}")
+        try:
+            await service.update_status(document_id, DocumentStatus.FAILED)
+        except Exception:
+            logger.error(f"Failed to update status for {document_id}")
 
 
 @router.get("/{document_id}/download")
@@ -272,4 +335,28 @@ async def get_document_download_url(
         "download_url": download_url,
         "expires_in_hours": expiry_hours,
         "file_name": doc.get("file_name"),
+    })
+
+
+@router.get("/{document_id}/status", response_model=ApiResponse[dict])
+async def get_document_status(
+    document_id: str,
+    service: DocumentService = Depends(get_document_service),
+) -> ApiResponse[dict]:
+    """
+    获取文档处理状态
+
+    返回文档的 RAG 管道处理进度:
+    - processing: 正在处理中
+    - indexed: 处理完成，已索引
+    - failed: 处理失败
+    """
+    doc = await service.get_by_id(document_id)
+    if not doc:
+        raise NotFoundError(f"Document {document_id}")
+
+    return ApiResponse.ok({
+        "id": doc.get("id"),
+        "title": doc.get("title"),
+        "status": doc.get("status", "unknown"),
     })

@@ -6,10 +6,9 @@
 遵循 dev-tdd_workflow skill 规范。
 """
 
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
-
 
 T = TypeVar("T")
 
@@ -18,9 +17,9 @@ class ApiResponse(BaseModel, Generic[T]):
     """统一 API 响应格式"""
 
     success: bool = Field(..., description="Whether the request was successful")
-    data: Optional[T] = Field(None, description="The response data")
-    error: Optional[str] = Field(None, description="The error message if any")
-    detail: Optional[Any] = Field(None, description="Detailed error information")
+    data: T | None = Field(None, description="The response data")
+    error: str | None = Field(None, description="The error message if any")
+    detail: Any | None = Field(None, description="Detailed error information")
 
     @classmethod
     def ok(cls, data: T) -> "ApiResponse[T]":
@@ -28,7 +27,7 @@ class ApiResponse(BaseModel, Generic[T]):
         return cls(success=True, data=data)
 
     @classmethod
-    def fail(cls, error: str, detail: Optional[Any] = None) -> "ApiResponse[T]":
+    def fail(cls, error: str, detail: Any | None = None) -> "ApiResponse[T]":
         """创建失败响应"""
         return cls(success=False, error=error, detail=detail)
 
@@ -52,7 +51,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     """分页响应格式"""
 
     success: bool = True
-    data: List[T] = Field(default_factory=list, description="List of data items")
+    data: list[T] = Field(default_factory=list, description="List of data items")
     meta: PaginationMeta = Field(..., description="Pagination metadata")
 
 

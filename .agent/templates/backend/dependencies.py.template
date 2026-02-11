@@ -1,0 +1,91 @@
+"""
+FastAPI Dependencies
+
+依赖注入定义。
+"""
+
+from typing import Annotated, Optional
+from functools import lru_cache
+
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+# TODO: 导入你的服务和配置
+# from app.core.config import Settings, get_settings
+# from app.core.azure_openai import AzureOpenAIService
+# from app.core.azure_search import AzureSearchService
+
+
+# ============================================
+# Security Dependencies
+# ============================================
+
+security = HTTPBearer(auto_error=False)
+
+
+async def get_current_user(
+    credentials: Annotated[
+        Optional[HTTPAuthorizationCredentials],
+        Depends(security)
+    ],
+):
+    """获取当前用户"""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    # TODO: 验证 token 并返回用户
+    # token = credentials.credentials
+    # user = await verify_token(token)
+    # return user
+    pass
+
+
+async def get_optional_user(
+    credentials: Annotated[
+        Optional[HTTPAuthorizationCredentials],
+        Depends(security)
+    ],
+):
+    """获取当前用户（可选）"""
+    if not credentials:
+        return None
+    # TODO: 验证 token
+    pass
+
+
+# ============================================
+# Service Dependencies
+# ============================================
+
+@lru_cache
+def get_openai_service():
+    """获取 OpenAI 服务单例"""
+    # TODO: 返回服务实例
+    pass
+
+
+@lru_cache
+def get_search_service():
+    """获取 Search 服务单例"""
+    # TODO: 返回服务实例
+    pass
+
+
+@lru_cache
+def get_storage_service():
+    """获取 Storage 服务单例"""
+    # TODO: 返回服务实例
+    pass
+
+
+# ============================================
+# Type Aliases
+# ============================================
+
+# CurrentUser = Annotated[User, Depends(get_current_user)]
+# OptionalUser = Annotated[Optional[User], Depends(get_optional_user)]
+# OpenAI = Annotated[AzureOpenAIService, Depends(get_openai_service)]
+# Search = Annotated[AzureSearchService, Depends(get_search_service)]

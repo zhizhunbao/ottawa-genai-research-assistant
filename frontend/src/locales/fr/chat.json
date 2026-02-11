@@ -1,1 +1,56 @@
-{}
+{
+  "welcome": {
+    "title": "Bienvenue à Ottawa GenAI Research",
+    "subtitle": "Posez des questions sur les rapports et données de développement économique d'Ottawa. Je rechercherai dans les documents et fournirai des réponses citées."
+  },
+  "title": "Assistant de recherche",
+  "placeholder": "Posez une question sur les rapports de développement économique...",
+  "send": "Envoyer",
+  "newChat": "Nouveau chat",
+  "history": "Historique",
+  "noHistory": "Aucun historique de chat",
+  "sources": {
+    "title": "Sources",
+    "document": "Document",
+    "page": "Page",
+    "section": "Section",
+    "relevance": "Pertinence",
+    "excerpt": "Texte original",
+    "noExcerpt": "Aucun extrait disponible.",
+    "preview": "Aperçu de la source",
+    "viewDocument": "Voir le document"
+  },
+  "confidence": {
+    "label": "Confiance",
+    "high": "Élevée",
+    "medium": "Moyenne",
+    "low": "Faible"
+  },
+  "loading": {
+    "thinking": "Réflexion...",
+    "searching": "Recherche dans les documents...",
+    "generating": "Génération de la réponse..."
+  },
+  "errors": {
+    "sendFailed": "Échec de l'envoi du message. Veuillez réessayer.",
+    "noResponse": "Impossible d'obtenir une réponse. Veuillez réessayer."
+  },
+  "session": {
+    "rename": "Renommer",
+    "delete": "Supprimer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette conversation ?"
+  },
+  "filters": {
+    "title": "Filtres",
+    "dateRange": "Période",
+    "documentType": "Type de document",
+    "topics": "Sujets",
+    "apply": "Appliquer les filtres",
+    "clear": "Effacer"
+  },
+  "actions": {
+    "copy": "Copier",
+    "copied": "Copié !",
+    "close": "Fermer"
+  }
+}

@@ -75,13 +75,16 @@ export const useChatStore = create<ChatStore>()(
         set({ currentSessionId: sessionId }),
 
       deleteSession: (sessionId) =>
-        set((state) => ({
-          sessions: state.sessions.filter((s) => s.id !== sessionId),
-          currentSessionId:
-            state.currentSessionId === sessionId
-              ? state.sessions[0]?.id ?? null
-              : state.currentSessionId,
-        })),
+        set((state) => {
+          const newSessions = state.sessions.filter((s) => s.id !== sessionId)
+          return {
+            sessions: newSessions,
+            currentSessionId:
+              state.currentSessionId === sessionId
+                ? newSessions[0]?.id ?? null
+                : state.currentSessionId,
+          }
+        }),
 
       updateSessionTitle: (sessionId, title) =>
         set((state) => ({
