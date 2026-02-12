@@ -1,0 +1,61 @@
+import pathlib
+from typing import List, Dict, Any, Optional
+from jinja2 import Environment, FileSystemLoader
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+    ChatCompletionToolParam,
+)
+
+class PromptManager:
+    """
+    用 Jinja2 渲染 Prompt，支持 OpenAI ChatCompletion 类型。
+    参考: azure-search-openai-demo (promptmanager.py)
+    """
+    PROMPTS_DIRECTORY = pathlib.Path(__file__).parent / "prompts"
+
+    def __init__(self, prompts_dir: Optional[pathlib.Path] = None):
+        if prompts_dir:
+            self.PROMPTS_DIRECTORY = prompts_dir
+        self.env = Environment(
+            loader=FileSystemLoader(str(self.PROMPTS_DIRECTORY)),
+            autoescape=False, 
+            trim_blocks=True, 
+            lstrip_blocks=True,
+        )
+
+    def build_system_prompt(self, template_path: str, template_variables: Dict[str, Any]) -> ChatCompletionSystemMessageParam:
+        template = self.env.get_template(template_path)
+        content = template.render(template_variables)
+        return {"role": "system", "content": content}
+
+    def build_user_prompt(self, 
+                          template_path: str, 
+                          template_variables: Dict[str, Any], 
+                          image_sources: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionUserMessageParam:
+        template = self.env.get_template(template_path)
+        text_content = template.render(template_variables)
+        
+        content = [{"type": "text", "text": text_content}]
+        if image_sources:
+            for img in image_sources:
+                content.append({"type": "image_url", "image_url": {"url": img["url"]}})
+        
+        return {"role": "user", "content": content}
+
+    def build_conversation(self, 
+                           system_template_path: str, 
+                           template_variables: Dict[str, Any],
+                           past_messages: Optional[List[ChatCompletionMessageParam]] = None) -> List[ChatCompletionMessageParam]:
+        messages = [self.build_system_prompt(system_template_path, template_variables)]
+        if past_messages:
+            messages.extend(past_messages)
+        return messages
+
+    def load_tools(self, tools_list: List[Dict[str, Any]]) -> List[ChatCompletionToolParam]:
+        """
+        加载工具定义。
+        """
+        # 简单转换或直接返回符合 OpenAI 格式的列表
+        return tools_list

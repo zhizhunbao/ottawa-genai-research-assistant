@@ -1,8 +1,9 @@
 /**
- * 研究功能类型定义
+ * Research Feature Type Definitions
  *
- * 定义研究助手相关的所有 TypeScript 类型。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Comprehensive TypeScript interfaces and enums for RAG, search, and document management.
+ *
+ * @template — Custom Implementation
  */
 
 // ============================================================================

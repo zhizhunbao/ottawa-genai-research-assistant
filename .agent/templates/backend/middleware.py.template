@@ -1,59 +1,29 @@
-"""
-FastAPI Middleware
-
-请求中间件：日志、错误处理、请求追踪。
-"""
-
-import time
 import uuid
-import logging
-from typing import Callable
-
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.cors import CORSMiddleware
 
-logger = logging.getLogger(__name__)
-
+from app.core.config import settings
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """请求日志中间件"""
-
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    """
+    A15. 中间件 (日志追踪).
+    出处: fastapi-best-practices
+    """
+    async def dispatch(self, request, call_next):
         request_id = str(uuid.uuid4())[:8]
-        start_time = time.time()
-
-        # 注入 request_id
         request.state.request_id = request_id
-
         response = await call_next(request)
-
-        duration = time.time() - start_time
-        logger.info(
-            f"[{request_id}] {request.method} {request.url.path} "
-            f"-> {response.status_code} ({duration:.3f}s)"
-        )
-
         response.headers["X-Request-ID"] = request_id
         return response
 
-
-class ErrorHandlingMiddleware(BaseHTTPMiddleware):
-    """全局错误处理中间件"""
-
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        try:
-            return await call_next(request)
-        except Exception as e:
-            logger.exception(f"Unhandled error: {e}")
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Internal server error"},
-            )
-
-
 def setup_middleware(app: FastAPI) -> None:
-    """注册中间件"""
+    # CORS 中间件
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.add_middleware(RequestLoggingMiddleware)
-    app.add_middleware(ErrorHandlingMiddleware)
-    # TODO: 添加更多中间件 (CORS, etc.)

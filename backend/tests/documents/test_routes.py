@@ -1,8 +1,9 @@
 """
-文档路由集成测试
+Document API Routing Tests
 
-遵循 dev-tdd_workflow skill 的测试模式。
-测试 RESTful API 端点。
+Functional tests for document management endpoints.
+
+@template T1 backend/tests/test_routes.py — API Routing Pattern
 """
 
 import pytest

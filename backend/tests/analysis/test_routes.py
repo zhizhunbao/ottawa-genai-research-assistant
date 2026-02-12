@@ -1,8 +1,9 @@
 """
-分析路由集成测试
+Analysis API Integration Tests
 
-遵循 dev-tdd_workflow skill 的 API 集成测试模式。
-遵循 dev-terminology skill 的命名规范。
+Functional tests for chart generation and reporting endpoints.
+
+@template T1 backend/tests/test_routes.py — API Integration Pattern
 """
 
 import pytest

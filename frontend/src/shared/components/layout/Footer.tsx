@@ -1,9 +1,10 @@
 /**
- * Footer - 全局底部栏
+ * Global Footer Component
  *
- * 展示版权信息、组织名称和相关链接。
- * 复刻 Ottawa Government 视觉风格：深蓝色调、品牌 Logo 以及专业排版。
- * 遵循 dev-frontend_patterns 规范。
+ * Displays copyright, organization branding, and essential resource links.
+ * Inspired by the City of Ottawa visual identity.
+ *
+ * @template C1 frontend/shared/components/layout/Footer.tsx — Global Footer Layout
  */
 
 import { useTranslation } from 'react-i18next'

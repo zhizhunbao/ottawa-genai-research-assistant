@@ -1,10 +1,9 @@
 /**
  * i18n Configuration
  *
- * Internationalization setup for English and French support.
- * Uses react-i18next for React integration.
+ * Internationalization setup for English and French support using react-i18next.
  *
- * 精简版：只保留 common, home, auth, chat 四个命名空间。
+ * @template — Custom Implementation
  */
 
 import i18n from 'i18next'

@@ -1,0 +1,179 @@
+import json
+import logging
+import re
+from dataclasses import dataclass, field
+from typing import Any, List, Optional, Dict, AsyncGenerator
+import httpx
+from .agent_context import AgentContext
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class LLMConfig:
+    """
+    LLM 配置类。
+    """
+    model: str
+    api_key: str
+    base_url: str
+    max_tokens: int = 4096
+    temperature: float = 0.7
+    function_call_type: str = "function_call"  # "function_call" | "struct_parse" | "claude"
+    max_input_tokens: Optional[int] = None
+    ext_params: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    arguments: str
+
+@dataclass
+class ToolCallResponse:
+    content: Optional[str] = None
+    tool_calls: List[ToolCall] = field(default_factory=list)
+    finish_reason: str = ""
+    total_tokens: int = 0
+    duration: float = 0.0
+
+class LLMAdapter:
+    """
+    统一 LLM 调用接口，适配 OpenAI / Claude / struct_parse 三种模式。
+    参考: joyagent-jdgenie (LLM.java)
+    """
+    def __init__(self, config: LLMConfig):
+        self.config = config
+        self.client = httpx.AsyncClient(timeout=300)
+
+    async def ask(self, 
+                  context: AgentContext, 
+                  messages: List[Dict[str, Any]], 
+                  system_msgs: Optional[List[Dict[str, Any]]] = None, 
+                  stream: bool = False, 
+                  temperature: Optional[float] = None) -> Any:
+        """
+        普通对话调用。
+        """
+        params = self._prepare_params(messages, system_msgs, stream, temperature)
+        if stream:
+            return self._call_stream(params)
+        else:
+            return await self._call_unary(params)
+
+    async def ask_tool(self, 
+                       context: AgentContext, 
+                       messages: List[Dict[str, Any]], 
+                       system_msgs: Optional[List[Dict[str, Any]]] = None, 
+                       tools: List[Dict[str, Any]] = None, 
+                       tool_choice: str = "auto",
+                       stream: bool = False) -> ToolCallResponse:
+        """
+        工具调用 — 自动适配 function_call / struct_parse / Claude 格式。
+        """
+        prepared_system = system_msgs or []
+        prepared_tools = tools or []
+        
+        if self.config.function_call_type == "struct_parse":
+            # 将工具 schema 拼入 system prompt
+            tool_prompt = self._build_struct_parse_prompt(prepared_tools)
+            if not prepared_system:
+                prepared_system = [{"role": "system", "content": tool_prompt}]
+            else:
+                prepared_system[0]["content"] += "\n" + tool_prompt
+            
+            params = self._prepare_params(messages, prepared_system, stream)
+        elif "claude" in self.config.model.lower():
+            claude_tools = self._gpt_to_claude_tools(prepared_tools)
+            params = self._prepare_params(messages, prepared_system, stream)
+            params["tools"] = claude_tools
+            params["tool_choice"] = tool_choice if tool_choice in ["auto", "any"] else {"type": "tool", "name": tool_choice}
+        else:
+            params = self._prepare_params(messages, prepared_system, stream)
+            params["tools"] = prepared_tools
+            params["tool_choice"] = tool_choice
+
+        # 执行调用并解析结果...
+        # 这里仅展示结构，实际实现会更复杂
+        resp = await self._call_unary(params)
+        return self._parse_tool_response(resp)
+
+    def _prepare_params(self, messages, system_msgs, stream, temperature=None):
+        all_messages = []
+        if system_msgs:
+            all_messages.extend(system_msgs)
+        all_messages.extend(messages)
+        
+        params = {
+            "model": self.config.model,
+            "messages": all_messages,
+            "temperature": temperature if temperature is not None else self.config.temperature,
+            "max_tokens": self.config.max_tokens,
+            "stream": stream
+        }
+        params.update(self.config.ext_params)
+        return params
+
+    def _gpt_to_claude_tools(self, gpt_tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """将 OpenAI 格式工具转换为 Claude 格式。"""
+        claude_tools = []
+        for tool in gpt_tools:
+            if tool.get("type") == "function":
+                func = tool["function"]
+                claude_tools.append({
+                    "name": func["name"],
+                    "description": func.get("description", ""),
+                    "input_schema": func.get("parameters", {})
+                })
+        return claude_tools
+
+    def _build_struct_parse_prompt(self, tools: List[Dict[str, Any]]) -> str:
+        """构造 struct_parse 模式的 Prompt。"""
+        prompt = "你是一个能够调用工具的助手。当需要调用工具时，请严格按以下 JSON 格式输出，并放在 ```json 代码块中：\n"
+        for tool in tools:
+            func = tool.get("function", tool)
+            prompt += f"- {func['name']}: {func.get('description', '')}\n"
+            prompt += f"  参数格式: {json.dumps(func.get('parameters', {}), ensure_ascii=False)}\n"
+        return prompt
+
+    async def _call_unary(self, params):
+        # 实际 API 调用逻辑
+        resp = await self.client.post(f"{self.config.base_url}/chat/completions", 
+                                      headers={"Authorization": f"Bearer {self.config.api_key}"},
+                                      json=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    def _parse_tool_response(self, resp: Dict[str, Any]) -> ToolCallResponse:
+        """解析 LLM 响应中的工具调用。"""
+        choice = resp["choices"][0]
+        message = choice["message"]
+        content = message.get("content")
+        tool_calls = []
+
+        if message.get("tool_calls"):
+            for tc in message["tool_calls"]:
+                tool_calls.append(ToolCall(
+                    id=tc["id"],
+                    name=tc["function"]["name"],
+                    arguments=tc["function"]["arguments"]
+                ))
+        elif self.config.function_call_type == "struct_parse" and content:
+            # 解析 ```json ``` 代码块
+            matches = re.findall(r"```json\s*([\s\S]*?)\s*```", content)
+            for match in matches:
+                try:
+                    data = json.loads(match)
+                    tool_calls.append(ToolCall(
+                        id=f"call_{uuid.uuid4().hex[:8]}",
+                        name=data.get("name", ""),
+                        arguments=json.dumps(data.get("arguments", {}))
+                    ))
+                except:
+                    continue
+        
+        return ToolCallResponse(
+            content=content,
+            tool_calls=tool_calls,
+            finish_reason=choice.get("finish_reason", ""),
+            total_tokens=resp.get("usage", {}).get("total_tokens", 0)
+        )

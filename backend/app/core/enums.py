@@ -1,8 +1,10 @@
 """
-全局枚举模块
+Global Enums Module
 
-定义系统中使用的所有业务枚举类。
-遵循 dev-backend_patterns skill 规范。
+Defines system-wide business enumeration classes.
+
+@template A12 backend/core/enums.py — StrEnum Global Constants
+@reference fastapi-best-practices §9 Constants
 """
 
 from enum import StrEnum

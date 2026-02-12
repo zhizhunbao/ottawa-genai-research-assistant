@@ -2,6 +2,8 @@
 文档上传 API 集成测试
 
 测试文件上传到 Azure Blob Storage 的完整流程。
+
+@template T1 backend/tests/test_routes.py — API Integration Pattern
 """
 
 from io import BytesIO

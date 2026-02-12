@@ -1,8 +1,9 @@
 /**
- * 聊天状态管理 Store
+ * Chat State Store
  *
- * 使用 Zustand 管理聊天会话和消息状态。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Manages chat sessions, messages, and interaction states using Zustand.
+ *
+ * @template — Custom Implementation (Zustand)
  */
 
 import { create } from 'zustand'
@@ -110,10 +111,10 @@ export const useChatStore = create<ChatStore>()(
           sessions: state.sessions.map((s) =>
             s.id === sessionId
               ? {
-                  ...s,
-                  messages: [...s.messages, newMessage],
-                  updatedAt: now,
-                }
+                ...s,
+                messages: [...s.messages, newMessage],
+                updatedAt: now,
+              }
               : s
           ),
         }))
@@ -126,12 +127,12 @@ export const useChatStore = create<ChatStore>()(
           sessions: state.sessions.map((s) =>
             s.id === sessionId
               ? {
-                  ...s,
-                  messages: s.messages.map((m) =>
-                    m.id === messageId ? { ...m, ...updates } : m
-                  ),
-                  updatedAt: new Date().toISOString(),
-                }
+                ...s,
+                messages: s.messages.map((m) =>
+                  m.id === messageId ? { ...m, ...updates } : m
+                ),
+                updatedAt: new Date().toISOString(),
+              }
               : s
           ),
         })),
@@ -141,11 +142,11 @@ export const useChatStore = create<ChatStore>()(
           sessions: state.sessions.map((s) =>
             s.id === sessionId
               ? {
-                  ...s,
-                  messages: s.messages.map((m) =>
-                    m.id === messageId ? { ...m, isLoading } : m
-                  ),
-                }
+                ...s,
+                messages: s.messages.map((m) =>
+                  m.id === messageId ? { ...m, isLoading } : m
+                ),
+              }
               : s
           ),
         })),

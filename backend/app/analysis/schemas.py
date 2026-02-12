@@ -1,8 +1,9 @@
 """
-分析模块 Schema
+Analysis Module Schemas
 
-定义分析相关的 Pydantic 模型。
-遵循 dev-backend_patterns skill 规范。
+Pydantic models for analysis requests and responses.
+
+@template A8 backend/domain/schemas.py — Pydantic Models
 """
 
 from datetime import datetime

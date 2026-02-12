@@ -1,8 +1,9 @@
 """
-文档服务层
+Document Service Layer
 
-处理文档上传、元数据管理和状态追踪。
-遵循 dev-backend_patterns skill 规范。
+Handles document uploads, metadata management, and processing status tracking.
+
+@template A10 backend/domain/service.py — Shared CRUD & Logic Layer
 """
 
 from typing import Any

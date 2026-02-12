@@ -1,8 +1,9 @@
 """
-用户数据模型
+User Data Models
 
-定义用户相关的数据库模型。
-遵循 dev-backend_patterns skill 规范。
+Defines database models for user management.
+
+@template A9 backend/domain/models.py — SQLAlchemy ORM Model
 """
 
 from datetime import UTC, datetime

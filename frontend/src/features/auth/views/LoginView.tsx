@@ -1,8 +1,9 @@
 /**
- * 登录视图
+ * Login View
  *
- * 视图层只组合组件和调用 Hooks。
- * 遵循 dev-frontend_patterns skill 规范。
+ * High-level view component that orchestrates authentication hooks and page layout.
+ *
+ * @template — Custom Implementation
  */
 
 import { LoginPage } from '@/features/auth/components/LoginPage'

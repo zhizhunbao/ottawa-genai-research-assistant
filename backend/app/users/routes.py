@@ -1,8 +1,9 @@
 """
-用户路由
+User Management Routes
 
-定义用户相关的 API 端点。
-遵循 dev-backend_patterns skill 的 RESTful 结构。
+API endpoints for user registration, login, and profile operations.
+
+@template A7 backend/domain/router.py — API Routes
 """
 
 from fastapi import APIRouter, Depends

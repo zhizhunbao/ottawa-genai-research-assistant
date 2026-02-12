@@ -1,8 +1,9 @@
 """
-研究服务单元测试
+Research Service Tests
 
-遵循 dev-tdd_workflow skill 的测试模式。
-测试 RAG 搜索和聊天功能。
+Unit and integration tests for RAG logic and search service.
+
+@template T2 backend/tests/test_service.py — Service Layer Mocking Pattern
 """
 
 from unittest.mock import patch
@@ -12,11 +13,18 @@ import pytest
 from app.core.enums import ChatRole
 from app.core.exceptions import ExternalServiceError
 from app.research.schemas import (
+    ChartData,
+    ChartType,
     ChatMessage,
     ChatRequest,
     SearchQuery,
 )
-from app.research.service import ResearchService
+from app.research.service import (
+    MAX_QUERY_LENGTH,
+    ChartDataExtractor,
+    ResearchService,
+    chart_extractor,
+)
 
 
 class TestResearchService:
@@ -264,3 +272,267 @@ class TestChatMessage:
         message = ChatMessage(role=ChatRole.ASSISTANT, content="您好！")
         assert message.role == ChatRole.ASSISTANT
         assert message.content == "您好！"
+
+
+# ── Chart Extraction Tests (US-301) ──────────────────────────────────
+
+
+class TestChartDataExtractor:
+    """测试 ChartDataExtractor 类"""
+
+    @pytest.fixture
+    def extractor(self) -> ChartDataExtractor:
+        return ChartDataExtractor()
+
+    def test_has_numeric_data_with_numbers(self, extractor: ChartDataExtractor):
+        """测试检测数值数据 - 有数字"""
+        content = "GDP increased by 2.5% in Q1, 3.1% in Q2, and 2.8% in Q3."
+        assert extractor._has_numeric_data(content) is True
+
+    def test_has_numeric_data_without_numbers(self, extractor: ChartDataExtractor):
+        """测试检测数值数据 - 无数字"""
+        content = "The economy is growing steadily."
+        assert extractor._has_numeric_data(content) is False
+
+    def test_extract_time_series_quarterly(self, extractor: ChartDataExtractor):
+        """测试提取季度时间序列"""
+        content = """
+        Q1 2025: 2.5%
+        Q2 2025: 3.1%
+        Q3 2025: 2.8%
+        Q4 2025: 3.0%
+        """
+        result = extractor._extract_time_series(content)
+        assert len(result) == 4
+        assert result[0]["period"] == "Q1 2025"
+        assert result[0]["value"] == 2.5
+
+    def test_extract_category_data(self, extractor: ChartDataExtractor):
+        """测试提取分类数据"""
+        content = """
+        Technology: 35%
+        Healthcare: 25%
+        Finance: 20%
+        Manufacturing: 20%
+        """
+        result = extractor._extract_category_data(content)
+        assert len(result) == 4
+        assert result[0]["name"] == "Technology"
+        assert result[0]["value"] == 35
+
+    def test_determine_chart_type_trend(self, extractor: ChartDataExtractor):
+        """测试确定图表类型 - 趋势查询"""
+        assert extractor._determine_chart_type("GDP growth trend") == ChartType.LINE
+        assert extractor._determine_chart_type("quarterly growth") == ChartType.LINE
+
+    def test_determine_chart_type_comparison(self, extractor: ChartDataExtractor):
+        """测试确定图表类型 - 比较查询"""
+        assert extractor._determine_chart_type("compare sectors") == ChartType.BAR
+        assert extractor._determine_chart_type("top industries") == ChartType.BAR
+
+    def test_determine_chart_type_distribution(self, extractor: ChartDataExtractor):
+        """测试确定图表类型 - 分布查询"""
+        assert extractor._determine_chart_type("market share") == ChartType.PIE
+        assert extractor._determine_chart_type("sector distribution") == ChartType.PIE
+
+    def test_extract_chart_data_returns_none_for_no_data(
+        self, extractor: ChartDataExtractor
+    ):
+        """测试无数据时返回 None"""
+        result = extractor.extract_chart_data("No numbers here", "query")
+        assert result is None
+
+    def test_extract_chart_data_returns_none_for_empty_content(
+        self, extractor: ChartDataExtractor
+    ):
+        """测试空内容返回 None"""
+        result = extractor.extract_chart_data("", "query")
+        assert result is None
+
+    def test_extract_chart_data_time_series(self, extractor: ChartDataExtractor):
+        """测试提取时间序列图表数据"""
+        content = """
+        Economic growth by quarter:
+        Q1 2025: 2.5%
+        Q2 2025: 3.1%
+        Q3 2025: 2.8%
+        """
+        result = extractor.extract_chart_data(content, "growth trend over time")
+        assert result is not None
+        assert result.type == ChartType.LINE
+        assert len(result.data) >= 3
+
+    def test_extract_chart_data_pie_chart(self, extractor: ChartDataExtractor):
+        """测试提取饼图数据"""
+        content = """
+        Industry breakdown:
+        Technology: 35%
+        Healthcare: 25%
+        Finance: 20%
+        Other: 20%
+        """
+        result = extractor.extract_chart_data(content, "market share distribution")
+        assert result is not None
+        assert result.type == ChartType.PIE
+
+
+class TestChartDataModel:
+    """测试 ChartData 模型"""
+
+    def test_chart_data_line(self):
+        """测试折线图数据模型"""
+        data = ChartData(
+            type=ChartType.LINE,
+            title="GDP Growth",
+            x_key="period",
+            y_keys=["value"],
+            data=[{"period": "Q1", "value": 2.5}, {"period": "Q2", "value": 3.1}],
+        )
+        assert data.type == ChartType.LINE
+        assert data.stacked is False
+
+    def test_chart_data_bar_stacked(self):
+        """测试堆叠柱状图数据模型"""
+        data = ChartData(
+            type=ChartType.BAR,
+            title="Sector Comparison",
+            x_key="sector",
+            y_keys=["value1", "value2"],
+            data=[{"sector": "Tech", "value1": 100, "value2": 50}],
+            stacked=True,
+        )
+        assert data.type == ChartType.BAR
+        assert data.stacked is True
+
+    def test_chart_data_pie(self):
+        """测试饼图数据模型"""
+        data = ChartData(
+            type=ChartType.PIE,
+            title="Market Share",
+            data=[{"name": "A", "value": 60}, {"name": "B", "value": 40}],
+        )
+        assert data.type == ChartType.PIE
+        assert len(data.data) == 2
+
+
+class TestGlobalExtractor:
+    """测试全局 chart_extractor 实例"""
+
+    def test_global_instance_exists(self):
+        """测试全局实例存在"""
+        assert chart_extractor is not None
+        assert isinstance(chart_extractor, ChartDataExtractor)
+
+
+# ── Query Preprocessing Tests (US-202) ───────────────────────────────
+
+
+class TestQueryPreprocessing:
+    """查询预处理测试"""
+
+    @pytest.fixture
+    def service(self):
+        return ResearchService()
+
+    def test_basic_cleanup(self, service):
+        """清理多余空白"""
+        result = service.preprocess_query("  hello   world  ")
+        assert result == "hello world"
+
+    def test_newlines_and_tabs(self, service):
+        """替换换行和 Tab"""
+        result = service.preprocess_query("hello\n\tworld\r\ntest")
+        assert result == "hello world test"
+
+    def test_truncate_long_query(self, service):
+        """截断超长查询"""
+        long_query = "a" * 1000
+        result = service.preprocess_query(long_query)
+        assert len(result) == MAX_QUERY_LENGTH
+
+    def test_empty_query(self, service):
+        """空查询返回空字符串"""
+        result = service.preprocess_query("   ")
+        assert result == ""
+
+    def test_french_chinese_queries(self, service):
+        """多语言查询正常处理"""
+        assert service.preprocess_query("Quel est le PIB?") == "Quel est le PIB?"
+        assert service.preprocess_query("渥太华经济如何？") == "渥太华经济如何？"
+
+
+# ── RAG Integration Tests (Mocked) ───────────────────────────────────
+
+
+class TestRAGIntegration:
+    """RAG 集成流程测试 (使用 Mock)"""
+
+    @pytest.fixture
+    def mock_openai(self):
+        """Mock OpenAI service"""
+        from unittest.mock import AsyncMock, MagicMock
+        mock = MagicMock()
+        mock.create_embedding = AsyncMock(return_value=[0.1] * 1536)
+        mock.rag_chat = AsyncMock(
+            return_value="According to documents, Ottawa's GDP grew by 2%."
+        )
+        return mock
+
+    @pytest.fixture
+    def mock_search(self):
+        """Mock Search service"""
+        from unittest.mock import AsyncMock, MagicMock
+        mock = MagicMock()
+        mock.search = AsyncMock(return_value=[
+            {
+                "id": "chunk-1",
+                "title": "Econ Report",
+                "content": "Ottawa GDP growth was 2% in 2023.",
+                "source": "report.pdf",
+                "score": 0.99,
+            },
+        ])
+        return mock
+
+    @pytest.mark.asyncio
+    async def test_chat_full_workflow(self, mock_openai, mock_search):
+        """测试完整的 RAG 聊天流程 (搜索 -> 增强 -> 生成)"""
+        service = ResearchService(
+            search_service=mock_search,
+            openai_service=mock_openai,
+        )
+
+        request = ChatRequest(
+            messages=[ChatMessage(role=ChatRole.USER, content="How is the GDP?")],
+            use_rag=True,
+        )
+
+        response = await service.chat(request)
+
+        # 验证结果
+        assert response.message.role == ChatRole.ASSISTANT
+        assert "2%" in response.message.content
+        assert len(response.sources) > 0
+        assert response.sources[0].title == "Econ Report"
+
+        # 验证调用链
+        mock_search.search.assert_called_once()
+        mock_openai.rag_chat.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_chat_no_rag_workflow(self, mock_openai, mock_search):
+        """测试不使用 RAG 的聊天流程"""
+        service = ResearchService(
+            search_service=mock_search,
+            openai_service=mock_openai,
+        )
+
+        request = ChatRequest(
+            messages=[ChatMessage(role=ChatRole.USER, content="Hello")],
+            use_rag=False,
+        )
+
+        await service.chat(request)
+
+        # 不应该调用搜索
+        mock_search.search.assert_not_called()

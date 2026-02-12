@@ -1,0 +1,62 @@
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+
+class Citation(BaseModel):
+    """
+    H4. 追踪引用 (Citation).
+    出处: RAGFlow (https://github.com/infiniflow/ragflow)
+    参考: Grounded Citations 模式
+    """
+    citation_id: str                   # 引用标号 [1], [2], ...
+    content: str                       # 引用的原文片段
+    source_file: str                   # 来源文件
+    page_num: Optional[int] = None     # 页码
+    section_title: str = ""            # 章节标题
+    confidence: float = 1.0            # 引用置信度
+
+class CitedAnswer(BaseModel):
+    """
+    含引用的回答结果.
+    """
+    answer: str                        # 含引用标记的答案 ("...据报告[1]...")
+    citations: List[Citation]          # 引用列表
+    source_chunks: List[Dict[str, Any]] = Field(default_factory=list) # 原始检索块
+
+class CitationTracker:
+    """
+    溯源引用追踪器.
+    核心跨层级功能: 答案生成时自动注入引用标记，支持页码级溯源.
+    出处: 
+      - RAGFlow (https://github.com/infiniflow/ragflow)
+      - PageIndex (https://github.com/VectifyAI/PageIndex)
+    """
+    def __init__(self, retrieval_results: List[Any]):
+        self.sources = retrieval_results
+        self.citations: List[Citation] = []
+
+    def build_context_with_markers(self) -> str:
+        """
+        为每个检索结果添加标记, 供 LLM 在生成时引用.
+        
+        输出格式示例:
+        [Source 1] (file.pdf, Page 12, Section 3.2)
+        <content>...
+        [Source 2] (file.pdf, Page 15)
+        <content>...
+        """
+        # 实现逻辑应当将 retrieval_results 格式化为带有显式索引的文本块
+        raise NotImplementedError
+
+    def extract_citations(self, answer: str) -> CitedAnswer:
+        """
+        从 LLM 生成的答案中提取引用标记 (如 "[1]"), 并将其映射回原始来源.
+        """
+        raise NotImplementedError
+
+    def verify_citations(self, cited_answer: CitedAnswer) -> CitedAnswer:
+        """
+        验证引用内容是否与原文匹配 (后验步骤，防止 LLM 产生幻觉引用).
+        
+        可以使用 NLI (Natural Language Inference) 模型或简单的文本包含/相似度检查.
+        """
+        raise NotImplementedError

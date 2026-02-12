@@ -1,8 +1,9 @@
 """
-分析服务层
+Analysis Service Layer
 
-包含图表生成、发言稿总结等核心业务逻辑。
-遵循 dev-backend_patterns skill 规范。
+Business logic for chart generation, speaking notes, and summary analysis.
+
+@template A10 backend/domain/service.py — Shared CRUD & Logic Layer
 """
 
 from app.analysis.schemas import AnalysisRequest, ChartData, SpeakingNotes

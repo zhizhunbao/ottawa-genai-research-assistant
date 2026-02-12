@@ -1,4 +1,10 @@
-"""Health check API routes."""
+"""
+Health Check Routes
+
+API endpoints for monitoring system and dependency health status.
+
+@template A7 backend/domain/router.py — API Routes
+"""
 
 from fastapi import APIRouter, Depends
 

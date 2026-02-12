@@ -1,9 +1,10 @@
 /**
- * 研究功能枚举与固定值
+ * Research Feature Enums & Constants
  *
- * 存放业务枚举、配置项和固定值。
- * 遵循 dev-frontend_patterns 规范。
+ * Centralized business enums and fixed configuration constants for the research module.
+ *
+ * @template — Custom Implementation
  */
 
 // 目前研究模块专用的枚举将在后续开发中添加
-export {}
+export { }

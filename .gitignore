@@ -112,6 +112,6 @@ backend/uploads/*
 secrets.json
 
 
-.github/
+.github/references/
 .cursorignore
 create_migration_package.py

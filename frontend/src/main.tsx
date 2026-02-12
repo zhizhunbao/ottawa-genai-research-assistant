@@ -1,8 +1,9 @@
 /**
  * Application Entry Point
  *
- * Wraps the app with MSAL authentication provider.
- * 遵循 dev-frontend_patterns skill 规范。
+ * Initializes React, MSAL authentication, and global providers.
+ *
+ * @template — Custom Implementation
  */
 
 import * as React from 'react'

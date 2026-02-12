@@ -1,0 +1,39 @@
+from typing import Any, Optional
+from abc import ABC, abstractmethod
+from pydantic import BaseModel, Field
+
+class Action(ABC):
+    """
+    C2. Agent 动作 (原子任务).
+    出处: MetaGPT (Action system)
+    
+    核心模式: 单一职责原则 (SRP). 每个 Action 只负责一个明确的 LLM 调用或工具操作.
+    """
+    def __init__(
+        self, 
+        name: str = "", 
+        context: Any = None, 
+        llm: Any = None
+    ):
+        self.name = name
+        self.context = context
+        self.llm = llm
+        self.desc = "" # 供 Role 的 think 过程选择
+
+    def set_prefix(self, prefix: str):
+        """设置 Prompt 前缀 (通常是 Role 的指令)."""
+        self.prefix = prefix
+
+    async def _aask(self, prompt: str, system_msgs: Optional[list[str]] = None) -> str:
+        """封装调用 LLM 的逻辑."""
+        if not self.llm:
+            raise ValueError("LLM not initialized in Action")
+        return await self.llm.aask(prompt, system_msgs)
+
+    @abstractmethod
+    async def run(self, *args, **kwargs) -> Any:
+        """
+        执行具体的动作逻辑.
+        子类必须实现此方法.
+        """
+        raise NotImplementedError("Action.run() must be implemented")

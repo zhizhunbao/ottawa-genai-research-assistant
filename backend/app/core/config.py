@@ -1,9 +1,11 @@
 """
-应用配置模块
+Application Configuration Module
 
-使用 pydantic-settings 管理环境变量和应用配置。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Manages environment variables and application settings using pydantic-settings.
+
+@template A1 backend/core/config.py — Pydantic BaseSettings Environment Management
+@reference full-stack-fastapi-template/backend/app/core/config.py
+@reference fastapi-best-practices §1 Project Structure
 """
 
 from functools import lru_cache

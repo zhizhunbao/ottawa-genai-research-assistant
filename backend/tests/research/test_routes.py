@@ -1,7 +1,9 @@
 """
-研究路由集成测试
+Research API Integration Tests
 
-遵循 dev-tdd_workflow skill 的 API 集成测试模式。
+Functional tests for RAG and semantic search endpoints.
+
+@template T1 backend/tests/test_routes.py — API Integration Pattern
 """
 
 import pytest

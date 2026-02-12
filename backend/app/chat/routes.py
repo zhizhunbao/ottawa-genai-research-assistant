@@ -1,8 +1,9 @@
 """
-聊天历史路由
+Chat History Routes
 
-提供聊天会话和消息的 RESTful API 端点。
-对应 Sprint 4 US-204: Chat History Persistence。
+RESTful API endpoints for managing chat sessions and message history.
+
+@template A7 backend/domain/router.py — API Routes
 """
 
 import logging

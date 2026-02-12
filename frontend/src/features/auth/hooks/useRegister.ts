@@ -1,8 +1,9 @@
 /**
- * 注册 Hook
+ * Registration Business Logic Hook
  *
- * 提供注册页面的业务逻辑，包括表单验证、提交处理等。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Handles account creation form state, password validation, and navigation.
+ *
+ * @template — Custom Implementation
  */
 
 import { useState, useCallback } from 'react'
@@ -19,13 +20,13 @@ interface FormErrors {
 export function useRegister() {
   const navigate = useNavigate()
   const { register, isLoading, error, clearError, isAuthenticated } = useAuth()
-  
+
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
   // 验证表单
   const validateForm = useCallback((displayName: string, email: string, password: string, confirmPassword?: string): FormErrors => {
     const errors: FormErrors = {}
-    
+
     if (!displayName.trim()) {
       errors.displayName = 'Full Name is required'
     }
@@ -35,7 +36,7 @@ export function useRegister() {
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       errors.email = 'Invalid email format'
     }
-    
+
     if (!password) {
       errors.password = 'Password is required'
     } else if (password.length < 6) {
@@ -43,18 +44,18 @@ export function useRegister() {
     }
 
     if (confirmPassword !== undefined) {
-       if (confirmPassword !== password) {
-          errors.confirmPassword = 'Passwords do not match'
-       }
+      if (confirmPassword !== password) {
+        errors.confirmPassword = 'Passwords do not match'
+      }
     }
-    
+
     return errors
   }, [])
 
   // 提交表单
   const handleSubmit = useCallback(async (displayName: string, email: string, password: string, confirmPassword?: string) => {
     const errors = validateForm(displayName, email, password, confirmPassword)
-    
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
       return
@@ -62,7 +63,7 @@ export function useRegister() {
 
     clearError()
     setFormErrors({})
-    
+
     const result = await register({ displayName, email, password })
     if (result.success) {
       navigate('/chat')
@@ -97,7 +98,7 @@ export function useRegister() {
     error,
     formErrors,
     isAuthenticated,
-    
+
     // 方法
     handleSubmit,
     handleInputChange,

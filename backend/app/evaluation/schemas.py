@@ -3,6 +3,8 @@ LLM 评估 Schemas
 
 定义 US-303 LLM Evaluation Framework 的数据模型。
 6 维度评估：Coherence, Relevancy, Completeness, Grounding, Helpfulness, Faithfulness
+
+@template A8 backend/domain/schemas.py — Pydantic Models
 """
 
 from datetime import UTC, datetime

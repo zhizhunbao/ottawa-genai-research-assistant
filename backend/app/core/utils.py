@@ -1,8 +1,9 @@
 """
-基础工具模块
+Base Utility Module
 
-提供全局可用的工具函数，如 ID 生成。
-遵循 dev-backend_patterns skill 规范。
+Provides globally available utility functions, such as ID generation.
+
+@template — Custom Implementation (Shared Utilities)
 """
 
 import uuid

@@ -1,8 +1,9 @@
 /**
- * 全局共享枚举
+ * Global Shared Enums
  *
- * 存放跨模块使用的枚举和固定配置。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Centralized enumerations for cross-module configurations and state types.
+ *
+ * @template — Custom Implementation
  */
 
 /** 语言类型 */

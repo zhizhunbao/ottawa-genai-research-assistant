@@ -1,8 +1,9 @@
 /**
- * 登录页面组件
+ * LoginPage Component
  *
- * 提供用户登录表单 UI，包括邮箱密码登录和 Azure AD SSO。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Full-page UI for user sign-in, supporting standard auth and Microsoft SSO.
+ *
+ * @template — Custom Implementation
  */
 
 import { Link } from 'react-router-dom'
@@ -97,9 +98,8 @@ export function LoginPage({
                   onChange={(e) => onInputChange('email', e.target.value)}
                   disabled={isLoading}
                   autoComplete="email"
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    formErrors.email ? 'border-red-300' : 'border-gray-200'
-                  } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                  className={`w-full px-4 py-3 rounded-lg border ${formErrors.email ? 'border-red-300' : 'border-gray-200'
+                    } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                 />
                 {formErrors.email && (
                   <p className="mt-2 text-sm text-red-600">{formErrors.email}</p>
@@ -118,9 +118,8 @@ export function LoginPage({
                   onChange={(e) => onInputChange('password', e.target.value)}
                   disabled={isLoading}
                   autoComplete="current-password"
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    formErrors.password ? 'border-red-300' : 'border-gray-200'
-                  } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                  className={`w-full px-4 py-3 rounded-lg border ${formErrors.password ? 'border-red-300' : 'border-gray-200'
+                    } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                 />
                 {formErrors.password && (
                   <p className="mt-2 text-sm text-red-600">{formErrors.password}</p>
@@ -158,10 +157,10 @@ export function LoginPage({
               className="w-full px-6 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" viewBox="0 0 21 21" fill="none">
-                <path d="M10 0H0V10H10V0Z" fill="#F25022"/>
-                <path d="M21 0H11V10H21V0Z" fill="#7FBA00"/>
-                <path d="M10 11H0V21H10V11Z" fill="#00A4EF"/>
-                <path d="M21 11H11V21H21V11Z" fill="#FFB900"/>
+                <path d="M10 0H0V10H10V0Z" fill="#F25022" />
+                <path d="M21 0H11V10H21V0Z" fill="#7FBA00" />
+                <path d="M10 11H0V21H10V11Z" fill="#00A4EF" />
+                <path d="M21 11H11V21H21V11Z" fill="#FFB900" />
               </svg>
               {t('login.azureAd')}
             </button>

@@ -1,0 +1,75 @@
+from typing import List, Dict, Any, Optional
+from enum import StrEnum
+from pydantic import BaseModel, Field
+
+class LayoutType(StrEnum):
+    """
+    文档布局组件类型.
+    出处: RAGFlow (https://github.com/infiniflow/ragflow)
+    参考: .github/references/ragflow/deepdoc/vision/
+    """
+    TITLE = "title"
+    TEXT = "text"
+    TABLE = "table"
+    FIGURE = "figure"
+    EQUATION = "equation"
+    LIST = "list"
+    HEADER = "header"
+    FOOTER = "footer"
+    REFERENCE = "reference"
+    FOOTNOTE = "footnote"
+
+class LayoutBox(BaseModel):
+    """
+    基于坐标的布局盒模型.
+    """
+    type: LayoutType
+    bbox: List[float] = Field(..., description="[x0, y0, x1, y1] 坐标")
+    score: float = 1.0
+    text: str = ""
+    page_num: int = 1
+    
+    # 针对表格组件的元数据
+    table_html: Optional[str] = None
+    table_rows: Optional[List[Any]] = None
+
+class LayoutAnalyzer:
+    """
+    H4 (Ext). 布局分析器 (Visual Layout Analysis).
+    出处: RAGFlow (https://github.com/infiniflow/ragflow)
+    参考: .github/references/ragflow/deepdoc/vision/layout_predictor.py
+    
+    核心模式: 利用视觉模型 (如 YOLOv8/v10) 识别文档的物理布局组件，
+    并将其顺序重组为逻辑文档流。
+    """
+    
+    def __init__(self, model_path: Optional[str] = None):
+        self.model_path = model_path
+
+    async def analyze(self, image_bytes: bytes, page_num: int = 1) -> List[LayoutBox]:
+        """
+        分析单页图像流，识别所有布局组件。
+        
+        工作流程:
+        1. 图像预处理 (缩放、归一化).
+        2. 模型推理 (检测 Bounding Boxes).
+        3. 后处理 (NMS 非极大值抑制).
+        4. OCR 提取识别框内的文本.
+        """
+        # 实现逻辑参考 ragflow/deepdoc/vision/layout_predictor.py
+        raise NotImplementedError
+
+    async def extract_table_structure(self, table_box: LayoutBox, image_bytes: bytes) -> str:
+        """
+        针对 Table 类型的组件执行专用的表格结构识别 (TSR).
+        
+        返回: 表格的 Markdown 或 HTML 表达.
+        """
+        raise NotImplementedError
+
+    def reorder_boxes(self, boxes: List[LayoutBox]) -> List[LayoutBox]:
+        """
+        视觉检测到的框通常是无序的，此函数根据阅读顺序 (从上到下，从左到右，支持双栏) 重新排序.
+        """
+        # 实现逻辑参考 ragflow/deepdoc/vision/recognizer.py (sort_key)
+        raise NotImplementedError

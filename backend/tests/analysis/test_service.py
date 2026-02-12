@@ -1,8 +1,9 @@
 """
-分析服务单元测试
+Analysis Service Tests
 
-遵循 dev-tdd_workflow skill 的测试模式。
-遵循 dev-terminology skill 的命名规范。
+Unit tests for calculation logic, report generation, and data formatting.
+
+@template T2 backend/tests/test_service.py — Service Logic Pattern
 """
 
 from unittest.mock import AsyncMock

@@ -1,9 +1,9 @@
 /**
- * useAuthDialog - 认证对话框状态管理 Hook
+ * AuthDialog State Management Hook
  *
- * 提供全局控制 AuthDialog 打开/关闭的能力。
- * 使用 Zustand 进行状态管理。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Manages the global open/close state of the authentication modal.
+ *
+ * @template — Custom Implementation (Zustand)
  */
 
 import { create } from 'zustand'

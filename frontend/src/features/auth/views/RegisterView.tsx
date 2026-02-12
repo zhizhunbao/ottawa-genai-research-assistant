@@ -1,8 +1,9 @@
 /**
- * 注册视图
+ * User Registration View
  *
- * 视图层只组合组件和调用 Hooks。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Orchestrates registration-specific hooks and page-level layout.
+ *
+ * @template — Custom Implementation
  */
 
 import { RegisterPage } from '@/features/auth/components/RegisterPage'

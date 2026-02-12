@@ -1,7 +1,9 @@
 /**
- * 组件或工具
+ * Vitest Test Setup
  *
- * 遵循 dev-frontend_patterns skill 规范。
+ * Configures the global test environment, including DOM matchers and i18n mocks.
+ *
+ * @template T4 frontend/test/setup.ts — Vitest Global Configuration
  */
 
 import '@testing-library/jest-dom'

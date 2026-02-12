@@ -1,8 +1,11 @@
 """
-Ottawa GenAI Research Assistant Backend
+FastAPI Application Entry Point
 
-FastAPI 应用入口模块。
-遵循 dev-backend_patterns 和 dev-tdd_workflow skill 规范。
+Main entry point for the Ottawa GenAI Research Assistant Backend.
+
+@template A17 backend/main.py — FastAPI Entry (lifespan + CORS + routers + exception handler)
+@reference full-stack-fastapi-template/backend/app/main.py
+@reference fastapi-best-practices §1 Project Structure
 """
 
 from collections.abc import AsyncGenerator

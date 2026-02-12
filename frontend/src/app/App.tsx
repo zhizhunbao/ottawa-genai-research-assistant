@@ -1,8 +1,9 @@
 /**
  * App - Root Application Component
  *
- * Routes: Home, Chat, Evaluation Dashboard.
- * Auth 通过 Modal 处理，无需单独路由。
+ * Configures application routing and high-level layout.
+ *
+ * @template — Custom Implementation
  */
 
 import { Routes, Route } from 'react-router-dom'
@@ -12,8 +13,8 @@ import { Suspense, lazy } from 'react'
 
 // Views (lazy loaded)
 const HomeView = lazy(() => import('@/features/home/views/HomeView'))
-const ChatView = lazy(() => import('@/features/research/views/ChatView'))
-const EvaluationView = lazy(() => import('@/features/research/views/EvaluationView'))
+const ChatView = lazy(() => import('@/features/chat/views/ChatView'))
+const EvaluationView = lazy(() => import('@/features/evaluation/views/EvaluationView'))
 
 // Loading component
 function Loading() {

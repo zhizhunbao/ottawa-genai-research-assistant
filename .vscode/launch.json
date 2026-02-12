@@ -5,7 +5,7 @@
       "name": "Full Stack Dev",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npm run dev -- --port 3000",
+      "command": "npm run dev",
       "cwd": "${workspaceFolder}/frontend"
     },
     {
@@ -28,7 +28,10 @@
   "compounds": [
     {
       "name": "Launch Both",
-      "configurations": ["Backend Dev", "Full Stack Dev"],
+      "configurations": [
+        "Backend Dev",
+        "Full Stack Dev"
+      ],
       "stopAll": true
     }
   ]

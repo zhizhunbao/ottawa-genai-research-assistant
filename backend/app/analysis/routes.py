@@ -1,8 +1,9 @@
 """
-分析路由
+Analysis Routes
 
-定义图表生成和报告分析相关的 API 端点。
-遵循 dev-backend_patterns skill 规范。
+API endpoints for chart visualization and reporting.
+
+@template A7 backend/domain/router.py — API Routes
 """
 
 from fastapi import APIRouter, Depends

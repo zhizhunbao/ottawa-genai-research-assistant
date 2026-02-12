@@ -1,7 +1,9 @@
 """
-研究路由
+Research Routes
 
-定义研究/RAG 相关的 API 端点。
+API endpoints for RAG-powered research assistance and semantic query handling.
+
+@template A7 backend/domain/router.py — API Routes
 """
 
 from fastapi import APIRouter

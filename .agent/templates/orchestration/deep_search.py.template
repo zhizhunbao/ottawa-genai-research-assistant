@@ -1,0 +1,66 @@
+from typing import List, Optional
+from pydantic import BaseModel
+
+class SearchStep(BaseModel):
+    query: str
+    reason: str
+
+class DeepSearchState(BaseModel):
+    queries_attempted: List[str] = []
+    accumulated_context: str = ""
+    is_satisfied: bool = False
+
+class DeepSearchOrchestrator:
+    """
+    G6. 深度搜索编排器.
+    出处: 结合 RAGFlow + JDGenie (DeepSearch.py)
+    
+    核心模式: 自适应检索策略. 
+    1. 判断现有背景信息是否足够回答.
+    2. 如果不足，生成 N 个新的补充检索词.
+    3. 合并新旧信息，重复过程.
+    """
+    def __init__(self, retriever: Any, llm: Any):
+        self.retriever = retriever
+        self.llm = llm
+
+    async def run(self, original_query: str, max_rounds: int = 3) -> str:
+        state = DeepSearchState()
+        state.queries_attempted.append(original_query)
+        
+        for round in range(max_rounds):
+            # 1. 检索
+            new_info = await self.retriever.search(state.queries_attempted[-1])
+            state.accumulated_context += f"\nRound {round+1} Info: {new_info}"
+
+            # 2. 评估
+            satisfied, next_query = await self._evaluate(original_query, state)
+            if satisfied:
+                break
+            
+            if next_query:
+                state.queries_attempted.append(next_query)
+            else:
+                break
+
+        return state.accumulated_context
+
+    async def _evaluate(self, original_query: str, state: DeepSearchState) -> tuple[bool, Optional[str]]:
+        """
+        让 LLM 评估当前信息是否足够.
+        如果不够，返回下一个搜索词.
+        """
+        prompt = f"""
+        原问题: {original_query}
+        当前已知信息: {state.accumulated_context}
+        
+        请判断现有信息是否足以完整回答原问题？
+        如果足以回答，返回 'YES'。
+        如果不足，返回 'NO' 并提供一个进一步补充检索的查询词。
+        格式: SUCCESS:[YES/NO] | QUERY:[检索词]
+        """
+        res = await self.llm.aask(prompt)
+        # 简单逻辑解析结果...
+        satisfied = "YES" in res
+        query = res.split("QUERY:")[-1].strip() if not satisfied else None
+        return satisfied, query

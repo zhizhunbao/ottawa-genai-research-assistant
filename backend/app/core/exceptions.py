@@ -1,9 +1,11 @@
 """
-自定义异常模块
+Custom Exceptions Module
 
-定义应用级别的自定义异常类。
-遵循 dev-security_review skill 的错误处理规范。
-遵循 dev-tdd_workflow skill 规范。
+Defines application-level custom exception classes.
+
+@template A3 backend/core/exceptions.py — Custom Exception Hierarchy
+@reference fastapi-best-practices §6 Error Handling
+@reference full-stack-fastapi-template/backend/app/utils.py (AppExceptionCase)
 """
 
 from typing import Any

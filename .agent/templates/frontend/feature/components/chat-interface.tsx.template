@@ -1,0 +1,112 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageItem } from './message-item';
+import { ChatInput } from './chat-input';
+import { useChatStream } from '../hooks/use-chat-stream';
+import { Message } from '../types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { nanoid } from 'nanoid';
+
+export const ChatInterface: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { sendMessage, isLoading } = useChatStream('/api/v1');
+
+  // 自动滚动到底部
+  useEffect(() => {
+    if (scrollRef.current) {
+      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [messages]);
+
+  const handleSendMessage = async (content: string, options: { deepSearch: boolean, files: File[] }) => {
+    const userMessage: Message = {
+      id: nanoid(),
+      role: 'user',
+      content,
+      timestamp: Date.now()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    const assistantMsgId = nanoid();
+    const assistantMessage: Message = {
+      id: assistantMsgId,
+      role: 'assistant',
+      content: '',
+      thought: '',
+      status: 'loading',
+      timestamp: Date.now()
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+
+    await sendMessage(content, {
+      onMessage: (chunk) => {
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMsgId ? { ...m, content: m.content + chunk } : m
+        ));
+      },
+      onThought: (thoughtChunk) => {
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMsgId ? { ...m, thought: (m.thought || '') + thoughtChunk } : m
+        ));
+      },
+      onDone: () => {
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMsgId ? { ...m, status: 'done' } : m
+        ));
+      },
+      onError: (err) => {
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMsgId ? { ...m, content: m.content + '\n\n发生错误: ' + err.message, status: 'error' } : m
+        ));
+      }
+    }, {
+      deep_search: options.deepSearch
+      // 这里可以处理文件上传逻辑
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-background">
+      {/* 头部展示 (可选) */}
+      <header className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-10">
+        <h1 className="text-lg font-semibold flex items-center gap-2">
+          AI Research Assistant
+          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] uppercase tracking-wider">v2.0</span>
+        </h1>
+      </header>
+
+      {/* 聊天记录区 */}
+      <div className="flex-1 overflow-hidden" ref={scrollRef}>
+        <ScrollArea className="h-full px-4 lg:px-0">
+          <div className="max-w-4xl mx-auto py-8">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center mt-20 p-8">
+                <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center mb-6">
+                  <span className="text-3xl">🤖</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-2">欢迎使用研究助手</h2>
+                <p className="text-muted-foreground max-w-sm">
+                  上传论文、报告或直接提问，我将通过多智能体协作和深度搜索为你提供详尽的分析。
+                </p>
+              </div>
+            ) : (
+              messages.map((m) => (
+                <MessageItem key={m.id} message={m} />
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* 输入区 */}
+      <footer className="border-t border-border bg-card/20 backdrop-blur-lg pb-4">
+        <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+      </footer>
+    </div>
+  );
+};

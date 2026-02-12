@@ -1,9 +1,9 @@
 """
-文档管理路由
+Document Management Routes
 
-定义文档上传、列表查询、删除等 API 端点。
-遵循 dev-backend_patterns skill 规范。
-遵循 step-06-backend.md Story 开发循环。
+API endpoints for document uploads, list queries, deletion, and ingestion management.
+
+@template A7 backend/domain/router.py — API Routes
 """
 
 import logging
@@ -13,7 +13,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Up
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.azure_storage import AzureBlobStorageService
+from app.azure.storage import AzureBlobStorageService
 from app.core.database import get_db
 from app.core.dependencies import get_blob_storage, get_document_pipeline_optional
 from app.core.document_store import DocumentStore

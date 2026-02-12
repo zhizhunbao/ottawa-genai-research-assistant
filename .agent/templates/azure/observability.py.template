@@ -1,0 +1,44 @@
+import logging
+from typing import Optional
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+
+logger = logging.getLogger(__name__)
+
+def setup_observability(app, connection_string: Optional[str]):
+    """
+    一站式 Azure Monitor + OpenTelemetry 集成。
+    参考: azure-search-openai-demo (app.py)
+    """
+    if not connection_string:
+        logger.info("Skipping Azure Monitor setup: No connection string provided")
+        return
+
+    try:
+        configure_azure_monitor(
+            connection_string=connection_string,
+            instrumentation_options={
+                "django": {"enabled": False}, 
+                "fastapi": {"enabled": False} # 我们手动添加 ASGI 中间件
+            }
+        )
+        
+        # 自动追踪出站请求
+        AioHttpClientInstrumentor().instrument()
+        HTTPXClientInstrumentor().instrument()
+        
+        # 自动追踪 OpenAI SDK 调用 (需要安装 opentelemetry-instrumentation-openai)
+        try:
+            OpenAIInstrumentor().instrument()
+        except Exception:
+            logger.warning("Failed to instrument OpenAI, library might be missing.")
+
+        # 添加 ASGI 中间件追踪入站请求
+        app.add_middleware(OpenTelemetryMiddleware)
+        
+        logger.info("Azure Monitor and OpenTelemetry instrumentation enabled.")
+    except Exception as e:
+        logger.error(f"Failed to setup observability: {e}")

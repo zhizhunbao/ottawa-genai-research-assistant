@@ -1,8 +1,9 @@
 /**
- * AuthDialogProvider - 认证对话框提供者
+ * AuthDialog Provider
  *
- * 连接 AuthDialog 组件和全局状态管理。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Connects the global AuthDialog state to the UI component.
+ *
+ * @template — Custom Implementation
  */
 
 import { AuthDialog } from './AuthDialog'

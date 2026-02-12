@@ -1,8 +1,9 @@
 /**
- * 认证 Hook
+ * Authentication Hook
  *
- * 提供认证相关的业务逻辑和状态管理。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Custom hook for managing user authentication state and business logic.
+ *
+ * @template — Custom Implementation
  */
 
 import { useState, useCallback } from 'react'

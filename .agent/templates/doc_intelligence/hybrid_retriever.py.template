@@ -1,0 +1,66 @@
+from abc import ABC, abstractmethod
+from typing import List, Any, Optional, Dict
+from pydantic import BaseModel, Field
+
+class RetrievalResult(BaseModel):
+    """
+    检索结果模型.
+    """
+    content: str
+    source_id: str                     # TreeNode ID, Chunk ID 或 文件名
+    score: float                       # 融合后的分数
+    page_range: List[int] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    retrieval_source: str = "hybrid"   # "vector" | "tree" | "keyword"
+
+class BaseRetriever(ABC):
+    @abstractmethod
+    async def retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+        pass
+
+class VectorRetriever(BaseRetriever):
+    """传统向量检索装饰器."""
+    async def retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+        # 实现逻辑: vector_store.similarity_search()
+        raise NotImplementedError
+
+class TreeSearchRetriever(BaseRetriever):
+    """
+    基于 PageIndex 的推理式树搜索.
+    核心逻辑: LLM 根据节点摘要递归选择子节点.
+    """
+    async def retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+        # 实现逻辑: 从 root 开始逐级推理 (walk_tree)
+        raise NotImplementedError
+
+class HybridRetriever:
+    """
+    H3. 混合检索器.
+    核心模式: 多路并行检索 + 融合重排 (RRF).
+    出处: 
+      - RAGFlow (https://github.com/infiniflow/ragflow)
+      - PageIndex (https://github.com/VectifyAI/PageIndex)
+    参考: .github/references/ragflow/rag/
+    """
+    def __init__(self, retrievers: List[BaseRetriever]):
+        self.retrievers = retrievers
+
+    async def retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+        """
+        1. 并行调用所有检索器.
+        2. 结果汇总.
+        3. 执行 RRF (Reciprocal Rank Fusion) 融合.
+        4. (可选) 调用 Reranker 模型进行最终排序.
+        """
+        # all_results = await asyncio.gather(*[r.retrieve(query, top_k=50) for r in self.retrievers])
+        # return self._rrf_fusion(all_results, top_k)
+        raise NotImplementedError
+
+    def _rrf_fusion(self, results_list: List[List[RetrievalResult]], top_k: int, k: int = 60) -> List[RetrievalResult]:
+        """
+        Reciprocal Rank Fusion 算法实现.
+        Score = sum(1 / (k + rank))
+        """
+        fused_scores = {}
+        # ... 实现细节
+        raise NotImplementedError

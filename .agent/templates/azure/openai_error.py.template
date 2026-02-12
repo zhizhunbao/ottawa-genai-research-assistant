@@ -1,0 +1,29 @@
+import logging
+from typing import Dict, Any, Union
+from openai import APIError
+
+logger = logging.getLogger(__name__)
+
+ERROR_MESSAGE_FILTER = "Your message contains content that was flagged by the content filter."
+ERROR_MESSAGE_LENGTH = "Your message exceeded the context length limit."
+
+def error_dict(error: Exception) -> Dict[str, str]:
+    """
+    将 OpenAI APIError 转换为用户友好的错误字典。
+    参考: azure-search-openai-demo (error.py)
+    """
+    if isinstance(error, APIError):
+        if error.code == "content_filter":
+            return {"error": ERROR_MESSAGE_FILTER}
+        if error.code == "context_length_exceeded":
+            return {"error": ERROR_MESSAGE_LENGTH}
+    
+    return {"error": f"Error type: {type(error).__name__}, message: {str(error)}"}
+
+def get_error_status_code(error: Exception) -> int:
+    """
+    根据错误类型返回合适的 HTTP 状态码。
+    """
+    if isinstance(error, APIError) and error.code == "content_filter":
+        return 400
+    return 500

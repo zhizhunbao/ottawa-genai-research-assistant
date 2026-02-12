@@ -1,8 +1,9 @@
 """
-用户 Schemas
+User Module Schemas
 
-定义用户相关的请求/响应模型。
-遵循 dev-security_review skill 的输入验证规范。
+Pydantic models for user registration, login, and authentication validation.
+
+@template A8 backend/domain/schemas.py — Pydantic Models
 """
 
 from datetime import datetime

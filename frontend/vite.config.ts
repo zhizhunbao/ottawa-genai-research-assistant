@@ -1,16 +1,19 @@
 /// <reference types="vitest" />
+import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      '@/lib': resolve(__dirname, './src/lib'),
-      '@/features': resolve(__dirname, './src/features'),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@/lib': fileURLToPath(new URL('./src/lib', import.meta.url)),
+      '@/features': fileURLToPath(new URL('./src/features', import.meta.url)),
       '@/shared': resolve(__dirname, './src/shared'),
       '@/stores': resolve(__dirname, './src/stores'),
     },

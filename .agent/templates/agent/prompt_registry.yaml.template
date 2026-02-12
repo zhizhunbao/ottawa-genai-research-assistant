@@ -1,0 +1,32 @@
+# Prompt 注册表模板
+# 出处: MetaGPT (Prompt management best practices)
+
+ResearchRole:
+  system: |
+    你是一个专业的研究员。你的目标是 {{goal}}。
+    你必须遵循以下约束:
+    {{constraints}}
+  
+  think: |
+    当前历史记忆为:
+    {{memory}}
+    
+    请根据上述信息，从以下动作中选择最合适的一个:
+    {{actions_desc}}
+    
+    仅返回动作名称。
+
+CodeGeneratorAction:
+  prompt: |
+    请根据以下需求编写代码:
+    {{requirement}}
+    
+    使用语言: {{language}}
+    架构风格: {{style}}
+
+SummarizerAction:
+  prompt: |
+    请总结以下内容，保持客观。
+    
+    内容:
+    {{content}}

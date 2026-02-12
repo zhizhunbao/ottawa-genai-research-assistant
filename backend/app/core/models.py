@@ -1,9 +1,12 @@
 """
-通用文档存储模型
+Universal Document Storage Model
 
-实现单一表存储所有类型数据的模式，使用 JSON 字段存储业务特定的属性。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Implements a single-table storage pattern for all data types using JSON fields for 
+business-specific attributes (EAV pattern).
+
+@template A9 backend/domain/models.py — SQLAlchemy ORM Model
+@template A6 backend/core/models.py — EAV Pattern (JSON Fields + Type Discriminator)
+@reference full-stack-fastapi-template/backend/app/models.py
 """
 
 from datetime import UTC, datetime

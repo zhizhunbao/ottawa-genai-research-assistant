@@ -3,6 +3,8 @@
 
 测试聊天会话 CRUD 和消息追加的 API 端点。
 对应 Sprint 4 US-204: Chat History Persistence。
+
+@template T1 backend/tests/test_routes.py — API Integration Pattern
 """
 
 import pytest

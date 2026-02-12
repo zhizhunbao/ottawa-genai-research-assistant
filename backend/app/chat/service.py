@@ -1,9 +1,10 @@
 """
-聊天历史服务层
+Chat History Service Layer
 
-管理聊天会话和消息的持久化。
-使用 UniversalDocument 模型存储会话数据。
-对应 Sprint 4 US-204: Chat History Persistence。
+Manages persistence of chat sessions and messages using the UniversalDocument model.
+Implements CRUD operations for chat threads and message tracking.
+
+@template A10 backend/domain/service.py — Generic CRUD Service Layer
 """
 
 import logging

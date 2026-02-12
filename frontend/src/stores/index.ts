@@ -1,8 +1,9 @@
 /**
- * Stores 导出入口
+ * Store Entry Point
  *
- * 集中导出所有 Zustand stores 和相关 selectors。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Re-exports all Zustand stores and relevant selectors for centralized access.
+ *
+ * @template — Custom Implementation
  */
 
 export { useAuthStore, selectUser, selectIsAuthenticated, selectIsLoading, selectAuthError } from './authStore'

@@ -1,8 +1,9 @@
 /**
- * API 基础服务
+ * Base API Service
  *
- * 提供统一的 HTTP 请求处理，包括认证、错误处理等。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Provides unified HTTP request handling, including authentication, timing, and error processing.
+ *
+ * @template — Custom Implementation
  */
 
 import type { ApiResponse } from '@/features/research/types'

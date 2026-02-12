@@ -1,9 +1,11 @@
 """
-通用文档存储服务 (DocumentStore)
+Universal Document Store (DocumentStore)
 
-提供统一的接口来保存、检索和管理存储在 universal_documents 表中的数据。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Provides a unified interface for saving, retrieving, and managing data in the universal_documents table.
+
+@template A6 backend/core/models.py — EAV Document Store Interface
+@template A10 backend/domain/service.py — Generic CRUD Service Layer
+@reference full-stack-fastapi-template/backend/app/crud.py
 """
 
 from typing import Any

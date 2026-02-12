@@ -1,9 +1,11 @@
 """
-通用 Schemas 模块
+Common Schemas Module
 
-定义通用的请求/响应模型。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Defines universal request/response models.
+
+@template A2 backend/core/schemas.py — Custom Base Model + Standard API Response
+@reference fastapi-best-practices §4 Response Model
+@reference full-stack-fastapi-template/backend/app/models.py
 """
 
 from typing import Any, Generic, TypeVar

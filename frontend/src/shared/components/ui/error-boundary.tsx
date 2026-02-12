@@ -1,8 +1,9 @@
 /**
- * 错误边界组件
+ * Error Boundary Component
  *
- * 捕获子组件树中的 JavaScript 错误。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Catches JavaScript errors in child component trees to prevent global application crash.
+ *
+ * @template C2 frontend/shared/components/ErrorBoundary.tsx — Global Error Handler
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react'

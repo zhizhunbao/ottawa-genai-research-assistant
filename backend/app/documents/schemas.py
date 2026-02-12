@@ -1,8 +1,9 @@
 """
-文档模块 Schema
+Document Module Schemas
 
-定义文档管理相关的 Pydantic 模型。
-遵循 dev-backend_patterns skill 规范。
+Pydantic models for document management, uploads, and status tracking.
+
+@template A8 backend/domain/schemas.py — Pydantic Models
 """
 
 from datetime import datetime

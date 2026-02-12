@@ -1,0 +1,82 @@
+import asyncio
+import uuid
+from enum import Enum
+from typing import Any, List, Optional
+from pydantic import BaseModel, Field
+
+# 假设的基础模型
+# from app.orchestration.context import AgentContext
+
+class AgentState(Enum):
+    IDLE = "idle"
+    RUNNING = "running"
+    FINISHED = "finished"
+    ERROR = "error"
+
+class BaseAgent:
+    """
+    G1. Agent 调度基类 (带状态机).
+    出处: joyagent-jdgenie (BaseAgent.java)
+    
+    核心模式: 
+    1. ReAct 循环 (Think-Act-Observe).
+    2. 显式状态管理 (State Machine).
+    3. 最大步数控制 (防止无限死循环).
+    """
+    def __init__(
+        self, 
+        name: str, 
+        role_desc: str, 
+        max_steps: int = 10,
+        llm: Any = None
+    ):
+        self.agent_id = str(uuid.uuid4())
+        self.name = name
+        self.role_desc = role_desc
+        self.max_steps = max_steps
+        self.llm = llm
+        self.state = AgentState.IDLE
+        self.steps = []
+
+    async def run(self, user_input: str, context: Any) -> str:
+        """主运行循环 (ReAct Loop)."""
+        self.state = AgentState.RUNNING
+        context.printer.info(f"Agent {self.name} started.")
+
+        current_step = 0
+        while current_step < self.max_steps:
+            current_step += 1
+            
+            # 1. THINK: 调用 LLM 决定下一步 (Thought + Action Call)
+            thought, action_call = await self._think(user_input, context)
+            context.printer.thought(thought)
+
+            if not action_call:
+                # 如果没有更多动作，循环结束
+                break
+
+            # 2. ACT: 并发或顺序执行工具调用
+            # 出处: joyagent-jdgenie 支持并发 executeTools
+            observation = await self._act(action_call, context)
+            context.printer.observation(observation)
+
+            # 3. 记录日志
+            self.steps.append({"thought": thought, "action": action_call, "observation": observation})
+
+        self.state = AgentState.FINISHED
+        final_answer = await self._summarize(context)
+        return final_answer
+
+    async def _think(self, user_input: str, context: Any):
+        """调用 LLM 进行思考."""
+        # 实际代码会根据 prompt 模板组装上下文
+        raise NotImplementedError
+
+    async def _act(self, action_call: Any, context: Any):
+        """执行工具集."""
+        # 逻辑点: 利用 context 中的 ToolCollection 执行
+        raise NotImplementedError
+
+    async def _summarize(self, context: Any) -> str:
+        """生成最终回答."""
+        raise NotImplementedError

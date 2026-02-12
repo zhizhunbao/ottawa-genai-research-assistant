@@ -1,13 +1,14 @@
 /**
- * 首页功能枚举与固定值
+ * Home Feature Enums & Static Configuration
  *
- * 存放首页专用的业务枚举、配置项和固定值。
- * 遵循 dev-frontend_patterns 规范。
+ * Visual configurations, statistics metadata, and feature mappings for the landing page.
+ *
+ * @template — Custom Implementation
  */
 
-import { 
-  BarChart3, 
-  FileText, 
+import {
+  BarChart3,
+  FileText,
   Brain,
   Upload,
   MessageSquare

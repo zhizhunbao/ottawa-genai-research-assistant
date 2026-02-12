@@ -1,8 +1,10 @@
 """
-LLM 评估服务
+LLM Evaluation Service Layer
 
-US-303: 使用 LLM-as-Judge 方法评估 RAG 响应质量。
-对每个响应进行 6 维度评估，存储结果到数据库。
+Implements a 'judge-as-LLM' approach for evaluating RAG response quality.
+Assesses responses across multiple dimensions and persists results.
+
+@template A10 backend/domain/service.py — Shared CRUD & Logic Layer
 """
 
 import json
@@ -16,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.enums import DocumentStatus, DocumentType
 from app.core.models import UniversalDocument
 from app.core.utils import generate_uuid
-from app.evaluation.prompts import EVALUATION_PROMPTS, EVALUATION_SYSTEM_PROMPT
+from app.azure.prompts import EVALUATION_PROMPTS, EVALUATION_SYSTEM_PROMPT
 from app.evaluation.schemas import (
     DIMENSION_THRESHOLDS,
     DimensionScore,
@@ -107,7 +109,7 @@ class LLMEvaluationService:
                 explanation="OpenAI service not configured — default score",
             )
 
-        prompt_template = EVALUATION_PROMPTS[dimension]
+        prompt_template = EVALUATION_PROMPTS[dimension.value]
         prompt = prompt_template.format(
             query=query,
             response=response,

@@ -1,4 +1,10 @@
-"""Health check service for Azure resources."""
+"""
+Health Check Service
+
+Monitors the availability and latency of Azure integration services.
+
+@template A10 backend/domain/service.py — Shared CRUD & Logic Layer
+"""
 
 import logging
 import time
@@ -54,7 +60,7 @@ class HealthCheckService:
             )
 
         try:
-            from app.core.azure_storage import AzureBlobStorageService
+            from app.azure.storage import AzureBlobStorageService
 
             storage = AzureBlobStorageService(
                 connection_string=settings.azure_storage_connection_string,
@@ -93,7 +99,7 @@ class HealthCheckService:
             )
 
         try:
-            from app.core.azure_search import AzureSearchService
+            from app.azure.search import AzureSearchService
 
             search = AzureSearchService(
                 endpoint=settings.azure_search_endpoint,
@@ -133,7 +139,7 @@ class HealthCheckService:
             )
 
         try:
-            from app.core.azure_openai import AzureOpenAIService
+            from app.azure.openai import AzureOpenAIService
 
             openai_svc = AzureOpenAIService(
                 endpoint=settings.azure_openai_endpoint,

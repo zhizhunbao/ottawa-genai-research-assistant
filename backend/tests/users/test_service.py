@@ -1,8 +1,9 @@
 """
-用户服务单元测试
+User Service Tests
 
-遵循 dev-tdd_workflow skill 的测试模式。
-使用 Arrange-Act-Assert 结构。
+Unit tests for user registration, auth, and profile logic.
+
+@template T2 backend/tests/test_service.py — Service Layer Mocking Pattern
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch

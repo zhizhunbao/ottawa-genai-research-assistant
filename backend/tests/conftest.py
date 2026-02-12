@@ -1,7 +1,9 @@
 """
-Pytest 配置和共享 Fixtures
+Global Pytest Configuration
 
-遵循 dev-tdd_workflow skill 的测试模式。
+Global fixtures for database sessions, app clients, and mock services.
+
+@template T0 backend/tests/conftest.py — Global Test Fixtures
 """
 
 from collections.abc import AsyncGenerator
@@ -16,7 +18,7 @@ from app.core.dependencies import get_search_service_optional
 from app.main import app
 
 if TYPE_CHECKING:
-    from app.core.azure_search import AzureSearchService
+    from app.azure.search import AzureSearchService
 
 
 # 测试数据库引擎

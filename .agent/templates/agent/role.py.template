@@ -1,0 +1,70 @@
+from abc import ABC, abstractmethod
+from typing import Optional, Any, Union
+from pydantic import BaseModel, Field
+
+# 假设项目中存在统一的消息模型
+# from app.agent.schema import Message
+
+class BaseRole(ABC):
+    """
+    C1. Agent 角色基类.
+    出处: MetaGPT (Role-playing architecture)
+    
+    核心模式: Observe -> Think -> Act (基于状态机的循环)
+    """
+    def __init__(
+        self, 
+        name: str = "Assistant", 
+        profile: str = "A helpful AI assistant",
+        goal: str = "Help user solve problems",
+        constraints: str = "Objective and concise"
+    ):
+        self.name = name
+        self.profile = profile
+        self.goal = goal
+        self.constraints = constraints
+        self._actions = []
+        self._todo = None
+        self._rc = {"state": -1, "watch": set(), "news": [], "memory": []}
+
+    def set_actions(self, actions: list):
+        """为角色注入动作集."""
+        self._actions = actions
+        self._rc["state"] = 0
+
+    @abstractmethod
+    async def think(self) -> bool:
+        """选择接下来的最优 Action."""
+        pass
+
+    @abstractmethod
+    async def act(self) -> Any:
+        """执行当前选定的 Action."""
+        pass
+
+    @abstractmethod
+    async def react(self) -> Any:
+        """对观察到的消息做出反应."""
+        pass
+
+    async def run(self, with_message: Optional[Any] = None) -> Any:
+        """
+        核心运行循环.
+        Observe -> Think -> Act
+        """
+        # 1. Observe (将新消息存入记忆)
+        if with_message:
+            self._rc["memory"].append(with_message)
+        
+        # 2. Think (Loop 开启)
+        if await self.think():
+            # 3. Act
+            return await self.act()
+        
+        return None
+
+    def get_memories(self, k: int = 0) -> list:
+        """获取最近 K 条记忆."""
+        if k == 0:
+            return self._rc["memory"]
+        return self._rc["memory"][-k:]

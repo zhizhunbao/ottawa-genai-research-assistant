@@ -1,8 +1,9 @@
 """
-文档服务单元测试
+Document Service Tests
 
-遵循 dev-tdd_workflow skill 的测试模式。
-测试文档的业务逻辑，模拟数据库和存储。
+Unit tests for document upload, processing status, and metadata service.
+
+@template T2 backend/tests/test_service.py — Service Logic Pattern
 """
 
 from unittest.mock import AsyncMock

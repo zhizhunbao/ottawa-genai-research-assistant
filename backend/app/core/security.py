@@ -1,10 +1,10 @@
 """
-安全模块
+Security Module
 
-提供认证、授权和密码处理功能。
-遵循 dev-security_review skill 规范。
-遵循 dev-tdd_workflow skill 规范。
-遵循 dev-libs_compatibility skill 规范（bcrypt 直接使用方案）。
+Provides authentication, authorization, and password hashing functionality.
+
+@template A4 backend/core/security.py — JWT + bcrypt Authentication
+@reference full-stack-fastapi-template/backend/app/core/security.py
 """
 
 from datetime import datetime, timedelta

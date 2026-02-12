@@ -1,8 +1,9 @@
 """
-通用文档存储服务集成测试
+Document Store Integration Tests
 
-遵循 dev-tdd_workflow skill 的测试模式。
-使用真实测试数据库 (SQLite) 验证 CRUD 操作。
+Real database (SQLite) tests for CRUD operations on universal documents.
+
+@template T3 backend/tests/test_db.py — Database Integration Pattern
 """
 
 import pytest

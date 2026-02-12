@@ -1,8 +1,9 @@
 """
-聊天 Schemas
+Chat Module Schemas
 
-定义聊天会话和消息的请求/响应模型。
-对应 Sprint 4 US-204: Chat History Persistence。
+Pydantic models for chat sessions, messages, and history persistence.
+
+@template A8 backend/domain/schemas.py — Pydantic Models
 """
 
 

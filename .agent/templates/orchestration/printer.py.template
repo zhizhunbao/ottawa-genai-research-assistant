@@ -1,0 +1,55 @@
+import json
+from enum import Enum
+from typing import Any, Optional
+
+class PrintType(Enum):
+    """
+    流式输出类型.
+    出处: joyagent-jdgenie (Message Type Protocol)
+    """
+    INFO = "info"       # 进度描述
+    THOUGHT = "thought" # 思考过程
+    ACTION = "action"   # 工具调用开始
+    OBSERVE = "observe" # 工具结果返回
+    ANSWER = "answer"   # 最终回答片段
+    ERROR = "error"     # 错误信息
+
+class AgentPrinter:
+    """
+    G4. 流式输出打印机.
+    核心模式: 将非结构化的 Agent 过程转换为结构化的事件流 (Event Stream).
+    """
+    def __init__(self, output_queue: Optional[Any] = None):
+        self.queue = output_queue
+
+    async def _emit(self, msg_type: PrintType, content: Any, metadata: Optional[dict] = None):
+        payload = {
+            "type": msg_type.value,
+            "content": content,
+            "metadata": metadata or {}
+        }
+        # 如果有队列，则放入队列（用于 SSE 响应异步生成器）
+        if self.queue:
+            await self.queue.put(json.dumps(payload))
+        else:
+            # 否则降级为本地控制台日志
+            print(f"[{msg_type.value.upper()}] {content}")
+
+    async def info(self, msg: str):
+        await self._emit(PrintType.INFO, msg)
+
+    async def thought(self, msg: str):
+        await self._emit(PrintType.THOUGHT, msg)
+
+    async def action(self, tool_name: str, args: dict):
+        await self._emit(PrintType.ACTION, {"name": tool_name, "args": args})
+
+    async def observation(self, result: str):
+        await self._emit(PrintType.OBSERVE, result)
+
+    async def answer_chunk(self, chunk: str):
+        """流式推送最终回答的碎片."""
+        await self._emit(PrintType.ANSWER, chunk)
+
+    async def error(self, err: str):
+        await self._emit(PrintType.ERROR, err)

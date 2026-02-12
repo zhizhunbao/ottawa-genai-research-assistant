@@ -1,9 +1,9 @@
 /**
- * PageContainer - 页面内容容器组件
+ * PageContainer Component
  *
- * 提供统一的内容区域样式：最大宽度、内边距、背景等。
- * 可在各个 Page 组件中使用以保持一致性。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Standardized container for page content, managing maximum width, padding, and layout consistency.
+ *
+ * @template C1 frontend/shared/components/layout/PageContainer.tsx — Page Layout Wrapper
  */
 
 import { ReactNode } from 'react'

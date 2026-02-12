@@ -2,6 +2,8 @@
 LLM 评估 API 路由
 
 US-303: 提供评估触发和结果查询端点。
+
+@template A7 backend/domain/router.py — API Routes
 """
 
 from fastapi import APIRouter, Depends

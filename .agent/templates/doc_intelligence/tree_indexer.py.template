@@ -1,0 +1,72 @@
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any, Union
+from enum import IntEnum
+
+class TOCType(IntEnum):
+    """
+    目录提取状态.
+    """
+    HAS_TOC_WITH_PAGE = 1    # 有目录且有页码
+    HAS_TOC_NO_PAGE = 2      # 有目录但无页码 (需 LLM 推理页码)
+    NO_TOC = 3               # 无目录 (需 LLM 生成层级结构)
+
+@dataclass
+class TreeNode:
+    """
+    H2. 层级树索引节点.
+    出处: PageIndex (https://github.com/VectifyAI/PageIndex)
+    参考: .github/references/pageindex/pageindex/page_index.py
+    """
+    title: str
+    node_id: str                       # 唯一节点 ID ("0001", "0002", ...)
+    start_index: int                   # 起始物理页码 (0-indexed)
+    end_index: int                     # 结束物理页码
+    summary: str = ""                  # LLM 生成的节点摘要
+    text: str = ""                     # 节点对应的原始文本 (可选)
+    level: int = 1                     # 层级深度 (1-H1, 2-H2, ...)
+    nodes: List['TreeNode'] = field(default_factory=list)  # 子节点
+
+class TreeIndexer:
+    """
+    层级树索引构建器 (PageIndex 模式).
+    核心模式: 文档 → TOC 检测 → 层级树结构 → 页码映射.
+    出处: PageIndex (https://github.com/VectifyAI/PageIndex)
+    """
+    def __init__(self, model: Optional[str] = None):
+        self.model = model
+
+    async def build_index(
+        self, 
+        doc_path: str, 
+        toc_check_page_num: int = 10,
+        if_add_summary: bool = True,
+        if_add_text: bool = False
+    ) -> TreeNode:
+        """
+        主处理管道:
+        1. check_toc() — 检测文档前 N 页是否有目录页.
+        2. meta_processor() — 根据目录类型选择处理路径:
+           - process_toc_with_page_numbers()
+           - process_toc_no_page_numbers()
+           - process_no_toc() (LLM 直接生成结构)
+        3. verify_toc() — 并发验证标题在对应页面是否出现.
+        4. fix_incorrect_toc() — 自动修复或重试不正确的条目.
+        5. split_large_nodes() — 递归拆分过大节点以适配上下文窗口.
+        """
+        # 实现参考 pageindex/page_index.py
+        raise NotImplementedError
+
+    def _check_toc(self, pages: List[Any]) -> TOCType:
+        """检测文档是否包含目录及其类型."""
+        raise NotImplementedError
+
+    def _verify_titles_concurrently(self, node: TreeNode, pages: List[Any]):
+        """使用 ThreadPoolExecutor 并发验证目录项的真实性."""
+        raise NotImplementedError
+
+    def _process_large_node_recursively(self, node: TreeNode, max_pages: int = 20):
+        """
+        递归拆分超大节点。如果一个节点跨度超过 max_pages，则通过 LLM 或语义分段
+        将其拆分为更小的子节点，确保 Retrieval 时 Context 不会爆炸。
+        """
+        pass

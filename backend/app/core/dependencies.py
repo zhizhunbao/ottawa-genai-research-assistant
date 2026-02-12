@@ -1,9 +1,11 @@
 """
-依赖注入模块
+Dependency Injection Module
 
-定义可复用的 FastAPI 依赖项。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Defines reusable FastAPI dependencies for the application.
+
+@template A11 backend/core/dependencies.py — Annotated Type Alias DI
+@reference full-stack-fastapi-template/backend/app/api/deps.py
+@reference fastapi-best-practices §3 Dependencies
 """
 
 from __future__ import annotations
@@ -14,12 +16,12 @@ from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
-    from app.core.azure_openai import AzureOpenAIService
-    from app.core.azure_search import AzureSearchService
-    from app.core.azure_storage import AzureBlobStorageService
-    from app.core.document_pipeline import DocumentPipeline
+    from app.azure.openai import AzureOpenAIService
+    from app.azure.search import AzureSearchService
+    from app.azure.storage import AzureBlobStorageService
+    from app.doc_intel.pipeline import DocumentPipeline
 
-from app.core.azure_auth import (
+from app.azure.auth import (
     get_current_user_azure_ad,
     get_current_user_id_azure_ad,
     get_current_user_optional,
@@ -71,7 +73,7 @@ def get_blob_storage() -> AzureBlobStorageService:
     global _blob_storage_instance
 
     if _blob_storage_instance is None:
-        from app.core.azure_storage import AzureBlobStorageService
+        from app.azure.storage import AzureBlobStorageService
 
         if not settings.azure_storage_connection_string:
             raise ValueError(
@@ -108,7 +110,7 @@ def get_search_service() -> AzureSearchService:
     global _search_service_instance
 
     if _search_service_instance is None:
-        from app.core.azure_search import AzureSearchService
+        from app.azure.search import AzureSearchService
 
         if not settings.azure_search_endpoint or not settings.azure_search_api_key:
             raise ValueError(
@@ -163,7 +165,7 @@ def get_openai_service() -> AzureOpenAIService:
     global _openai_service_instance
 
     if _openai_service_instance is None:
-        from app.core.azure_openai import AzureOpenAIService
+        from app.azure.openai import AzureOpenAIService
 
         if not settings.azure_openai_endpoint or not settings.azure_openai_api_key:
             raise ValueError(
@@ -222,7 +224,7 @@ def get_document_pipeline() -> DocumentPipeline:
     global _document_pipeline_instance
 
     if _document_pipeline_instance is None:
-        from app.core.document_pipeline import DocumentPipeline
+        from app.doc_intel.pipeline import DocumentPipeline
 
         openai_service = get_openai_service()
         search_service = get_search_service()

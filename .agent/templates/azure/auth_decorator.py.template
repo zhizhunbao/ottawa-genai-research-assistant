@@ -1,0 +1,55 @@
+from functools import wraps
+from typing import Any, Callable, Dict, Optional
+import logging
+# 假设存在某种方式获取 Request 和 AuthHelper
+# from fastapi import Request, HTTPException
+
+logger = logging.getLogger(__name__)
+
+def authenticated(route_fn: Callable):
+    """
+    @authenticated 装饰器，解析 Authorization Header 到 auth_claims。
+    参考: azure-search-openai-demo (decorators.py)
+    """
+    @wraps(route_fn)
+    async def auth_handler(*args, **kwargs):
+        # 实际实现中需要从 context 或参数中提取 request
+        request = kwargs.get('request') 
+        if not request:
+            # 兼容底层调用
+            return await route_fn(*args, **kwargs)
+            
+        auth_helper = kwargs.get('auth_helper') # 假设通过依赖注入提供
+        if auth_helper:
+            try:
+                auth_claims = await auth_helper.get_auth_claims_if_enabled(request.headers)
+                kwargs['auth_claims'] = auth_claims
+            except Exception as e:
+                logger.error(f"Authentication failed: {e}")
+                # raise HTTPException(status_code=401, detail="Authentication failed")
+        
+        return await route_fn(*args, **kwargs)
+    return auth_handler
+
+class AuthenticationHelper:
+    """
+    Entra ID (Azure AD) 认证辅助类。
+    """
+    async def get_token_auth_header(self, headers: Dict[str, str]) -> Optional[str]:
+        """提取 Bearer Token"""
+        auth = headers.get("Authorization")
+        if auth and auth.startswith("Bearer "):
+            return auth[7:]
+        return None
+
+    async def validate_access_token(self, token: str) -> Dict[str, Any]:
+        """JWT 验证 (通过 Entra JWKS 端点)"""
+        # 实现逻辑建议使用 python-jose 或 PyJWT
+        pass
+
+    async def get_auth_claims_if_enabled(self, headers: Dict[str, str]) -> Dict[str, Any]:
+        """提取并验证 claims"""
+        token = await self.get_token_auth_header(headers)
+        if not token:
+            return {}
+        return await self.validate_access_token(token)

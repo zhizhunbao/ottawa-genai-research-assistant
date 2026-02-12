@@ -1,8 +1,9 @@
 /**
- * 认证状态管理 Store
+ * Authentication State Store
  *
- * 使用 Zustand 管理用户认证状态。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Manages user session, token persistence, and authentication status using Zustand.
+ *
+ * @template — Custom Implementation (Zustand)
  */
 
 import { create } from 'zustand'

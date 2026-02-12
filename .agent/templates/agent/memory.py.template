@@ -1,0 +1,46 @@
+from typing import Iterable, List, Optional
+from pydantic import BaseModel, Field
+
+# 假设的消息模型
+class Message(BaseModel):
+    role: str
+    content: str
+    sent_from: str = ""
+    cause_by: str = ""
+
+class Memory(BaseModel):
+    """
+    Agent 记忆管理.
+    提供短期记忆存储、检索和清洗功能.
+    """
+    storage: List[Message] = Field(default_factory=list)
+    index: dict = Field(default_factory=dict) # 用于快速检索 (如按 Action ID)
+
+    def add(self, message: Message):
+        """新增记忆."""
+        self.storage.append(message)
+        if message.cause_by:
+            self.index[message.cause_by] = message
+
+    def add_batch(self, messages: Iterable[Message]):
+        for msg in messages:
+            self.add(msg)
+
+    def get(self, k: int = 0) -> List[Message]:
+        """获取最近 K 条记忆."""
+        return self.storage[-k:]
+
+    def get_by_action(self, action_class: Any) -> Optional[Message]:
+        """获取特定 Action 产生的最新记忆."""
+        action_name = action_class.__name__ if isinstance(action_class, type) else action_class
+        return self.index.get(action_name)
+
+    def clear(self):
+        """清空记忆."""
+        self.storage = []
+        self.index = {}
+
+    def format_as_string(self, k: int = 0) -> str:
+        """将记忆格式化为字符串 (供 Prompt 使用)."""
+        msgs = self.get(k)
+        return "\n".join([f"{m.role}: {m.content}" for m in msgs])

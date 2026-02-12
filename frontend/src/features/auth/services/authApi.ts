@@ -1,8 +1,9 @@
 /**
- * 认证 API 服务
+ * Authentication API Service
  *
- * 处理用户认证相关的 API 调用。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Provides methods for user login, registration, and session management.
+ *
+ * @template — Custom Implementation
  */
 
 import { apiService } from '@/shared/services/apiService'

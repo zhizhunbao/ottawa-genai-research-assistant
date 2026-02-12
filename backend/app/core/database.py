@@ -1,9 +1,10 @@
 """
-数据库连接模块
+Database Connection Module
 
-提供异步数据库会话管理。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Provides asynchronous database session management.
+
+@template A5 backend/core/database.py — SQLAlchemy Async Engine + Session
+@reference full-stack-fastapi-template/backend/app/core/db.py
 """
 
 from collections.abc import AsyncGenerator

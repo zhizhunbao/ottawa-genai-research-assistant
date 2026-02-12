@@ -1,8 +1,9 @@
 /**
- * useHomeData - 首页数据 Hook
+ * Home Data Hook
  *
- * 提供首页所需的静态展示数据和业务逻辑。
- * 遵循 dev-frontend_patterns 规范。
+ * Provides static configuration and presentation data for the landing page.
+ *
+ * @template — Custom Implementation
  */
 
 import { HOME_FEATURES_CONFIG, HOME_STATS_CONFIG } from '../enums'

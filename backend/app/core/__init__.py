@@ -1,7 +1,8 @@
 """
-应用配置模块
+Core Infrastructure Module
 
-使用 pydantic-settings 管理环境变量和应用配置。
-遵循 dev-backend_patterns skill 规范。
-遵循 dev-tdd_workflow skill 规范。
+Provides foundational layers: configuration, database, security, exceptions, and Azure service wrappers.
+
+@template A1-A12 backend/core/ — Core Infrastructure Layer
+@reference full-stack-fastapi-template + fastapi-best-practices + azure-search-openai-demo
 """

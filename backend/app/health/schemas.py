@@ -1,4 +1,10 @@
-"""Health check response schemas."""
+"""
+Health Check Schemas
+
+Pydantic models for health status reporting.
+
+@template A8 backend/domain/schemas.py — Pydantic Models
+"""
 
 from enum import StrEnum
 

@@ -1,4 +1,7 @@
-"""Health check endpoint tests."""
+"""Health check endpoint tests.
+
+@template T1 backend/tests/test_routes.py — API Integration Pattern
+"""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -22,7 +25,7 @@ class TestHealthCheckService:
             mock_settings.azure_storage_connection_string = "test-connection"
             mock_settings.azure_storage_container_name = "test-container"
 
-            with patch("app.core.azure_storage.AzureBlobStorageService") as mock_storage:
+            with patch("app.azure.storage.AzureBlobStorageService") as mock_storage:
                 mock_instance = MagicMock()
                 mock_instance.list_files = AsyncMock(return_value=[])
                 mock_storage.return_value = mock_instance
@@ -51,7 +54,7 @@ class TestHealthCheckService:
             mock_settings.azure_storage_connection_string = "test-connection"
             mock_settings.azure_storage_container_name = "test-container"
 
-            with patch("app.core.azure_storage.AzureBlobStorageService") as mock_storage:
+            with patch("app.azure.storage.AzureBlobStorageService") as mock_storage:
                 mock_storage.side_effect = Exception("Connection failed")
 
                 result = await service.check_storage()
@@ -67,7 +70,7 @@ class TestHealthCheckService:
             mock_settings.azure_search_api_key = "test-key"
             mock_settings.azure_search_index_name = "test-index"
 
-            with patch("app.core.azure_search.AzureSearchService") as mock_search:
+            with patch("app.azure.search.AzureSearchService") as mock_search:
                 mock_instance = MagicMock()
                 mock_instance.get_document_count = AsyncMock(return_value=0)
                 mock_search.return_value = mock_instance
@@ -98,7 +101,7 @@ class TestHealthCheckService:
             mock_settings.azure_openai_chat_deployment = "gpt-4o-mini"
             mock_settings.azure_openai_embedding_deployment = "text-embedding-ada-002"
 
-            with patch("app.core.azure_openai.AzureOpenAIService") as mock_openai:
+            with patch("app.azure.openai.AzureOpenAIService") as mock_openai:
                 mock_instance = MagicMock()
                 mock_instance.create_embedding = AsyncMock(return_value=[0.0] * 1536)
                 mock_openai.return_value = mock_instance
@@ -129,7 +132,7 @@ class TestHealthCheckService:
             mock_settings.azure_openai_chat_deployment = "gpt-4o-mini"
             mock_settings.azure_openai_embedding_deployment = "text-embedding-ada-002"
 
-            with patch("app.core.azure_openai.AzureOpenAIService") as mock_openai:
+            with patch("app.azure.openai.AzureOpenAIService") as mock_openai:
                 mock_instance = MagicMock()
                 mock_instance.create_embedding = AsyncMock(return_value=[0.0] * 512)
                 mock_openai.return_value = mock_instance

@@ -1,0 +1,24 @@
+import { AxiosError } from 'axios';
+// import { toast } from '@/components/ui/use-toast';
+
+export function handleServerError(error: unknown) {
+  let errMsg = 'Something went wrong!';
+
+  if (error instanceof AxiosError) {
+    // 适配后端 JSend 风格或标准 FastAPI 风格响应
+    errMsg = error.response?.data?.message || error.response?.data?.detail || error.message;
+  } else if (error instanceof Error) {
+    errMsg = error.message;
+  }
+
+  console.error('[ServerError]', error);
+  
+  // 触发全局 Toast
+  // toast({
+  //   title: 'Error',
+  //   description: errMsg,
+  //   variant: 'destructive',
+  // });
+  
+  return errMsg;
+}

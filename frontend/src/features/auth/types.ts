@@ -1,8 +1,9 @@
 /**
- * 认证功能类型定义
+ * Authentication Type Definitions
  *
- * 定义用户认证相关的所有 TypeScript 类型。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Comprehensive TypeScript interfaces and types for the auth feature.
+ *
+ * @template — Custom Implementation
  */
 
 // ============================================================================

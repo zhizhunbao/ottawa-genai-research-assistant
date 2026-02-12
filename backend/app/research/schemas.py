@@ -1,17 +1,43 @@
 """
-研究 Schemas
+Research Module Schemas
 
-定义研究/RAG 相关的请求/响应模型。
-遵循 dev-backend_patterns skill 规范。
-对应 US-301: Chart Visualization (添加图表数据支持)
+Pydantic models for research queries, RAG responses, and chart data visualization.
+
+@template A8 backend/domain/schemas.py — Pydantic Models
 """
 
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 from app.core.enums import ChatRole
-from app.research.chart_service import ChartData
+
+
+# ── Chart Schemas ─────────────────────────────────────────────────────
+
+
+class ChartType(str, Enum):
+    """图表类型"""
+
+    LINE = "line"
+    BAR = "bar"
+    PIE = "pie"
+
+
+class ChartData(BaseModel):
+    """图表数据结构"""
+
+    type: ChartType = Field(..., description="图表类型")
+    title: str | None = Field(None, description="图表标题")
+    x_key: str | None = Field(None, description="X 轴数据键名")
+    y_keys: list[str] | None = Field(None, description="Y 轴数据键名列表")
+    data: list[dict[str, Any]] = Field(default_factory=list, description="图表数据")
+    stacked: bool = Field(False, description="是否堆叠显示（仅柱状图）")
+
+
+# ── Search Schemas ────────────────────────────────────────────────────
 
 
 class SearchQuery(BaseModel):
@@ -39,6 +65,9 @@ class SearchResponse(BaseModel):
     query: str = Field(..., description="The original search query")
     results: list[SearchResult] = Field(default_factory=list, description="List of search results")
     total: int = Field(..., description="Total number of results found")
+
+
+# ── Chat Schemas ──────────────────────────────────────────────────────
 
 
 class ChatMessage(BaseModel):

@@ -1,0 +1,62 @@
+import * as React from 'react';
+
+// 假设项目中定义的类型
+// import { User } from '@/types/api';
+
+export enum ROLES {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+}
+
+export type RoleTypes = keyof typeof ROLES;
+
+// 基于策略的权限定义
+export const POLICIES = {
+  'item:delete': (user: { id: string, role: RoleTypes }, item: { owner_id: string }) => 
+    user.role === ROLES.ADMIN || item.owner_id === user.id,
+};
+
+export const useAuthorization = () => {
+  // 实际项目中应从 useUser Hook 获取当前用户信息
+  const user = { data: { role: ROLES.USER } }; 
+
+  const checkAccess = React.useCallback(
+    ({ allowedRoles }: { allowedRoles: RoleTypes[] }) => {
+      if (allowedRoles && allowedRoles.length > 0) {
+        return allowedRoles.includes(user.data.role as RoleTypes);
+      }
+      return true;
+    },
+    [user.data.role]
+  );
+
+  return { checkAccess, role: user.data.role };
+};
+
+type AuthorizationProps = {
+  forbiddenFallback?: React.ReactNode;
+  children: React.ReactNode;
+  allowedRoles?: RoleTypes[];
+  policyCheck?: boolean;
+};
+
+export const Authorization = ({
+  allowedRoles,
+  policyCheck,
+  children,
+  forbiddenFallback = null,
+}: AuthorizationProps) => {
+  const { checkAccess } = useAuthorization();
+
+  let canAccess = true;
+
+  if (allowedRoles) {
+    canAccess = checkAccess({ allowedRoles });
+  }
+
+  if (typeof policyCheck !== 'undefined') {
+    canAccess = canAccess && policyCheck;
+  }
+
+  return <>{canAccess ? children : forbiddenFallback}</>;
+};

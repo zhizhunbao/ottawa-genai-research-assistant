@@ -1,8 +1,9 @@
 /**
- * 文档 Hook
+ * Document Management Hook
  *
- * 提供文档管理相关的业务逻辑。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Provides business logic for document listing, uploading, and deletion within the research feature.
+ *
+ * @template — Custom Implementation
  */
 
 import { useState, useCallback } from 'react'

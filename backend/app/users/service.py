@@ -1,8 +1,9 @@
 """
-用户服务层
+User Service Layer
 
-包含用户相关的业务逻辑。
-遵循 dev-backend_patterns skill 的 Service 层模式。
+Handles user registration, authentication logic, and profile management.
+
+@template A10 backend/domain/service.py — Shared CRUD & Logic Layer
 """
 
 

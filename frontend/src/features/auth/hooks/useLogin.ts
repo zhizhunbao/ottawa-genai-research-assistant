@@ -1,9 +1,9 @@
 /**
- * 登录 Hook
+ * Login Business Logic Hook
  *
- * 提供登录页面的业务逻辑，包括表单验证、提交处理等。
- * 支持 Azure AD SSO 登录。
- * 遵循 dev-frontend_patterns skill 规范。
+ * Manages login form state, validation, and submission for both password and SSO flows.
+ *
+ * @template — Custom Implementation
  */
 
 import { useState, useCallback } from 'react'
