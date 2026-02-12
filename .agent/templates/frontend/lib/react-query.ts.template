@@ -28,3 +28,4 @@ export type MutationConfig<MutationFnType extends (...args: any) => Promise<any>
     Error, 
     Parameters<MutationFnType>[0]
   >;
+

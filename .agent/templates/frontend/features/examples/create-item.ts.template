@@ -1,0 +1,41 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
+
+import { api } from '@/lib/api-client';
+import { MutationConfig } from '@/lib/react-query';
+import { get{{FeatureName}}sQueryOptions } from './get-{{feature_name}}s';
+
+export const create{{FeatureName}}InputSchema = z.object({
+  title: z.string().min(1, 'Required'),
+  description: z.string().min(1, 'Required'),
+  data: z.record(z.any()).optional(),
+});
+
+export type Create{{FeatureName}}Input = z.infer<typeof create{{FeatureName}}InputSchema>;
+
+export const create{{FeatureName}} = ({ data }: { data: Create{{FeatureName}}Input }): Promise<any> => {
+  return api.post(`/{{feature_name}}s`, data);
+};
+
+type UseCreate{{FeatureName}}Options = {
+  mutationConfig?: MutationConfig<typeof create{{FeatureName}}>;
+};
+
+export const useCreate{{FeatureName}} = ({ mutationConfig }: UseCreate{{FeatureName}}Options = {}) => {
+  const queryClient = useQueryClient();
+
+  const { onSuccess, ...restConfig } = mutationConfig || {};
+
+  return useMutation({
+    onSuccess: (...args) => {
+      // 自动使列表缓存失效 (出处: bulletproof-react)
+      queryClient.invalidateQueries({
+        queryKey: get{{FeatureName}}sQueryOptions().queryKey,
+      });
+      onSuccess?.(...args);
+    },
+    ...restConfig,
+    mutationFn: create{{FeatureName}},
+  });
+};
+

@@ -1,9 +1,42 @@
 # 🌐 B. Frontend Templates (React / TypeScript)
 
-> **层级**: Frontend | **模板数**: 18
+> **层级**: Frontend | **模板数**: 22 | **已抽取**: 15 (含 data-table 6个)
 > **主要参考**: [bulletproof-react](../../.github/references/bulletproof-react/) + [shadcn-admin](../../.github/references/shadcn-admin/) + [JDGenie UI](../../.github/references/joyagent-jdgenie/ui/)
 
 基于 bulletproof-react 的 **Feature-First** 结构。
+
+## 📁 已抽取的模板
+
+以下模板已抽取到 [`.agent/templates/frontend/`](../../.agent/templates/frontend/)，可直接使用：
+
+| 模板 | 路径 | 状态 |
+|------|------|------|
+| DataTable 套件 (6个) | `data-table/*.tsx.template` | ✅ 可用 |
+| ConfirmDialog | `confirm-dialog.tsx.template` | ✅ 可用 |
+| PasswordInput | `password-input.tsx.template` | ✅ 可用 |
+| LongText | `long-text.tsx.template` | ✅ 可用 |
+| ThemeProvider | `context/theme-provider.tsx.template` | ✅ 可用 |
+| ThemeSwitch | `theme-switch.tsx.template` | ✅ 可用 |
+| useDialogState | `hooks/use-dialog-state.ts.template` | ✅ 可用 |
+| **useTypewriter** | `hooks/use-typewriter.ts.template` | ✅ 可用 |
+| **ErrorPages** | `feature/errors/index.tsx.template` | ✅ 可用 |
+| **handleServerError** | `lib/handle-server-error.ts.template` | ✅ 可用 |
+
+### 使用方式
+
+```bash
+# 1. 复制模板
+cp .agent/templates/frontend/data-table/*.template frontend/src/shared/components/data-table/
+
+# 2. 移除 .template 后缀并替换路径别名
+cd frontend/src/shared/components/data-table/
+for f in *.template; do mv "$f" "${f%.template}"; done
+sed -i 's/{{alias}}/@/g' *.tsx
+
+# 3. 添加 i18n (根据 @i18n 注释)
+```
+
+或直接告诉 Claude: `"把 data-table 模板复制到项目中"`
 
 ---
 
@@ -282,6 +315,7 @@ function NavUser({ user }: { user: { name: string; email: string; avatar: string
 ### B10. `components/data-table/data-table.tsx.template` — DataTable 组件套件
 
 > **来源**: [`shadcn-admin/src/components/data-table/`](../../.github/references/shadcn-admin/src/components/data-table/)
+> **已抽取**: ✅ [`.agent/templates/frontend/data-table/`](../../.agent/templates/frontend/data-table/)
 
 包含 **7 个子文件**:
 
@@ -401,11 +435,139 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
 
 ---
 
+## UI Component Templates (UI 组件层)
+
+### B19. `components/confirm-dialog.tsx.template` — 确认弹窗
+
+> **来源**: [`shadcn-admin/src/components/confirm-dialog.tsx`](../../.github/references/shadcn-admin/src/components/confirm-dialog.tsx)
+> **已抽取**: ✅ [`.agent/templates/frontend/confirm-dialog.tsx.template`](../../.agent/templates/frontend/confirm-dialog.tsx.template)
+
+```tsx
+// 核心模式: 通用确认弹窗，支持危险操作样式
+type ConfirmDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: React.ReactNode;
+  desc: React.JSX.Element | string;
+  destructive?: boolean;      // 危险操作（红色按钮）
+  handleConfirm: () => void;
+  isLoading?: boolean;
+  cancelBtnText?: string;
+  confirmText?: React.ReactNode;
+};
+
+// 使用示例
+<ConfirmDialog
+  open={isOpen}
+  onOpenChange={setIsOpen}
+  title="Delete Item"
+  desc="Are you sure? This action cannot be undone."
+  destructive
+  handleConfirm={handleDelete}
+  isLoading={isDeleting}
+/>
+```
+
+**关键特性**:
+- `destructive` 模式：红色确认按钮
+- `isLoading` 状态：禁用按钮 + 加载指示
+- 自定义按钮文本
+
+---
+
+### B20. `components/password-input.tsx.template` — 密码输入框
+
+> **来源**: [`shadcn-admin/src/components/password-input.tsx`](../../.github/references/shadcn-admin/src/components/password-input.tsx)
+> **已抽取**: ✅ [`.agent/templates/frontend/password-input.tsx.template`](../../.agent/templates/frontend/password-input.tsx.template)
+
+```tsx
+// 核心模式: 带显示/隐藏切换的密码输入框
+export function PasswordInput({ className, disabled, ref, ...props }) {
+  const [showPassword, setShowPassword] = useState(false);
+  return (
+    <div className="relative">
+      <input type={showPassword ? 'text' : 'password'} {...props} />
+      <Button onClick={() => setShowPassword(prev => !prev)}>
+        {showPassword ? <Eye /> : <EyeOff />}
+      </Button>
+    </div>
+  );
+}
+```
+
+---
+
+### B21. `components/long-text.tsx.template` — 长文本截断
+
+> **来源**: [`shadcn-admin/src/components/long-text.tsx`](../../.github/references/shadcn-admin/src/components/long-text.tsx)
+> **已抽取**: ✅ [`.agent/templates/frontend/long-text.tsx.template`](../../.agent/templates/frontend/long-text.tsx.template)
+
+```tsx
+// 核心模式: 自动检测溢出，桌面 Tooltip / 移动端 Popover
+export function LongText({ children, className }) {
+  const [isOverflown, setIsOverflown] = useState(false);
+  // 检测文本是否溢出
+  if (!isOverflown) return <div className="truncate">{children}</div>;
+  return (
+    <>
+      {/* Desktop: Tooltip */}
+      <div className="hidden sm:block">
+        <Tooltip><TooltipTrigger>{children}</TooltipTrigger></Tooltip>
+      </div>
+      {/* Mobile: Popover */}
+      <div className="sm:hidden">
+        <Popover><PopoverTrigger>{children}</PopoverTrigger></Popover>
+      </div>
+    </>
+  );
+}
+```
+
+**关键特性**:
+- 自动检测文本溢出
+- 响应式：桌面 Tooltip / 移动端 Popover
+- 使用 `queueMicrotask` 避免渲染闪烁
+
+---
+
+### B22. `components/theme-switch.tsx.template` — 主题切换按钮
+
+> **来源**: [`shadcn-admin/src/components/theme-switch.tsx`](../../.github/references/shadcn-admin/src/components/theme-switch.tsx)
+> **已抽取**: ✅ [`.agent/templates/frontend/theme-switch.tsx.template`](../../.agent/templates/frontend/theme-switch.tsx.template)
+
+```tsx
+// 核心模式: 下拉菜单切换 light/dark/system
+export function ThemeSwitch() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Sun className="dark:hidden" />
+        <Moon className="hidden dark:block" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+**关键特性**:
+- 图标动画：Sun ↔ Moon 旋转过渡
+- 配合 `ThemeProvider` 使用
+- 自动更新 `theme-color` meta 标签
+
+---
+
 ## Context Provider Templates (全局上下文层)
 
 ### B12. `context/theme-provider.tsx.template` — 主题切换
 
 > **来源**: [`shadcn-admin/src/context/theme-provider.tsx`](../../.github/references/shadcn-admin/src/context/theme-provider.tsx)
+> **已抽取**: ✅ [`.agent/templates/frontend/context/theme-provider.tsx.template`](../../.agent/templates/frontend/context/theme-provider.tsx.template)
 
 ```tsx
 // 核心模式: dark/light/system 三模式 + Cookie 持久化
@@ -623,6 +785,7 @@ export const useAuthStore = create<AuthState>()((set) => {
 ### B16. `hooks/use-dialog-state.tsx.template` — Dialog 状态管理
 
 > **来源**: [`shadcn-admin/src/hooks/use-dialog-state.tsx`](../../.github/references/shadcn-admin/src/hooks/use-dialog-state.tsx)
+> **已抽取**: ✅ [`.agent/templates/frontend/hooks/use-dialog-state.ts.template`](../../.agent/templates/frontend/hooks/use-dialog-state.ts.template)
 
 ```typescript
 // 核心模式: 类型安全的 Dialog toggle hook
@@ -753,25 +916,31 @@ export function useTypeWriter(options?: { maxStepSeconds?: number }) {
 
 ## 📊 总览表
 
-| # | 模板 | 来源 | 类别 |
-|---|------|------|------|
-| B1 | `lib/api-client.ts` | bulletproof-react | Lib |
-| B2 | `lib/react-query.ts` | bulletproof-react | Lib |
-| B3 | `lib/authorization.tsx` | bulletproof-react | Lib |
-| B4 | `feature/api/get-items.ts` | bulletproof-react | Feature |
-| B5 | `feature/api/create-item.ts` | bulletproof-react | Feature |
-| B6 | `lib/handle-server-error.ts` | shadcn-admin | Lib |
-| B7 | `layouts/dashboard-layout.tsx` | bulletproof-react | Layout |
-| B8 | `layouts/auth-layout.tsx` | bulletproof-react | Layout |
-| B9 | `components/layout/sidebar-nav.tsx` | shadcn-admin | Layout |
-| B10 | `components/data-table/` | shadcn-admin | DataTable |
-| B11 | `hooks/use-table-url-state.ts` | shadcn-admin | Hook |
-| B12 | `context/theme-provider.tsx` | shadcn-admin | Context |
-| B13 | `context/search-provider.tsx` | shadcn-admin | Context |
-| B14 | `features/errors/error-pages.tsx` | shadcn-admin + bulletproof-react | Error |
-| B15 | `stores/auth-store.ts` | shadcn-admin | Store |
-| B16 | `hooks/use-dialog-state.tsx` | shadcn-admin | Hook |
-| B17 | `components/seo/head.tsx` | bulletproof-react | SEO |
-| B18 | `hooks/use-typewriter.ts` | JDGenie UI | AI Chat |
+| # | 模板 | 来源 | 类别 | 已抽取 |
+|---|------|------|------|--------|
+| B1 | `lib/api-client.ts` | bulletproof-react | Lib | ⏳ |
+| B2 | `lib/react-query.ts` | bulletproof-react | Lib | ⏳ |
+| B3 | `lib/authorization.tsx` | bulletproof-react | Lib | ⏳ |
+| B4 | `feature/api/get-items.ts` | bulletproof-react | Feature | ⏳ |
+| B5 | `feature/api/create-item.ts` | bulletproof-react | Feature | ⏳ |
+| B6 | `lib/handle-server-error.ts` | shadcn-admin | Lib | ✅ |
+| B7 | `layouts/dashboard-layout.tsx` | bulletproof-react | Layout | ⏳ |
+| B8 | `layouts/auth-layout.tsx` | bulletproof-react | Layout | ⏳ |
+| B9 | `components/layout/sidebar-nav.tsx` | shadcn-admin | Layout | ⏳ |
+| B10 | `components/data-table/` | shadcn-admin | DataTable | ✅ |
+| B11 | `hooks/use-table-url-state.ts` | shadcn-admin | Hook | ⏳ |
+| B12 | `context/theme-provider.tsx` | shadcn-admin | Context | ✅ |
+| B13 | `context/search-provider.tsx` | shadcn-admin | Context | ⏳ |
+| B14 | `features/errors/error-pages.tsx` | shadcn-admin + bulletproof-react | Error | ✅ |
+| B15 | `stores/auth-store.ts` | shadcn-admin | Store | ⏳ |
+| B16 | `hooks/use-dialog-state.tsx` | shadcn-admin | Hook | ✅ |
+| B17 | `components/seo/head.tsx` | bulletproof-react | SEO | ⏳ |
+| B18 | `hooks/use-typewriter.ts` | JDGenie UI | AI Chat | ✅ |
+| B19 | `components/confirm-dialog.tsx` | shadcn-admin | UI | ✅ |
+| B20 | `components/password-input.tsx` | shadcn-admin | UI | ✅ |
+| B21 | `components/long-text.tsx` | shadcn-admin | UI | ✅ |
+| B22 | `components/theme-switch.tsx` | shadcn-admin | UI | ✅ |
+
+**图例**: ✅ 已抽取到 `.agent/templates/frontend/` | ⏳ 仅参考文档
 
 ---

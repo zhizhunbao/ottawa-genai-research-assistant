@@ -1,9 +1,9 @@
 /**
- * Registration Business Logic Hook
+ * useRegister - Registration form state, password validation, and account creation
  *
- * Handles account creation form state, password validation, and navigation.
- *
- * @template — Custom Implementation
+ * @module features/auth/hooks
+ * @templateRef none
+ * @reference none
  */
 
 import { useState, useCallback } from 'react'

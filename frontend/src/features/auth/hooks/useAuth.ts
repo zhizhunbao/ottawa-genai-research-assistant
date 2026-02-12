@@ -1,9 +1,9 @@
 /**
- * Authentication Hook
+ * useAuth - Authentication state management with login, register, and logout flows
  *
- * Custom hook for managing user authentication state and business logic.
- *
- * @template — Custom Implementation
+ * @module features/auth/hooks
+ * @templateRef none
+ * @reference none
  */
 
 import { useState, useCallback } from 'react'

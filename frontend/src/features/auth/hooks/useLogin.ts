@@ -1,9 +1,9 @@
 /**
- * Login Business Logic Hook
+ * useLogin - Login form state, validation, and submission for password and Azure AD SSO
  *
- * Manages login form state, validation, and submission for both password and SSO flows.
- *
- * @template — Custom Implementation
+ * @module features/auth/hooks
+ * @templateRef none
+ * @reference none
  */
 
 import { useState, useCallback } from 'react'

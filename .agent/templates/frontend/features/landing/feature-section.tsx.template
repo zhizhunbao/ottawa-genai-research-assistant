@@ -1,0 +1,93 @@
+/**
+ * Feature Section
+ *
+ * Grid of feature cards with icons, titles, and descriptions.
+ *
+ * @source taxonomy (shadcn official)
+ * @i18n Replace all text content with t() calls
+ *
+ * @example
+ * const features = [
+ *   { icon: Zap, title: 'Fast', description: 'Lightning fast performance' },
+ *   { icon: Shield, title: 'Secure', description: 'Enterprise-grade security' },
+ * ]
+ * <FeatureSection
+ *   headline="Features"
+ *   description="Everything you need to build modern apps."
+ *   features={features}
+ * />
+ */
+import type { LucideIcon } from 'lucide-react'
+import { cn } from '{{alias}}/lib/utils'
+
+interface Feature {
+  icon: LucideIcon | React.ComponentType<{ className?: string }>
+  title: string
+  description: string
+}
+
+interface FeatureSectionProps {
+  headline: string
+  description: string
+  features: Feature[]
+  footer?: string
+  className?: string
+}
+
+export function FeatureSection({
+  headline,
+  description,
+  features,
+  footer,
+  className,
+}: FeatureSectionProps) {
+  return (
+    <section
+      id="features"
+      className={cn(
+        'container space-y-6 bg-slate-50 py-8 dark:bg-transparent md:py-12 lg:py-24',
+        className
+      )}
+    >
+      <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
+        <h2 className="font-heading text-3xl leading-[1.1] sm:text-3xl md:text-6xl">
+          {headline}
+        </h2>
+        <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
+          {description}
+        </p>
+      </div>
+
+      <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
+        {features.map((feature, index) => {
+          const Icon = feature.icon
+          return (
+            <div
+              key={index}
+              className="relative overflow-hidden rounded-lg border bg-background p-2"
+            >
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <Icon className="h-12 w-12" />
+                <div className="space-y-2">
+                  <h3 className="font-bold">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {footer && (
+        <div className="mx-auto text-center md:max-w-[58rem]">
+          <p className="leading-normal text-muted-foreground sm:text-lg sm:leading-7">
+            {footer}
+          </p>
+        </div>
+      )}
+    </section>
+  )
+}
+

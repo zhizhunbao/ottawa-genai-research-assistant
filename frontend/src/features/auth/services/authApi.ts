@@ -1,9 +1,9 @@
 /**
- * Authentication API Service
+ * authApi - REST API client for login, registration, and session management
  *
- * Provides methods for user login, registration, and session management.
- *
- * @template — Custom Implementation
+ * @module features/auth/services
+ * @templateRef none
+ * @reference none
  */
 
 import { apiService } from '@/shared/services/apiService'

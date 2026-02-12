@@ -1,9 +1,9 @@
 /**
- * AuthDialog Provider
+ * AuthDialogProvider - Connects global auth dialog state to the AuthDialog component
  *
- * Connects the global AuthDialog state to the UI component.
- *
- * @template — Custom Implementation
+ * @module features/auth
+ * @templateRef none
+ * @reference none
  */
 
 import { AuthDialog } from './AuthDialog'

@@ -1,0 +1,98 @@
+/**
+ * Hero Section
+ *
+ * Landing page hero with headline, description, and CTA buttons.
+ *
+ * @source taxonomy (shadcn official)
+ * @router Adapt Link component for your router
+ * @i18n Replace all text content with t() calls
+ *
+ * @example
+ * <HeroSection
+ *   badge="New Release"
+ *   headline="Build your next great idea"
+ *   description="A modern platform for building amazing products."
+ *   primaryCta={{ label: 'Get Started', href: '/register' }}
+ *   secondaryCta={{ label: 'Learn More', href: '/docs' }}
+ * />
+ */
+import { Link } from 'react-router-dom' // Change to your router
+import { cn } from '{{alias}}/lib/utils'
+import { buttonVariants } from '{{alias}}/shared/components/ui/button'
+
+interface HeroSectionProps {
+  badge?: string
+  badgeHref?: string
+  headline: string
+  description: string
+  primaryCta: {
+    label: string
+    href: string
+  }
+  secondaryCta?: {
+    label: string
+    href: string
+    external?: boolean
+  }
+  className?: string
+}
+
+export function HeroSection({
+  badge,
+  badgeHref = '#',
+  headline,
+  description,
+  primaryCta,
+  secondaryCta,
+  className,
+}: HeroSectionProps) {
+  return (
+    <section className={cn('space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32', className)}>
+      <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
+        {badge && (
+          <Link
+            to={badgeHref}
+            className="rounded-2xl bg-muted px-4 py-1.5 text-sm font-medium"
+          >
+            {badge}
+          </Link>
+        )}
+
+        <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl lg:text-7xl">
+          {headline}
+        </h1>
+
+        <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
+          {description}
+        </p>
+
+        <div className="space-x-4">
+          <Link to={primaryCta.href} className={cn(buttonVariants({ size: 'lg' }))}>
+            {primaryCta.label}
+          </Link>
+
+          {secondaryCta && (
+            secondaryCta.external ? (
+              <a
+                href={secondaryCta.href}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+              >
+                {secondaryCta.label}
+              </a>
+            ) : (
+              <Link
+                to={secondaryCta.href}
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+              >
+                {secondaryCta.label}
+              </Link>
+            )
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+

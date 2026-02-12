@@ -1,8 +1,9 @@
 /**
- * MSAL Authentication Provider
+ * MsalAuthProvider - Azure AD authentication provider with state sync and token management
  *
- * Wraps the application with MSAL authentication context.
- * Provides Azure AD authentication functionality.
+ * @module features/auth
+ * @templateRef none
+ * @reference none
  */
 
 /* eslint-disable react-refresh/only-export-components */

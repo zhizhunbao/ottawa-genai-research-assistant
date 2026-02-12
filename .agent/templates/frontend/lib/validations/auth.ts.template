@@ -1,0 +1,38 @@
+/**
+ * Auth Validations
+ *
+ * Zod schemas for authentication-related form validation.
+ *
+ * @source taxonomy (shadcn official)
+ *
+ * @example
+ * import { userAuthSchema } from '@/lib/validations/auth'
+ * const result = userAuthSchema.safeParse({ email: 'user@example.com' })
+ */
+import * as z from 'zod'
+
+export const userAuthSchema = z.object({
+  email: z.string().email(),
+})
+
+export const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+  password: z
+    .string()
+    .min(1, 'Please enter your password')
+    .min(7, 'Password must be at least 7 characters long'),
+})
+
+export const signUpSchema = z
+  .object({
+    email: z.string().email('Please enter a valid email'),
+    password: z
+      .string()
+      .min(1, 'Please enter your password')
+      .min(7, 'Password must be at least 7 characters long'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match.",
+    path: ['confirmPassword'],
+  })

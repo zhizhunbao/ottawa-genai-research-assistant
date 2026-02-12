@@ -1,9 +1,9 @@
 /**
- * AuthDialog State Management Hook
+ * useAuthDialog - Global open/close state for the authentication modal
  *
- * Manages the global open/close state of the authentication modal.
- *
- * @template — Custom Implementation (Zustand)
+ * @module features/auth/hooks
+ * @templateRef none
+ * @reference none
  */
 
 import { create } from 'zustand'

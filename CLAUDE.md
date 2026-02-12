@@ -65,6 +65,10 @@ npm run lint              # Lint
 npm run type-check        # Type check
 ```
 
+## Development Philosophy
+
+- **能拿来用就坚决不自己写** - 优先使用成熟的库、框架和现有代码，避免重复造轮子
+
 ## Code Standards
 
 ### Python (Backend)

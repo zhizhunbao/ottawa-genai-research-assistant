@@ -60,3 +60,4 @@ export const Authorization = ({
 
   return <>{canAccess ? children : forbiddenFallback}</>;
 };
+

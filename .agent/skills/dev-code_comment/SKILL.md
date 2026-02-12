@@ -1,262 +1,446 @@
 ---
 name: code-comment
-description: 中英文双语代码注释规范。Use when (1) 为代码添加注释, (2) 需要中英双语文档, (3) 规范化代码注释格式, (4) 学习类项目代码注释
+description: English code comment standards for Python and TypeScript. Use when (1) adding comments to code, (2) standardizing comment format, (3) TypeScript/TSX file header comments, (4) Python module docstrings
 ---
 
-# Code Comment (Bilingual)
+# Code Comment Standards
 
 ## Objectives
 
-- Add bilingual (Chinese & English) comments to code
-- Follow consistent comment formatting rules
+- Add clear, English-only comments to code
+- Follow consistent comment formatting rules per language (Python / TypeScript)
 - Explain complex logic with reasons
 - Maintain clear code documentation
 
-## Comment Rules Overview
+## Shared Principles (All Languages)
 
-| Location | Language | Format |
-|----------|----------|--------|
-| File-level docstring | English only | Standard docstring |
-| Function docstring | Chinese + English | Two-line format: Chinese first line, English second line |
-| Inline comments | Chinese + English | Chinese line, then English line, above code |
-| Code spacing | - | Blank line between code blocks |
+| Principle           | Rule                                                                       |
+| ------------------- | -------------------------------------------------------------------------- |
+| Language            | English only                                                               |
+| File header         | Name + description + metadata tags                                         |
+| Header content      | Describe **what** it is, NOT **how** it's implemented                      |
+| Forbidden in header | ❌ User Story IDs (e.g. `US-107`) — belong in Git commits                  |
+| Forbidden in header | ❌ Implementation details (e.g. "uses shadcn/ui") — self-evident from code |
+| `@module` tag       | ✅ Required — matches directory path (e.g. `features/chat`, `core/config`) |
+| `@template` tag     | ✅ Required — template from `.agent/templates/`, or `none` if no template  |
+| `@reference` tag    | ✅ Required — external project or best practice source, or `none`          |
+| Function docs       | Concise English docstring                                                  |
+| Inline comments     | English, placed ABOVE code, not beside it                                  |
+| Code spacing        | Blank line between code blocks                                             |
 
-## 1. File-level Docstring (English Only)
+---
+
+## Part A: Python
+
+### 1. File-level Docstring
+
+Every `.py` file MUST have a module docstring at the top, before imports.
+
+**Standard format:**
 
 ```python
 """
-Lab 2: Q-Learning Agent for Cliff Walking
-Student ID: 041107730
-Implements Q-Learning using Bellman equation: Q(s,a) = r + γ * max Q(s',a')
-Modified from Hybrid Activity 1 to solve the Cliff Walking problem.
+ModuleName - Short description of what this module does
+
+@module app/chat/service
+@template A10 backend/domain/service.py — Generic CRUD Service Layer
+@reference none
 """
 ```
 
-## 2. Function Docstring (Two-Line Bilingual Format)
+**Field rules:**
 
-Two lines with Chinese first line, English second line:
+| Field        | Required | Description                                                     |
+| ------------ | -------- | --------------------------------------------------------------- |
+| Line 1       | ✅       | `ModuleName - Brief description`                                |
+| `@module`    | ✅       | Python module path matching directory (e.g. `app/chat/service`) |
+| `@template`  | ✅       | Template ID + path, or `none` if no template applies            |
+| `@reference` | ✅       | External reference project or best practice, or `none`          |
+
+### 2. File-level Docstring Examples
+
+**Service layer (with template):**
 
 ```python
-def train(env, episodes: int = 50, gamma: float = 0.9) -> list:
-    """训练Q-Learning智能体
-    Train Q-Learning agent"""
+"""
+ChatHistoryService - Manages persistence of chat sessions and messages
 
-def reset() -> tuple:
-    """重置环境到初始状态
-    Reset environment to initial state"""
+@module app/chat/service
+@template A10 backend/domain/service.py — Generic CRUD Service Layer
+@reference none
+"""
+```
+
+**Configuration module (with reference):**
+
+```python
+"""
+AppConfig - Manages environment variables and application settings using pydantic-settings
+
+@module app/core/config
+@template none
+@reference full-stack-fastapi-template/backend/app/core/config.py
+@reference fastapi-best-practices §1 Project Structure
+"""
+```
+
+**Azure integration (with template + reference):**
+
+```python
+"""
+AzureOpenAIService - Provides LLM chat completion, streaming, and embedding generation
+
+@module app/azure/openai
+@template F3 backend/azure/openai_error.py — OpenAI Adapter + Streaming Chat
+@reference azure-search-openai-demo/app/backend/approaches/
+"""
+```
+
+**Business-specific module (no template, no reference):**
+
+```python
+"""
+ChartDataExtractor - Extracts structured chart data from document content using LLM and regex fallback
+
+@module app/research/service
+@template none
+@reference none
+"""
+```
+
+**Route module:**
+
+```python
+"""
+ChatRoutes - RESTful endpoints for chat session CRUD and message operations
+
+@module app/chat/routes
+@template A8 backend/domain/routes.py — FastAPI Router with Depends
+@reference none
+"""
+```
+
+**Schema module:**
+
+```python
+"""
+ChatSchemas - Pydantic schemas for request/response validation in chat endpoints
+
+@module app/chat/schemas
+@template A9 backend/domain/schemas.py — Pydantic Request/Response Models
+@reference none
+"""
+```
+
+### 3. Class Docstring (One Line)
+
+```python
+class ChatHistoryService:
+    """Chat history persistence service."""
+
+class AzureOpenAIError(Exception):
+    """Azure OpenAI service error."""
+```
+
+### 4. Function Docstring
+
+Concise English docstring. For complex functions, include Args/Returns.
+
+**Simple function (one-liner):**
+
+```python
+def _validate_config(self) -> None:
+    """Validate required configuration."""
+
+@staticmethod
+def _doc_to_session(doc: UniversalDocument) -> dict:
+    """Convert UniversalDocument to session response dict."""
+```
+
+**Complex function (with Args/Returns):**
+
+```python
+async def create_session(self, owner_id: str, title: str | None = None) -> dict:
+    """Create a new chat session.
+
+    Args:
+        owner_id: User ID.
+        title: Session title.
+
+    Returns:
+        Session dict.
+    """
 ```
 
 **Rules:**
-- Use triple quotes `"""`
-- Chinese description on first line
-- English description on second line
-- Keep it concise, no blank line between Chinese and English
-- No parameter or return value details in docstring
 
-## 3. Inline Comments (Line-by-Line Bilingual)
+- Keep it concise
+- Args/Returns for complex functions only
+- Skip for trivial getters/setters
 
-Chinese comment immediately followed by English comment, placed ABOVE code:
+### 5. Inline Comments
+
+English comments placed ABOVE the code:
 
 ```python
-# 初始化Q表，使用随机值
-# Initialize Q-table with random values
-qtable = [[random.random() for _ in range(env.actions())] for _ in range(env.states())]
+# Create new dict to trigger SQLAlchemy change detection
+data = dict(doc.data)
 
-# 增加步数计数
-# Increment step count
-steps += 1
+# Auto-set first user message as session title
+if len(user_messages) == 1 and role == ChatRole.USER:
+    data["title"] = content[:50]
 ```
 
 **Rules:**
-- Comment goes ABOVE the code, NOT beside it
-- Chinese line first, English line immediately after (no blank line between)
-- Blank line AFTER comments and before next code block
-- For complex logic, add explanation:
+
+- Comment ABOVE code, never beside it
+- Blank line between code blocks
+- For complex logic, add reason:
 
 ```python
-# 使用贝尔曼方程更新Q表：Q(s,a) = r + γ * max Q(s',a')
-# Update Q-table using Bellman equation: Q(s,a) = r + γ * max Q(s',a')
-qtable[state][action] = reward + gamma * max(qtable[next_state])
-
-# 衰减探索率，随着学习进行减少随机探索
-# Decay exploration rate, reduce random exploration as learning progresses
-epsilon -= decay * epsilon
+# Use low temperature for stable JSON output.
+# High temperature causes unstable JSON format, increasing parse failure risk.
+response = await self._openai_service.chat_completion(
+    messages=[{"role": "user", "content": prompt}],
+    temperature=0.1,
+)
 ```
 
-## 4. Code Spacing
+### 6. Section Dividers
 
-**IMPORTANT:** Always add blank lines between code blocks:
+Use three-line box dividers (60 `=` characters) to group related methods within a class:
 
 ```python
-def main():
-    # 打印程序标题
-    # Print program header
-    print("=" * 50)
+class ChatHistoryService:
 
-    # 创建悬崖行走环境
-    # Create Cliff Walking environment
-    env = GridEnv(size=12)
+    # ============================================================
+    # Session CRUD
+    # ============================================================
 
-    # 设置超参数
-    # Set hyperparameters
-    EPISODES = 50
-    GAMMA = 0.9
+    async def create_session(self, ...) -> dict:
+        ...
+
+    async def list_sessions(self, ...) -> list[dict]:
+        ...
+
+    # ============================================================
+    # Message Operations
+    # ============================================================
+
+    async def append_message(self, ...) -> dict | None:
+        ...
+
+    # ============================================================
+    # Private Helpers
+    # ============================================================
+
+    async def _get_session_doc(self, ...) -> UniversalDocument | None:
+        ...
+```
+
+### 7. Import Comments
+
+**Do NOT comment obvious imports.** Only add comments for non-obvious choices:
+
+```python
+# Use TYPE_CHECKING to avoid circular imports
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.azure.openai import AzureOpenAIService
+```
+
+---
+
+## Part B: TypeScript / TSX
+
+### 1. File-level JSDoc
+
+Every `.tsx` / `.ts` file MUST have a JSDoc block at the top, before imports.
+
+**Standard format:**
+
+```tsx
+/**
+ * ComponentName - Short description of what this component does
+ *
+ * @module features/chat
+ * @template .agent/templates/frontend/features/chat/chat-input.tsx.template
+ * @reference none
+ */
+```
+
+**Field rules:**
+
+| Field        | Required | Description                                                                             |
+| ------------ | -------- | --------------------------------------------------------------------------------------- |
+| Line 1       | ✅       | `ComponentName - Brief description`                                                     |
+| `@module`    | ✅       | Module path matching directory structure (e.g. `features/chat`, `shared/components/ui`) |
+| `@template`  | ✅       | Template path, or `none` if no template applies                                         |
+| `@reference` | ✅       | External reference project or best practice, or `none`                                  |
+
+### 2. File-level JSDoc Examples
+
+**Feature component aligned with template:**
+
+```tsx
+/**
+ * ChatInput - Rich chat input with file upload, deep search toggle, and stop generation
+ *
+ * @module features/chat
+ * @template .agent/templates/frontend/features/chat/chat-input.tsx.template
+ * @reference none
+ */
+```
+
+**Business-specific component (no template):**
+
+```tsx
+/**
+ * ConfidenceIndicator - Visual indicator showing RAG response confidence level with color coding
+ *
+ * @module features/chat
+ * @template none
+ * @reference none
+ */
+```
+
+**Shared UI component:**
+
+```tsx
+/**
+ * ConfirmDialog - Reusable confirmation dialog with customizable title, message, and actions
+ *
+ * @module shared/components/ui
+ * @template .agent/templates/frontend/shared/components/ui/confirm-dialog.tsx.template
+ * @reference shadcn-admin/src/components/confirm-dialog.tsx
+ */
+```
+
+**Custom Hook:**
+
+```tsx
+/**
+ * useChatStream - Manages SSE streaming connection for chat messages with error handling
+ *
+ * @module features/chat/hooks
+ * @template .agent/templates/frontend/features/chat/use-chat-stream.ts.template
+ * @reference none
+ */
+```
+
+**Page / View component:**
+
+```tsx
+/**
+ * ChatPage - Main chat page view composing sidebar and chat interface
+ *
+ * @module features/chat/views
+ * @template none
+ * @reference none
+ */
+```
+
+**Service / API layer:**
+
+```tsx
+/**
+ * chatService - API client for chat-related endpoints including history and message sending
+ *
+ * @module features/chat/services
+ * @template none
+ * @reference none
+ */
+```
+
+**Type definition file:**
+
+```tsx
+/**
+ * ChatTypes - Shared type definitions for messages, conversations, and stream events
+ *
+ * @module features/chat/types
+ * @template none
+ * @reference none
+ */
+```
+
+### 3. Function / Hook Comments (JSDoc)
+
+Use JSDoc above exported functions:
+
+```tsx
+/**
+ * Handle message sending with streaming response management.
+ */
+export function useChatStream(baseUrl: string) { ... }
+
+/**
+ * Format confidence value as percentage display.
+ */
+function formatConfidence(value: number): string { ... }
 ```
 
 **Rules:**
-- Blank line after each code block
-- No blank line between Chinese and English comments
-- Comments always above code, never beside it
 
-## 5. Complex Logic Comments
+- Keep it concise — no `@param` / `@returns` unless the types are non-obvious
+- Use for exported functions and complex internal functions
 
-For complex logic with multiple lines, keep Chinese and English paired line-by-line:
+### 4. Inline Comments
 
-```python
-# 使用贝尔曼方程更新Q表：Q(s,a) = r + γ * max Q(s',a')
-# Update Q-table using Bellman equation: Q(s,a) = r + γ * max Q(s',a')
-# 这里alpha=1，即完全替换旧值（不使用加权平均）
-# Here alpha=1, meaning completely replace old value (no weighted average)
-# 完整公式应为：Q(s,a) = Q(s,a) + α * [r + γ * max Q(s',a') - Q(s,a)]
-# Full formula should be: Q(s,a) = Q(s,a) + α * [r + γ * max Q(s',a') - Q(s,a)]
-qtable[state][action] = reward + gamma * max(qtable[next_state])
+English comments placed ABOVE the code:
 
-# 检查是否掉下悬崖（底行，第1-10列）
-# Check if agent fell off cliff (bottom row, columns 1-10)
-# 原因：悬崖行走问题的核心机制，大负奖励惩罚掉入悬崖
-# Reason: Core mechanism of Cliff Walking problem, large negative reward penalizes falling
-if self.y == 3 and 1 <= self.x <= 10:
-    reward = -100
+```tsx
+// Scroll to latest message
+scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+
+// Generate unique message ID using nanoid
+const msgId = nanoid();
 ```
 
-## 6. Import Comments
+**Rules:**
 
-Add bilingual comments above imports:
+- Comment ABOVE code, never beside it
+- Blank line between code blocks
+- Skip trivial comments — do NOT comment obvious JSX structure
 
-```python
-# 导入抽象基类模块，用于定义环境接口
-# Import abstract base class module for defining environment interface
-import abc
+### 5. Import Comments
 
-# 导入操作系统、时间和随机模块
-# Import os, time and random modules
-import os
-import time
-import random
+**Do NOT comment obvious imports:**
+
+```tsx
+// Using nanoid instead of uuid for lighter weight in frontend
+import { nanoid } from "nanoid";
 ```
 
-## 7. Entry Point Comment
-
-```python
-# 程序入口点，运行主函数
-# Program entry point, run main function
-if __name__ == "__main__":
-    main()
-```
+---
 
 ## Comment Checklist
 
-Before finishing:
+Before finishing, verify per language:
 
-- [ ] File-level docstring is English only
-- [ ] All function docstrings use two-line format: Chinese first line, English second line
-- [ ] All inline comments have Chinese line immediately followed by English line
-- [ ] Comments are placed ABOVE code, not beside it
-- [ ] No blank line between Chinese and English lines (in both docstrings and comments)
-- [ ] Blank line between each code block
-- [ ] Complex logic has explanation and reason
-- [ ] Every code block has comments
-- [ ] Import statements have bilingual comments
+### Python
 
-## Quick Reference
+- [ ] File-level docstring has `ModuleName - Description` format
+- [ ] `@module` tag matches Python module path
+- [ ] `@template` tag present on every file (use `none` if no template)
+- [ ] `@reference` tag present on every file (use `none` if no reference)
+- [ ] No US IDs or implementation details in file header
+- [ ] Class docstrings are concise one-liners
+- [ ] Function docstrings are clear and concise
+- [ ] Complex functions include Args/Returns
+- [ ] Inline comments are above code, not beside it
+- [ ] Section dividers used for method groups in classes
+- [ ] Obvious imports are NOT commented
 
-```python
-# File docstring (English only)
-"""
-Lab 2: Q-Learning Agent
-Implements Q-Learning algorithm
-"""
+### TypeScript / TSX
 
-# Function docstring (two-line bilingual)
-def train(env):
-    """训练Q-Learning智能体
-    Train Q-Learning agent"""
-
-# Inline comment (line-by-line bilingual, above code)
-# 初始化Q表，使用随机值
-# Initialize Q-table with random values
-qtable = [[random.random() for _ in range(env.actions())] for _ in range(env.states())]
-
-# 增加步数计数
-# Increment step count
-steps += 1
-```
-
-## Key Rules Summary
-
-1. **Function docstrings**: Two lines - Chinese first line, English second line (NO blank line between)
-2. **Inline comments**: Chinese line, English line, then code (NO blank line between Chinese/English)
-3. **Comment placement**: Always ABOVE code, never beside it
-4. **Code spacing**: Blank line after each code block
-5. **No blank line**: Between Chinese and English lines (both in docstrings and comments)
-
-## Complete Example
-
-```python
-"""
-Lab 2: Q-Learning Agent for Cliff Walking
-Student ID: 041107730
-Implements Q-Learning using Bellman equation
-"""
-
-# 导入抽象基类模块，用于定义环境接口
-# Import abstract base class module for defining environment interface
-import abc
-
-# 导入操作系统、时间和随机模块
-# Import os, time and random modules
-import os
-import time
-import random
-
-
-class Env(abc.ABC):
-    """环境抽象基类
-    Environment abstract base class"""
-
-    @abc.abstractmethod
-    def actions(self) -> int:
-        """返回动作空间的大小
-        Return the size of action space"""
-        raise NotImplementedError()
-
-
-def train(env, episodes: int = 50, gamma: float = 0.9) -> list:
-    """训练Q-Learning智能体
-    Train Q-Learning agent"""
-
-    # 初始化Q表，使用随机值
-    # Initialize Q-table with random values
-    qtable = [[random.random() for _ in range(env.actions())] for _ in range(env.states())]
-
-    # 训练主循环，遍历所有回合
-    # Main training loop, iterate through all episodes
-    for episode in range(episodes):
-        # 重置环境，获取初始状态
-        # Reset environment and get initial state
-        state = env.reset()
-
-        # 使用贝尔曼方程更新Q表
-        # Update Q-table using Bellman equation
-        qtable[state][action] = reward + gamma * max(qtable[next_state])
-
-    # 返回训练好的Q表
-    # Return the trained Q-table
-    return qtable
-
-
-# 程序入口点，运行主函数
-# Program entry point, run main function
-if __name__ == "__main__":
-    main()
-```
+- [ ] File-level JSDoc has `ComponentName - Description` format
+- [ ] `@module` tag matches directory structure
+- [ ] `@template` tag present on every file (use `none` if no template)
+- [ ] `@reference` tag present on every file (use `none` if no reference)
+- [ ] No US IDs or implementation details in file header
+- [ ] Exported functions have JSDoc comments
+- [ ] Inline comments are above code, not beside it
+- [ ] Obvious imports are NOT commented
+- [ ] Trivial JSX structure is NOT commented

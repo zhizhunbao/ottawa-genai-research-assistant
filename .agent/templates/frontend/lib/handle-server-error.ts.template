@@ -1,24 +1,119 @@
-import { AxiosError } from 'axios';
-// import { toast } from '@/components/ui/use-toast';
+/**
+ * Server Error Handler
+ *
+ * Unified error handling with toast notifications.
+ *
+ * @source shadcn-admin
+ * @requires sonner (toast)
+ * @i18n Replace error messages with t() calls
+ *
+ * @example
+ * try {
+ *   await api.post('/endpoint', data)
+ * } catch (error) {
+ *   handleServerError(error)
+ * }
+ *
+ * @example
+ * // In React Query mutation
+ * useMutation({
+ *   mutationFn: createItem,
+ *   onError: handleServerError,
+ * })
+ */
+import { toast } from 'sonner'
 
-export function handleServerError(error: unknown) {
-  let errMsg = 'Something went wrong!';
+// Common HTTP error messages
+const HTTP_ERROR_MESSAGES: Record<number, string> = {
+  400: 'Bad request. Please check your input.',
+  401: 'Unauthorized. Please log in again.',
+  403: 'Forbidden. You do not have permission.',
+  404: 'Resource not found.',
+  408: 'Request timeout. Please try again.',
+  409: 'Conflict. The resource already exists.',
+  422: 'Validation error. Please check your input.',
+  429: 'Too many requests. Please slow down.',
+  500: 'Internal server error. Please try again later.',
+  502: 'Bad gateway. Please try again later.',
+  503: 'Service unavailable. Please try again later.',
+  504: 'Gateway timeout. Please try again later.',
+}
 
-  if (error instanceof AxiosError) {
-    // 适配后端 JSend 风格或标准 FastAPI 风格响应
-    errMsg = error.response?.data?.message || error.response?.data?.detail || error.message;
-  } else if (error instanceof Error) {
-    errMsg = error.message;
+interface ApiErrorResponse {
+  message?: string
+  title?: string
+  detail?: string
+  error?: string
+}
+
+/**
+ * Extract error message from various error formats
+ */
+function extractErrorMessage(error: unknown): string {
+  // Default message
+  let message = 'Something went wrong!'
+
+  // Handle null/undefined
+  if (!error) return message
+
+  // Handle string errors
+  if (typeof error === 'string') return error
+
+  // Handle Error objects
+  if (error instanceof Error) {
+    message = error.message
   }
 
-  console.error('[ServerError]', error);
-  
-  // 触发全局 Toast
-  // toast({
-  //   title: 'Error',
-  //   description: errMsg,
-  //   variant: 'destructive',
-  // });
-  
-  return errMsg;
+  // Handle Axios-like errors
+  if (typeof error === 'object' && error !== null) {
+    const err = error as Record<string, unknown>
+
+    // Check for status code
+    if ('status' in err && typeof err.status === 'number') {
+      const statusMessage = HTTP_ERROR_MESSAGES[err.status]
+      if (statusMessage) message = statusMessage
+
+      // 204 No Content
+      if (err.status === 204) return 'Content not found.'
+    }
+
+    // Check for response data (Axios format)
+    if ('response' in err && err.response && typeof err.response === 'object') {
+      const response = err.response as Record<string, unknown>
+      if ('data' in response && response.data) {
+        const data = response.data as ApiErrorResponse
+        message = data.message || data.title || data.detail || data.error || message
+      }
+    }
+
+    // Check for direct message properties
+    if ('message' in err && typeof err.message === 'string') {
+      message = err.message
+    }
+  }
+
+  return message
 }
+
+/**
+ * Handle server errors with toast notification
+ */
+export function handleServerError(error: unknown): void {
+  // Log error for debugging
+  console.error('[Server Error]', error)
+
+  // Extract and display message
+  const message = extractErrorMessage(error)
+  toast.error(message)
+}
+
+/**
+ * Handle server errors and return the message (without toast)
+ */
+export function getServerErrorMessage(error: unknown): string {
+  console.error('[Server Error]', error)
+  return extractErrorMessage(error)
+}
+
+export default handleServerError
+

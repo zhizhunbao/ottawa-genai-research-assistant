@@ -1,9 +1,9 @@
 /**
- * Authentication Type Definitions
+ * AuthTypes - TypeScript interfaces for users, credentials, tokens, and Azure AD
  *
- * Comprehensive TypeScript interfaces and types for the auth feature.
- *
- * @template — Custom Implementation
+ * @module features/auth
+ * @templateRef none
+ * @reference none
  */
 
 // ============================================================================

@@ -1,10 +1,9 @@
 /**
- * AuthDialog Component
+ * AuthDialog - Modal-based login and registration dialog with tab switching
  *
- * A modal-based interface for user login and registration switching.
- * Integrates with shadcn/ui Dialog and Tabs.
- *
- * @template — Custom Implementation
+ * @module features/auth
+ * @templateRef none
+ * @reference none
  */
 
 import { useState, FormEvent } from 'react'

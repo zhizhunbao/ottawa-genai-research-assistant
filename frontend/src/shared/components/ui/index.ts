@@ -74,5 +74,33 @@ export {
   SheetDescription,
 } from './sheet'
 
-// 业务组件
+// Form components (react-hook-form + zod integration)
+export {
+  useFormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+} from './form'
+
+// Popover
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor } from './popover'
+
+// Command (cmdk)
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+  CommandSeparator,
+} from './command'
+
+// Business components
 export { ErrorBoundary } from './error-boundary'

@@ -12,7 +12,7 @@ import { MainLayout } from '@/shared/components/layout'
 import { Suspense, lazy } from 'react'
 
 // Views (lazy loaded)
-const HomeView = lazy(() => import('@/features/home/views/HomeView'))
+const HomeView = lazy(() => import('@/features/landing/views/HomeView'))
 const ChatView = lazy(() => import('@/features/chat/views/ChatView'))
 const EvaluationView = lazy(() => import('@/features/evaluation/views/EvaluationView'))
 
