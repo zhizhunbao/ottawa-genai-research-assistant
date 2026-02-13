@@ -1,0 +1,232 @@
+"""
+RAG Utilities - Helper functions for RAG pipeline.
+
+@module backend/rag/rag-utils
+@source open-webui/backend/open_webui/apps/rag/utils.py
+@reference https://github.com/open-webui/open-webui
+@template S3-M5-F2
+
+Utility functions for the RAG pipeline:
+- Token counting and truncation
+- Context window management
+- Citation extraction and formatting
+- Relevance scoring helpers
+- Document format detection
+"""
+
+from __future__ import annotations
+
+import hashlib
+import re
+import logging
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Token Estimation ────────────────────────────────────────────────────────
+
+def estimate_tokens(text: str, model: str = "gpt-4") -> int:
+    """
+    Estimate token count for text. Uses rough heuristic (4 chars ≈ 1 token)
+    as fallback; prefers tiktoken if available.
+    """
+    try:
+        import tiktoken
+        enc = tiktoken.encoding_for_model(model)
+        return len(enc.encode(text))
+    except ImportError:
+        # Rough estimate: 1 token ≈ 4 characters for English
+        return len(text) // 4
+
+
+def truncate_to_token_limit(
+    text: str,
+    max_tokens: int,
+    model: str = "gpt-4",
+) -> str:
+    """Truncate text to fit within token limit."""
+    try:
+        import tiktoken
+        enc = tiktoken.encoding_for_model(model)
+        tokens = enc.encode(text)
+        if len(tokens) <= max_tokens:
+            return text
+        return enc.decode(tokens[:max_tokens])
+    except ImportError:
+        max_chars = max_tokens * 4
+        return text[:max_chars]
+
+
+# ─── Context Window Management ───────────────────────────────────────────────
+
+def fit_chunks_to_context(
+    chunks: list[dict[str, Any]],
+    max_tokens: int = 8000,
+    model: str = "gpt-4",
+) -> list[dict[str, Any]]:
+    """
+    Select chunks that fit within the context window.
+    Assumes chunks are already sorted by relevance (best first).
+    """
+    selected = []
+    total_tokens = 0
+    
+    for chunk in chunks:
+        content = chunk.get("content", "")
+        chunk_tokens = estimate_tokens(content, model)
+        
+        if total_tokens + chunk_tokens > max_tokens:
+            # Try to truncate the last chunk to fit
+            remaining = max_tokens - total_tokens
+            if remaining > 100:  # Only include if meaningful
+                chunk = {**chunk, "content": truncate_to_token_limit(
+                    content, remaining, model
+                )}
+                selected.append(chunk)
+            break
+        
+        selected.append(chunk)
+        total_tokens += chunk_tokens
+    
+    return selected
+
+
+# ─── Citation Helpers ────────────────────────────────────────────────────────
+
+def extract_citations(text: str) -> list[int]:
+    """
+    Extract citation references from text.
+    Supports formats: [1], [Source 1], [[citation:1]]
+    """
+    patterns = [
+        r'\[(\d+)\]',                    # [1]
+        r'\[Source\s+(\d+)\]',           # [Source 1]
+        r'\[\[citation:(\d+)\]\]',       # [[citation:1]]
+        r'\[Citation:\s*(\d+)\]',        # [Citation: 1]
+    ]
+    
+    citations = set()
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            citations.add(int(match.group(1)))
+    
+    return sorted(citations)
+
+
+def format_citation(index: int, source: str, content: str, max_preview: int = 200) -> str:
+    """Format a citation for display."""
+    preview = content[:max_preview]
+    if len(content) > max_preview:
+        preview += "..."
+    return f"[{index}] {source}: {preview}"
+
+
+def insert_citation_markers(
+    text: str,
+    chunk_sources: dict[int, str],
+) -> str:
+    """
+    Add citation source labels after citation markers in text.
+    [1] → [1: document.pdf, p.5]
+    """
+    for idx, source in chunk_sources.items():
+        text = text.replace(f"[{idx}]", f"[{idx}: {source}]")
+    return text
+
+
+# ─── Content Hashing ────────────────────────────────────────────────────────
+
+def content_hash(content: str) -> str:
+    """Generate a SHA-256 hash for content deduplication."""
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+
+
+def deduplicate_chunks(
+    chunks: list[dict[str, Any]],
+    similarity_threshold: float = 0.95,
+) -> list[dict[str, Any]]:
+    """
+    Remove near-duplicate chunks based on content hash.
+    For exact dedup; for semantic dedup, use embeddings.
+    """
+    seen_hashes = set()
+    unique = []
+    
+    for chunk in chunks:
+        h = content_hash(chunk.get("content", ""))
+        if h not in seen_hashes:
+            seen_hashes.add(h)
+            unique.append(chunk)
+    
+    return unique
+
+
+# ─── Document Format Detection ──────────────────────────────────────────────
+
+SUPPORTED_EXTENSIONS = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".csv": "text/csv",
+    ".json": "application/json",
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".epub": "application/epub+zip",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+
+
+def detect_file_type(filename: str) -> str | None:
+    """Detect MIME type from file extension."""
+    ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return SUPPORTED_EXTENSIONS.get(ext)
+
+
+def is_supported_file(filename: str) -> bool:
+    """Check if a file type is supported for ingestion."""
+    return detect_file_type(filename) is not None
+
+
+# ─── Relevance Scoring ──────────────────────────────────────────────────────
+
+def reciprocal_rank_fusion(
+    results_lists: list[list[tuple[str, float]]],
+    k: int = 60,
+) -> list[tuple[str, float]]:
+    """
+    Reciprocal Rank Fusion for combining multiple result lists.
+    Each result list is List[(doc_id, score)].
+    
+    RRF score = sum(1 / (k + rank_i)) for each list where doc appears.
+    """
+    scores: dict[str, float] = {}
+    
+    for results in results_lists:
+        for rank, (doc_id, _) in enumerate(results, 1):
+            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+    
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    return ranked
+
+
+def normalize_scores(
+    results: list[tuple[Any, float]],
+) -> list[tuple[Any, float]]:
+    """Normalize scores to [0, 1] range using min-max scaling."""
+    if not results:
+        return results
+    
+    scores = [s for _, s in results]
+    min_s, max_s = min(scores), max(scores)
+    
+    if max_s == min_s:
+        return [(item, 1.0) for item, _ in results]
+    
+    return [
+        (item, (score - min_s) / (max_s - min_s))
+        for item, score in results
+    ]

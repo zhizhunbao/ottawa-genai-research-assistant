@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Chat Feature Types
  *
  * TypeScript definitions for chat messages, sessions, and agent interaction steps.

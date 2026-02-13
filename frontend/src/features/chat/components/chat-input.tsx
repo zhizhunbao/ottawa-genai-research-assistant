@@ -1,3 +1,10 @@
+﻿/**
+ * ChatInput - Rich chat input with file upload, deep search toggle, and stop generation
+ *
+ * @module features/chat
+ * @template none
+ * @reference none
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { Paperclip, Search, StopCircle, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -56,7 +63,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, onStop 
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="问问 AI 研究员任何问题..."
+                    placeholder="Ask the AI research assistant anything..."
                     className="w-full bg-transparent border-0 focus:ring-0 resize-none py-4 px-12 text-sm leading-relaxed min-h-[56px] max-h-[200px]"
                     rows={1}
                 />
@@ -64,7 +71,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, onStop 
                 <button
                     onClick={() => fileInputRef.current?.click()}
                     className="absolute left-3 bottom-3 p-2 text-muted-foreground hover:text-primary transition-colors"
-                    title="上传文件"
+                    title="Upload file"
                 >
                     <Paperclip size={20} />
                     <input
@@ -88,7 +95,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, onStop 
                             )}
                         >
                             <Search size={14} className={isDeepSearch ? "animate-pulse" : ""} />
-                            <span>深度研究模式</span>
+                            <span>Deep Research Mode</span>
                         </button>
                     </div>
 

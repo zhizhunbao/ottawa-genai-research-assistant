@@ -1,0 +1,268 @@
+/**
+ * Message Primitives - Headless composable message building blocks
+ *
+ * @module frontend/features/chat/primitives/message-primitives
+ * @source assistant-ui/packages/react/src/primitives/message/MessageRoot.tsx (129L)
+ * @source assistant-ui/packages/react/src/primitives/message/MessageIf.tsx (92L)
+ * @source assistant-ui/packages/react/src/primitives/message/MessageParts.tsx
+ * @source assistant-ui/packages/react/src/primitives/message/MessageAttachments.tsx
+ * @reference https://github.com/Yonom/assistant-ui
+ * @template S1-M7-F1
+ *
+ * Headless message primitives (Radix-style):
+ * 1. MessageRoot — wrapper with hover state tracking
+ * 2. MessageIf — conditional rendering by role/state
+ * 3. MessageContent — renders text/tool/image parts
+ * 4. MessageActions — action bar slot (copy/edit/delete)
+ *
+ * Pattern: unstyled composable components, bring-your-own CSS
+ */
+
+import React, {
+  createContext,
+  forwardRef,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FC,
+  type PropsWithChildren,
+  type HTMLAttributes,
+} from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export type MessageRole = "user" | "assistant" | "system";
+
+export interface MessagePart {
+  type: "text" | "image" | "tool_call" | "tool_result" | "reasoning";
+  content?: string;
+  toolName?: string;
+  toolCallId?: string;
+  imageUrl?: string;
+}
+
+export interface MessageData {
+  id: string;
+  role: MessageRole;
+  parts: MessagePart[];
+  attachments?: File[];
+  isLast?: boolean;
+  isCopied?: boolean;
+  isHovering?: boolean;
+  branchCount?: number;
+  metadata?: Record<string, unknown>;
+}
+
+// ─── Context ────────────────────────────────────────────────────────────────
+// @source assistant-ui MessageRoot.tsx (17-48L) — hover state management
+
+interface MessageContextValue {
+  message: MessageData;
+  isHovering: boolean;
+  setIsHovering: (v: boolean) => void;
+}
+
+const MessageContext = createContext<MessageContextValue | null>(null);
+
+export function useMessage(): MessageContextValue {
+  const ctx = useContext(MessageContext);
+  if (!ctx) throw new Error("useMessage must be used within <MessageRoot>");
+  return ctx;
+}
+
+// ─── MessageRoot ────────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/message/MessageRoot.tsx (108-128L)
+
+export interface MessageRootProps extends HTMLAttributes<HTMLDivElement> {
+  message: MessageData;
+}
+
+/**
+ * Root container for a message. Tracks hover state via mouseenter/mouseleave.
+ * @example
+ * <MessageRoot message={msg}>
+ *   <MessageContent />
+ *   <MessageActions />
+ * </MessageRoot>
+ */
+export const MessageRoot = forwardRef<HTMLDivElement, MessageRootProps>(
+  ({ message, children, onMouseEnter, onMouseLeave, ...props }, ref) => {
+    const [isHovering, setIsHovering] = useState(false);
+
+    return (
+      <MessageContext.Provider value={{ message, isHovering, setIsHovering }}>
+        <div
+          ref={ref}
+          data-message-id={message.id}
+          data-role={message.role}
+          onMouseEnter={(e) => {
+            setIsHovering(true);
+            onMouseEnter?.(e);
+          }}
+          onMouseLeave={(e) => {
+            setIsHovering(false);
+            onMouseLeave?.(e);
+          }}
+          {...props}
+        >
+          {children}
+        </div>
+      </MessageContext.Provider>
+    );
+  }
+);
+MessageRoot.displayName = "MessagePrimitive.Root";
+
+// ─── MessageIf ──────────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/message/MessageIf.tsx (7-91L)
+
+export interface MessageIfProps {
+  /** Show only if message role is "user" */
+  user?: boolean;
+  /** Show only if message role is "assistant" */
+  assistant?: boolean;
+  /** Show only if message role is "system" */
+  system?: boolean;
+  /** Show only if message has branch alternatives */
+  hasBranches?: boolean;
+  /** Show only when message is hovered or is last */
+  lastOrHover?: boolean;
+  /** Show only if message is last */
+  last?: boolean;
+  /** Show only if message was copied */
+  copied?: boolean;
+  /** Show only if message has attachments */
+  hasAttachments?: boolean;
+  /** Show only if message has content */
+  hasContent?: boolean;
+  children?: React.ReactNode;
+}
+
+/**
+ * Conditional rendering based on message state.
+ * @example
+ * <MessageIf assistant>
+ *   <p>This only shows for assistant messages</p>
+ * </MessageIf>
+ */
+export const MessageIf: FC<MessageIfProps> = ({ children, ...filters }) => {
+  const { message, isHovering } = useMessage();
+
+  let show = true;
+  if (filters.user && message.role !== "user") show = false;
+  if (filters.assistant && message.role !== "assistant") show = false;
+  if (filters.system && message.role !== "system") show = false;
+  if (filters.hasBranches && (message.branchCount ?? 0) < 2) show = false;
+  if (filters.lastOrHover && !isHovering && !message.isLast) show = false;
+  if (filters.last !== undefined && filters.last !== message.isLast) show = false;
+  if (filters.copied === true && !message.isCopied) show = false;
+  if (filters.hasAttachments && !(message.attachments?.length)) show = false;
+  if (filters.hasContent === true && message.parts.length === 0) show = false;
+
+  return show ? <>{children}</> : null;
+};
+MessageIf.displayName = "MessagePrimitive.If";
+
+// ─── MessageContent ─────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/message/MessageParts.tsx
+
+export interface MessageContentProps {
+  /** Custom renderer for each part type */
+  components?: {
+    Text?: FC<{ content: string }>;
+    Image?: FC<{ url: string }>;
+    ToolCall?: FC<{ name: string; id: string; content?: string }>;
+    Reasoning?: FC<{ content: string }>;
+  };
+}
+
+/**
+ * Renders message parts using provided component overrides.
+ * Falls back to <p> for text parts if no custom component given.
+ */
+export const MessageContent: FC<MessageContentProps> = ({ components }) => {
+  const { message } = useMessage();
+
+  return (
+    <>
+      {message.parts.map((part, i) => {
+        switch (part.type) {
+          case "text":
+            return components?.Text ? (
+              <components.Text key={i} content={part.content ?? ""} />
+            ) : (
+              <p key={i}>{part.content}</p>
+            );
+          case "image":
+            return components?.Image ? (
+              <components.Image key={i} url={part.imageUrl ?? ""} />
+            ) : (
+              <img key={i} src={part.imageUrl} alt="" />
+            );
+          case "tool_call":
+            return components?.ToolCall ? (
+              <components.ToolCall
+                key={i}
+                name={part.toolName ?? ""}
+                id={part.toolCallId ?? ""}
+                content={part.content}
+              />
+            ) : (
+              <pre key={i}>{part.toolName}: {part.content}</pre>
+            );
+          case "reasoning":
+            return components?.Reasoning ? (
+              <components.Reasoning key={i} content={part.content ?? ""} />
+            ) : (
+              <details key={i}><summary>Thinking...</summary>{part.content}</details>
+            );
+          default:
+            return null;
+        }
+      })}
+    </>
+  );
+};
+MessageContent.displayName = "MessagePrimitive.Content";
+
+// ─── MessageActions ─────────────────────────────────────────────────────────
+
+export interface MessageActionsProps extends HTMLAttributes<HTMLDivElement> {
+  /** Only show when hovering or when message is last */
+  showOnHover?: boolean;
+}
+
+/**
+ * Container for message action buttons. Optionally hidden until hover.
+ */
+export const MessageActions = forwardRef<HTMLDivElement, MessageActionsProps>(
+  ({ showOnHover = true, style, children, ...props }, ref) => {
+    const { isHovering, message } = useMessage();
+    const visible = !showOnHover || isHovering || message.isLast;
+
+    return (
+      <div
+        ref={ref}
+        style={{
+          ...style,
+          opacity: visible ? 1 : 0,
+          transition: "opacity 0.15s ease",
+          pointerEvents: visible ? "auto" : "none",
+        }}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+MessageActions.displayName = "MessagePrimitive.Actions";
+
+export default {
+  Root: MessageRoot,
+  If: MessageIf,
+  Content: MessageContent,
+  Actions: MessageActions,
+};

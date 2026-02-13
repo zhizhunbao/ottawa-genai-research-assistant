@@ -1,7 +1,9 @@
-/**
- * Chat Feature Types
+﻿/**
+ * ChatTypes - Message, session, and source type definitions for chat feature
  *
+ * @module features/chat
  * @template T6 backend/features/chat/types.ts — RAG & Chat History Entities
+ * @reference none
  */
 
 import { ChartData } from '../analysis/types'
@@ -39,3 +41,38 @@ export interface ChatSession {
     createdAt: string
     updatedAt: string
 }
+
+// ── Component-Level Types (for UI rendering) ──
+
+/** Agent reasoning step (for deep-search / multi-agent flows) */
+export interface AgentStep {
+    id: string
+    type: string
+    title: string
+    content?: string
+    status: 'pending' | 'running' | 'done' | 'error'
+}
+
+/** Local message type used by ChatInterface component */
+export interface Message {
+    id: string
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    timestamp: number
+    thought?: string
+    status?: 'loading' | 'done' | 'error'
+    steps?: AgentStep[]
+    sources?: Source[]
+    confidence?: number
+    chart?: ChartData
+}
+
+/** Callbacks for the chat stream */
+export interface ChatStreamOptions {
+    onMessage?: (chunk: string) => void
+    onThought?: (thought: string) => void
+    onStep?: (step: AgentStep) => void
+    onDone?: () => void
+    onError?: (error: Error) => void
+}
+

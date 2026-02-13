@@ -1,0 +1,60 @@
+/**
+ * Agent Types - TypeScript definitions for agent execution
+ *
+ * @module frontend/features/agent
+ * @source joyagent-jdgenie/ui/src/components/ ActionView + PlanView
+ * @template S4-M2-F2
+ */
+
+export type StepStatus = "pending" | "running" | "completed" | "error" | "skipped";
+
+export interface PlanStage {
+  name: string;
+  description?: string;
+  status: StepStatus;
+}
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  status: StepStatus;
+  result?: string;
+  error?: string;
+  durationMs?: number;
+}
+
+export interface AgentFile {
+  name: string;
+  url: string;
+  type: string;
+  size?: number;
+}
+
+export interface SearchRound {
+  queries: string[];
+  docs: Array<{ title: string; url: string; snippet: string }>;
+  isFinal: boolean;
+}
+
+export interface AgentExecution {
+  stages: PlanStage[];
+  toolCalls: ToolCall[];
+  files: AgentFile[];
+  searchRounds: SearchRound[];
+  answer?: string;
+  isComplete: boolean;
+}
+
+export type AgentEventType =
+  | "plan_created" | "stage_started" | "stage_completed"
+  | "tool_started" | "tool_completed" | "file_created"
+  | "search_result" | "answer_chunk" | "execution_complete" | "error";
+
+export interface AgentEvent {
+  type: AgentEventType;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+export type ActionViewTab = "progress" | "tools" | "files" | "search";

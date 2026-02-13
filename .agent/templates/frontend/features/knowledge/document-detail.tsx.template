@@ -1,0 +1,352 @@
+/**
+ * Document Detail Panel - Chunk preview and metadata viewer
+ *
+ * @module frontend/features/knowledge/document-detail
+ * @source open-webui/src/lib/components/workspace/Knowledge/Document
+ * @reference https://github.com/open-webui/open-webui
+ * @template S4-M5-F2
+ *
+ * Detail view for a knowledge base document:
+ * 1. File metadata (name, type, size, dates)
+ * 2. Processing status with error details
+ * 3. Chunk list preview (paginated)
+ * 4. Actions: re-process, download, delete
+ */
+
+import React, { useState, type FC } from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface DocumentChunk {
+  id: string;
+  index: number;
+  content: string;
+  tokenCount: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DocumentDetail {
+  id: string;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  status: "uploading" | "processing" | "indexed" | "failed" | "deleting";
+  chunkCount: number;
+  totalTokens: number;
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DocumentDetailProps {
+  document: DocumentDetail;
+  chunks: DocumentChunk[];
+  totalChunks: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  onReprocess: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+  className?: string;
+}
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const st = {
+  panel: {
+    background: "var(--card-bg, #ffffff)",
+    borderRadius: "var(--radius-lg, 12px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+    overflow: "hidden",
+  } as React.CSSProperties,
+
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "16px 20px",
+    borderBottom: "1px solid var(--border-color, #e2e8f0)",
+  } as React.CSSProperties,
+
+  headerTitle: {
+    fontSize: "var(--text-lg, 18px)",
+    fontWeight: 600,
+    color: "var(--text-primary, #1e293b)",
+    maxWidth: "300px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  } as React.CSSProperties,
+
+  closeBtn: {
+    padding: "4px 8px",
+    border: "none",
+    background: "transparent",
+    fontSize: "20px",
+    cursor: "pointer",
+    color: "var(--text-secondary, #64748b)",
+  } as React.CSSProperties,
+
+  body: {
+    padding: "20px",
+  } as React.CSSProperties,
+
+  section: {
+    marginBottom: "20px",
+  } as React.CSSProperties,
+
+  sectionTitle: {
+    fontSize: "var(--text-sm, 14px)",
+    fontWeight: 600,
+    color: "var(--text-primary, #1e293b)",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.05em",
+    marginBottom: "10px",
+  } as React.CSSProperties,
+
+  metaGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+  } as React.CSSProperties,
+
+  metaItem: {
+    padding: "8px 12px",
+    background: "var(--bg-tertiary, #f8fafc)",
+    borderRadius: "var(--radius-sm, 6px)",
+  } as React.CSSProperties,
+
+  metaLabel: {
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--text-secondary, #64748b)",
+    marginBottom: "2px",
+  } as React.CSSProperties,
+
+  metaValue: {
+    fontSize: "var(--text-sm, 14px)",
+    fontWeight: 500,
+    color: "var(--text-primary, #1e293b)",
+  } as React.CSSProperties,
+
+  errorBox: {
+    padding: "10px 14px",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "var(--radius-sm, 6px)",
+    fontSize: "var(--text-sm, 14px)",
+    color: "#dc2626",
+  } as React.CSSProperties,
+
+  chunkCard: {
+    padding: "12px 14px",
+    marginBottom: "8px",
+    background: "var(--bg-tertiary, #f8fafc)",
+    borderRadius: "var(--radius-sm, 8px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+  } as React.CSSProperties,
+
+  chunkHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "6px",
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--text-secondary, #64748b)",
+  } as React.CSSProperties,
+
+  chunkContent: {
+    fontSize: "var(--text-sm, 14px)",
+    color: "var(--text-primary, #1e293b)",
+    lineHeight: 1.5,
+    whiteSpace: "pre-wrap" as const,
+    wordBreak: "break-word" as const,
+    maxHeight: "120px",
+    overflow: "hidden",
+  } as React.CSSProperties,
+
+  pagination: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    marginTop: "12px",
+  } as React.CSSProperties,
+
+  pageBtn: {
+    padding: "4px 10px",
+    border: "1px solid var(--border-color, #e2e8f0)",
+    borderRadius: "var(--radius-sm, 4px)",
+    background: "var(--card-bg, #ffffff)",
+    cursor: "pointer",
+    fontSize: "var(--text-sm, 14px)",
+    color: "var(--text-primary, #1e293b)",
+  } as React.CSSProperties,
+
+  actions: {
+    display: "flex",
+    gap: "8px",
+    paddingTop: "12px",
+    borderTop: "1px solid var(--border-color, #e2e8f0)",
+  } as React.CSSProperties,
+
+  actionBtn: {
+    flex: 1,
+    padding: "8px 14px",
+    fontSize: "var(--text-sm, 14px)",
+    fontWeight: 500,
+    border: "1px solid var(--border-color, #e2e8f0)",
+    borderRadius: "var(--radius-sm, 8px)",
+    background: "var(--card-bg, #ffffff)",
+    cursor: "pointer",
+    color: "var(--text-primary, #1e293b)",
+    textAlign: "center" as const,
+    transition: "background 0.15s ease",
+  } as React.CSSProperties,
+
+  dangerBtn: {
+    color: "#ef4444",
+    borderColor: "#fecaca",
+  } as React.CSSProperties,
+};
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleString();
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
+export const DocumentDetailPanel: FC<DocumentDetailProps> = ({
+  document: doc,
+  chunks,
+  totalChunks,
+  currentPage,
+  onPageChange,
+  onReprocess,
+  onDelete,
+  onClose,
+  className,
+}) => {
+  const CHUNKS_PER_PAGE = 10;
+  const totalPages = Math.ceil(totalChunks / CHUNKS_PER_PAGE);
+
+  return (
+    <div style={st.panel} className={className}>
+      {/* Header */}
+      <div style={st.header}>
+        <span style={st.headerTitle} title={doc.filename}>
+          {doc.filename}
+        </span>
+        <button style={st.closeBtn} onClick={onClose}>
+          ✕
+        </button>
+      </div>
+
+      <div style={st.body}>
+        {/* Metadata */}
+        <div style={st.section}>
+          <h3 style={st.sectionTitle}>Details</h3>
+          <div style={st.metaGrid}>
+            <div style={st.metaItem}>
+              <div style={st.metaLabel}>File Type</div>
+              <div style={st.metaValue}>{doc.fileType.toUpperCase()}</div>
+            </div>
+            <div style={st.metaItem}>
+              <div style={st.metaLabel}>File Size</div>
+              <div style={st.metaValue}>{formatFileSize(doc.fileSize)}</div>
+            </div>
+            <div style={st.metaItem}>
+              <div style={st.metaLabel}>Chunks</div>
+              <div style={st.metaValue}>{doc.chunkCount}</div>
+            </div>
+            <div style={st.metaItem}>
+              <div style={st.metaLabel}>Total Tokens</div>
+              <div style={st.metaValue}>{doc.totalTokens.toLocaleString()}</div>
+            </div>
+            <div style={st.metaItem}>
+              <div style={st.metaLabel}>Created</div>
+              <div style={st.metaValue}>{formatDate(doc.createdAt)}</div>
+            </div>
+            <div style={st.metaItem}>
+              <div style={st.metaLabel}>Updated</div>
+              <div style={st.metaValue}>{formatDate(doc.updatedAt)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error */}
+        {doc.error && (
+          <div style={st.section}>
+            <h3 style={st.sectionTitle}>Error</h3>
+            <div style={st.errorBox}>{doc.error}</div>
+          </div>
+        )}
+
+        {/* Chunks Preview */}
+        <div style={st.section}>
+          <h3 style={st.sectionTitle}>
+            Chunks ({totalChunks})
+          </h3>
+          {chunks.map((chunk) => (
+            <div key={chunk.id} style={st.chunkCard}>
+              <div style={st.chunkHeader}>
+                <span>Chunk #{chunk.index + 1}</span>
+                <span>{chunk.tokenCount} tokens</span>
+              </div>
+              <div style={st.chunkContent}>{chunk.content}</div>
+            </div>
+          ))}
+
+          {totalPages > 1 && (
+            <div style={st.pagination}>
+              <button
+                style={st.pageBtn}
+                disabled={currentPage <= 1}
+                onClick={() => onPageChange(currentPage - 1)}
+              >
+                ← Prev
+              </button>
+              <span style={{ fontSize: "var(--text-sm, 14px)", color: "var(--text-secondary)" }}>
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                style={st.pageBtn}
+                disabled={currentPage >= totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={st.actions}>
+          <button
+            style={st.actionBtn}
+            onClick={onReprocess}
+            disabled={doc.status === "processing"}
+          >
+            ⚙ Re-process
+          </button>
+          <button
+            style={{ ...st.actionBtn, ...st.dangerBtn }}
+            onClick={onDelete}
+          >
+            🗑 Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DocumentDetailPanel;

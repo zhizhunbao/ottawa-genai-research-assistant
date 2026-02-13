@@ -1,0 +1,623 @@
+"""
+Chat-Read-Retrieve-Read — Concrete RAG Strategy Implementation.
+
+A multi-step RAG approach:
+  1. **Read** the user's question + chat history
+  2. **Rewrite** the query for optimal search (using LLM)
+  3. **Retrieve** relevant documents (text/vector/hybrid search)
+  4. **Read** the search results and generate an answer (using LLM)
+
+Supports both streaming and non-streaming responses, follow-up question
+generation, and full explainability via ThoughtStep chain.
+
+Source: azure-search-openai-demo/app/backend/approaches/chatreadretrieveread.py (531 lines)
+Reference: https://github.com/Azure-Samples/azure-search-openai-demo
+Template: S3-M1-F2
+
+Usage:
+    approach = ChatReadRetrieveReadApproach(
+        openai_client=openai_client,
+        chatgpt_model="gpt-4o",
+        search_fn=my_vector_search_function,
+    )
+    # Non-streaming
+    result = await approach.run(messages, context={"overrides": {"top": 5}})
+    # Streaming
+    async for chunk in await approach.run_stream(messages, context={"overrides": {}}):
+        print(chunk)
+
+Adaptation Notes:
+    - Replace `search_fn` with your search implementation
+    - Replace `{{SYSTEM_PROMPT}}` with your system prompt template
+    - Replace `{{USER_PROMPT_TEMPLATE}}` with your user prompt template
+    - Adjust `suggest_followup_questions` behavior as needed
+"""
+
+import re
+from collections.abc import AsyncGenerator, Awaitable
+from dataclasses import asdict
+from typing import Any, Callable, Optional, cast
+
+from openai import AsyncOpenAI, AsyncStream
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionChunk,
+    ChatCompletionMessageParam,
+    ChatCompletionToolParam,
+)
+
+# Import from the RAG approach ABC template
+# from .rag_approach_abc import Approach, DataPoints, Document, ExtraInfo, ThoughtStep
+
+
+# ==================== Type Aliases ====================
+
+# A search function that takes (query, top_k, filter, use_vectors)
+# and returns a list of Documents.
+# Replace this with your actual search implementation.
+SearchFunction = Callable[..., Any]
+
+
+# ==================== Query Rewrite Tools ====================
+
+# Tool definition for structured query extraction
+# Source: chat_query_rewrite_tools.json from Azure samples
+QUERY_REWRITE_TOOLS: list[dict] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_sources",
+            "description": "Retrieve sources from the search index",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "search_query": {
+                        "type": "string",
+                        "description": "Query string to search for relevant sources",
+                    }
+                },
+                "required": ["search_query"],
+            },
+        },
+    }
+]
+
+
+# ==================== Prompt Templates ====================
+
+# System prompt for the final answer generation step
+# Source: chat_answer.system.jinja2 (simplified)
+SYSTEM_PROMPT = """{{SYSTEM_PROMPT}}
+Assistant helps users by answering questions using the provided sources.
+Each source is formatted as [filename]: content.
+Always cite sources using [filename] notation.
+{%- if include_follow_up_questions %}
+After answering, suggest 3 follow-up questions enclosed in << and >> markers.
+Example: <<What else can you tell me about X?>>
+{%- endif %}
+"""
+
+# User prompt template for the final answer step
+# Source: chat_answer.user.jinja2 (simplified)
+USER_PROMPT_TEMPLATE = """{{USER_PROMPT_TEMPLATE}}
+Sources:
+{sources}
+
+Question: {user_query}
+"""
+
+# System prompt for query rewriting step
+QUERY_REWRITE_PROMPT = """Below is a history of a conversation followed by the latest question.
+Generate a search query to find relevant information for answering the question.
+Do NOT include cited source filenames or document names in the search query.
+Do NOT include any special characters in the search query.
+If the question is not in English, translate the search query to English.
+If you cannot determine a search query, return the number 0.
+"""
+
+
+class ChatReadRetrieveReadApproach:  # (Approach):  # Uncomment to extend Approach ABC
+    """Multi-step RAG: Chat → Rewrite → Retrieve → Read → Answer.
+
+    Source: chatreadretrieveread.py L28-531
+    Simplified: Removed Azure-specific agentic retrieval, knowledge base clients,
+    SharePoint/web sources, image embeddings. Kept core CRRR pattern.
+    """
+
+    NO_RESPONSE = "0"
+
+    def __init__(
+        self,
+        *,
+        openai_client: AsyncOpenAI,
+        chatgpt_model: str,
+        chatgpt_deployment: Optional[str] = None,
+        embedding_model: str = "text-embedding-3-small",
+        embedding_dimensions: int = 1536,
+        search_fn: Optional[SearchFunction] = None,
+        include_token_usage: bool = True,
+    ):
+        """Initialize the CRRR approach.
+
+        Args:
+            openai_client: Async OpenAI client.
+            chatgpt_model: Model name for chat completions.
+            chatgpt_deployment: Azure deployment name (None for non-Azure).
+            embedding_model: Model for embeddings.
+            embedding_dimensions: Embedding dimensions.
+            search_fn: Callable that takes (query, top, filter, vectors) → list[Document].
+            include_token_usage: Whether to track and report token usage.
+
+        Source: chatreadretrieveread.py L37-99
+        """
+        self.openai_client = openai_client
+        self.chatgpt_model = chatgpt_model
+        self.chatgpt_deployment = chatgpt_deployment
+        self.embedding_model = embedding_model
+        self.embedding_dimensions = embedding_dimensions
+        self.search_fn = search_fn
+        self.include_token_usage = include_token_usage
+
+    # ==================== Follow-up Questions ====================
+
+    @staticmethod
+    def extract_followup_questions(
+        content: Optional[str],
+    ) -> tuple[str, list[str]]:
+        """Extract follow-up questions from <<...>> markers in content.
+
+        Source: chatreadretrieveread.py L101-104
+
+        Returns:
+            Tuple of (cleaned_content, list_of_followup_questions).
+        """
+        if content is None:
+            return "", []
+        return content.split("<<")[0], re.findall(r"<<([^>>]+)>>", content)
+
+    # ==================== Query Rewriting ====================
+
+    async def rewrite_query(
+        self,
+        user_query: str,
+        past_messages: list[ChatCompletionMessageParam],
+        overrides: dict[str, Any],
+    ) -> tuple[str, ChatCompletion]:
+        """Use LLM to rewrite user query into an optimized search query.
+
+        Source: chatreadretrieveread.py L362-382, approach.py L393-435
+
+        Args:
+            user_query: The original user question.
+            past_messages: Previous conversation messages for context.
+            overrides: Configuration overrides.
+
+        Returns:
+            Tuple of (optimized_query, chat_completion).
+        """
+        messages: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": QUERY_REWRITE_PROMPT},
+        ]
+        # Add past conversation for context
+        for msg in past_messages:
+            if msg["role"] != "system":
+                messages.append(msg)
+        messages.append({"role": "user", "content": user_query})
+
+        model = self.chatgpt_deployment or self.chatgpt_model
+        chat_completion = await self.openai_client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.0,
+            max_tokens=100,
+            tools=QUERY_REWRITE_TOOLS,
+            n=1,
+        )
+
+        # Extract query from tool call or content
+        response_message = chat_completion.choices[0].message
+        search_query = user_query  # default fallback
+
+        if response_message.tool_calls:
+            for tool_call in response_message.tool_calls:
+                if tool_call.type != "function":
+                    continue
+                try:
+                    import json
+
+                    parsed = json.loads(tool_call.function.arguments or "{}")
+                    candidate = parsed.get("search_query")
+                    if candidate and candidate != self.NO_RESPONSE:
+                        search_query = candidate
+                        break
+                except Exception:
+                    continue
+        elif response_message.content:
+            candidate = response_message.content.strip()
+            if candidate and candidate != self.NO_RESPONSE:
+                search_query = candidate
+
+        return search_query, chat_completion
+
+    # ==================== Embedding ====================
+
+    async def compute_query_embedding(self, query: str) -> list[float]:
+        """Compute embedding vector for a search query.
+
+        Source: approach.py L879-901
+        """
+        model = self.chatgpt_deployment or self.embedding_model
+        response = await self.openai_client.embeddings.create(
+            model=model,
+            input=query,
+            dimensions=self.embedding_dimensions,
+        )
+        return response.data[0].embedding
+
+    # ==================== Core CRRR Pipeline ====================
+
+    async def run_until_final_call(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        overrides: dict[str, Any],
+        should_stream: bool = False,
+    ) -> tuple[dict[str, Any], Awaitable[ChatCompletion] | Awaitable[AsyncStream[ChatCompletionChunk]]]:
+        """Execute the Read-Retrieve pipeline, stopping before the final answer generation.
+
+        Source: chatreadretrieveread.py L252-336
+
+        Steps:
+            1. Rewrite query using LLM
+            2. Compute embeddings (if vector search enabled)
+            3. Search for relevant documents
+            4. Build source context
+            5. Prepare and return final chat completion coroutine
+
+        Returns:
+            Tuple of (extra_info_dict, chat_completion_coroutine).
+        """
+        # Configuration from overrides
+        # Source: chatreadretrieveread.py L341-356
+        retrieval_mode = overrides.get("retrieval_mode", "hybrid")
+        use_text_search = retrieval_mode in ["text", "hybrid"]
+        use_vector_search = retrieval_mode in ["vectors", "hybrid"]
+        use_semantic_ranker = bool(overrides.get("semantic_ranker", False))
+        use_semantic_captions = bool(overrides.get("semantic_captions", False))
+        top = overrides.get("top", 3)
+        suggest_followup = bool(overrides.get("suggest_followup_questions", False))
+
+        original_user_query = messages[-1]["content"]
+        if not isinstance(original_user_query, str):
+            raise ValueError("The most recent message content must be a string.")
+
+        thoughts: list[dict[str, Any]] = []
+
+        # STEP 1: Generate optimized search query
+        # Source: chatreadretrieveread.py L362-382
+        search_query, rewrite_completion = await self.rewrite_query(
+            user_query=original_user_query,
+            past_messages=messages[:-1],
+            overrides=overrides,
+        )
+
+        thoughts.append(
+            {
+                "title": "Prompt to generate search query",
+                "description": f"Rewritten query: {search_query}",
+                "props": {
+                    "model": self.chatgpt_model,
+                    "token_usage": (
+                        {
+                            "prompt_tokens": rewrite_completion.usage.prompt_tokens,
+                            "completion_tokens": rewrite_completion.usage.completion_tokens,
+                            "total_tokens": rewrite_completion.usage.total_tokens,
+                        }
+                        if rewrite_completion.usage
+                        else None
+                    ),
+                },
+            }
+        )
+
+        # STEP 2: Compute embeddings for vector search
+        # Source: chatreadretrieveread.py L386-391
+        query_vector: Optional[list[float]] = None
+        if use_vector_search:
+            query_vector = await self.compute_query_embedding(search_query)
+
+        # STEP 3: Retrieve relevant documents
+        # Source: chatreadretrieveread.py L393-406
+        if self.search_fn:
+            results = await self.search_fn(
+                query=search_query,
+                top=top,
+                use_text_search=use_text_search,
+                use_vector_search=use_vector_search,
+                query_vector=query_vector,
+                use_semantic_ranker=use_semantic_ranker,
+            )
+        else:
+            results = []
+
+        thoughts.append(
+            {
+                "title": "Search using generated search query",
+                "description": search_query,
+                "props": {
+                    "use_semantic_ranker": use_semantic_ranker,
+                    "top": top,
+                    "retrieval_mode": retrieval_mode,
+                },
+            }
+        )
+
+        # STEP 4: Build source context
+        # Source: chatreadretrieveread.py L408-415
+        citations: list[str] = []
+        text_sources: list[str] = []
+        for doc in results:
+            citation = getattr(doc, "sourcepage", "") or getattr(doc, "id", "") or ""
+            if citation and citation not in citations:
+                citations.append(citation)
+            content = getattr(doc, "content", "") or ""
+            content = content.replace("\n", " ").replace("\r", " ")
+            text_sources.append(f"{citation}: {content}")
+
+        thoughts.append(
+            {
+                "title": "Search results",
+                "description": [
+                    (
+                        r.serialize_for_results()
+                        if hasattr(r, "serialize_for_results")
+                        else str(r)
+                    )
+                    for r in results
+                ],
+            }
+        )
+
+        # STEP 5: Prepare final answer prompt
+        # Source: chatreadretrieveread.py L298-313
+        sources_text = "\n".join(text_sources)
+        system_message = SYSTEM_PROMPT.replace(
+            "{%- if include_follow_up_questions %}",
+            "" if suggest_followup else "<!-- ",
+        ).replace(
+            "{%- endif %}",
+            "" if suggest_followup else " -->",
+        )
+
+        user_message = USER_PROMPT_TEMPLATE.format(
+            sources=sources_text,
+            user_query=original_user_query,
+        )
+
+        final_messages: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": system_message},
+        ]
+        # Include past conversation
+        for msg in messages[:-1]:
+            if msg["role"] != "system":
+                final_messages.append(msg)
+        final_messages.append({"role": "user", "content": user_message})
+
+        # Create the chat completion coroutine
+        # Source: chatreadretrieveread.py L315-325
+        model = self.chatgpt_deployment or self.chatgpt_model
+        params: dict[str, Any] = {
+            "max_tokens": overrides.get("response_token_limit", 1024),
+            "temperature": overrides.get("temperature", 0.3),
+        }
+        if should_stream:
+            params["stream"] = True
+            params["stream_options"] = {"include_usage": True}
+
+        chat_coroutine = self.openai_client.chat.completions.create(
+            model=model,
+            messages=final_messages,
+            n=1,
+            **params,
+        )
+
+        thoughts.append(
+            {
+                "title": "Prompt to generate answer",
+                "description": final_messages,
+                "props": {"model": self.chatgpt_model},
+            }
+        )
+
+        extra_info = {
+            "data_points": {
+                "text": text_sources,
+                "citations": citations,
+            },
+            "thoughts": thoughts,
+        }
+
+        return extra_info, chat_coroutine
+
+    # ==================== Non-Streaming Execution ====================
+
+    async def run_without_streaming(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        overrides: dict[str, Any],
+        session_state: Any = None,
+    ) -> dict[str, Any]:
+        """Execute the full CRRR pipeline (non-streaming).
+
+        Source: chatreadretrieveread.py L113-144
+        """
+        extra_info, chat_coroutine = await self.run_until_final_call(
+            messages, overrides, should_stream=False
+        )
+
+        chat_completion: ChatCompletion = await chat_coroutine
+        content = chat_completion.choices[0].message.content
+        role = chat_completion.choices[0].message.role
+
+        if overrides.get("suggest_followup_questions"):
+            content, followup_questions = self.extract_followup_questions(content)
+            extra_info["followup_questions"] = followup_questions
+
+        if self.include_token_usage and chat_completion.usage and extra_info["thoughts"]:
+            extra_info["thoughts"][-1]["props"] = extra_info["thoughts"][-1].get("props", {})
+            extra_info["thoughts"][-1]["props"]["token_usage"] = {
+                "prompt_tokens": chat_completion.usage.prompt_tokens,
+                "completion_tokens": chat_completion.usage.completion_tokens,
+                "total_tokens": chat_completion.usage.total_tokens,
+            }
+
+        return {
+            "message": {"content": content, "role": role},
+            "context": extra_info,
+            "session_state": session_state,
+        }
+
+    # ==================== Streaming Execution ====================
+
+    async def run_with_streaming(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        overrides: dict[str, Any],
+        session_state: Any = None,
+    ) -> AsyncGenerator[dict, None]:
+        """Execute the full CRRR pipeline (streaming).
+
+        Source: chatreadretrieveread.py L146-230
+
+        Yields search/thought context first, then streams content deltas.
+        After all content, yields follow-up questions (if enabled).
+        Token usage is reported in the final chunk.
+        """
+        extra_info, chat_coroutine = await self.run_until_final_call(
+            messages, overrides, should_stream=True
+        )
+
+        # Yield initial context with thoughts/data_points
+        yield {
+            "delta": {"role": "assistant"},
+            "context": extra_info,
+            "session_state": session_state,
+        }
+
+        followup_questions_started = False
+        followup_content = ""
+        suggest_followup = overrides.get("suggest_followup_questions", False)
+
+        chat_result = await chat_coroutine
+
+        # Handle non-streaming response from reasoning models
+        # Source: chatreadretrieveread.py L162-187
+        if isinstance(chat_result, ChatCompletion):
+            content = chat_result.choices[0].message.content or ""
+            role = chat_result.choices[0].message.role or "assistant"
+
+            followup_questions: list[str] = []
+            if suggest_followup:
+                content, followup_questions = self.extract_followup_questions(content)
+
+            if self.include_token_usage and chat_result.usage and extra_info["thoughts"]:
+                extra_info["thoughts"][-1]["props"] = extra_info["thoughts"][-1].get("props", {})
+                extra_info["thoughts"][-1]["props"]["token_usage"] = {
+                    "prompt_tokens": chat_result.usage.prompt_tokens,
+                    "completion_tokens": chat_result.usage.completion_tokens,
+                    "total_tokens": chat_result.usage.total_tokens,
+                }
+
+            yield {"delta": {"role": role, "content": content}}
+            yield {
+                "delta": {"role": "assistant"},
+                "context": extra_info,
+                "session_state": session_state,
+            }
+
+            if followup_questions:
+                yield {
+                    "delta": {"role": "assistant"},
+                    "context": {"followup_questions": followup_questions},
+                }
+            return
+
+        # Handle streaming response
+        # Source: chatreadretrieveread.py L189-230
+        async for event_chunk in chat_result:
+            event = event_chunk.model_dump()
+            if event["choices"]:
+                delta_content = event["choices"][0]["delta"].get("content") or ""
+                delta_role = event["choices"][0]["delta"].get("role", "assistant")
+
+                completion = {
+                    "delta": {
+                        "content": delta_content,
+                        "role": delta_role,
+                    }
+                }
+
+                # Handle follow-up question extraction during stream
+                # Source: chatreadretrieveread.py L202-217
+                if suggest_followup and "<<" in delta_content:
+                    followup_questions_started = True
+                    earlier_content = delta_content[: delta_content.index("<<")]
+                    if earlier_content:
+                        completion["delta"]["content"] = earlier_content
+                        yield completion
+                    followup_content += delta_content[delta_content.index("<<") :]
+                elif followup_questions_started:
+                    followup_content += delta_content
+                else:
+                    yield completion
+            else:
+                # Final chunk with usage data
+                # Source: chatreadretrieveread.py L219-223
+                if event_chunk.usage and self.include_token_usage and extra_info["thoughts"]:
+                    extra_info["thoughts"][-1]["props"] = extra_info["thoughts"][-1].get("props", {})
+                    extra_info["thoughts"][-1]["props"]["token_usage"] = {
+                        "prompt_tokens": event_chunk.usage.prompt_tokens,
+                        "completion_tokens": event_chunk.usage.completion_tokens,
+                        "total_tokens": event_chunk.usage.total_tokens,
+                    }
+                    yield {
+                        "delta": {"role": "assistant"},
+                        "context": extra_info,
+                        "session_state": session_state,
+                    }
+
+        # Emit accumulated follow-up questions
+        # Source: chatreadretrieveread.py L225-230
+        if followup_content:
+            _, followup_questions = self.extract_followup_questions(followup_content)
+            yield {
+                "delta": {"role": "assistant"},
+                "context": {"followup_questions": followup_questions},
+            }
+
+    # ==================== Public Interface ====================
+
+    async def run(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        session_state: Any = None,
+        context: dict[str, Any] = {},
+    ) -> dict[str, Any]:
+        """Non-streaming entry point.
+
+        Source: chatreadretrieveread.py L232-240
+        """
+        overrides = context.get("overrides", {})
+        return await self.run_without_streaming(messages, overrides, session_state)
+
+    async def run_stream(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        session_state: Any = None,
+        context: dict[str, Any] = {},
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """Streaming entry point.
+
+        Source: chatreadretrieveread.py L242-250
+        """
+        overrides = context.get("overrides", {})
+        return self.run_with_streaming(messages, overrides, session_state)

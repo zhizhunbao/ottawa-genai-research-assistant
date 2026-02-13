@@ -1,12 +1,10 @@
-/**
- * Global Shared Enums
+﻿/**
+ * SharedEnums - Cross-module enumerations and configuration constants
  *
- * Centralized enumerations for cross-module configurations and state types.
- *
- * @template — Custom Implementation
+ * @module shared
+ * @template none
+ * @reference none
  */
-
-/** 语言类型 */
 export enum Language {
   EN = 'en',
   FR = 'fr'

@@ -1,0 +1,249 @@
+/**
+ * Thread Primitives - Headless thread container and message list
+ *
+ * @module frontend/features/chat/primitives/thread-primitives
+ * @source assistant-ui/packages/react/src/primitives/thread/ThreadRoot.tsx (38L)
+ * @source assistant-ui/packages/react/src/primitives/thread/ThreadMessages.tsx (221L)
+ * @source assistant-ui/packages/react/src/primitives/thread/ThreadViewport.tsx
+ * @source assistant-ui/packages/react/src/primitives/thread/ThreadEmpty.tsx
+ * @source assistant-ui/packages/react/src/primitives/thread/ThreadScrollToBottom.tsx
+ * @reference https://github.com/Yonom/assistant-ui
+ * @template S1-M7-F2
+ *
+ * Headless thread primitives:
+ * 1. ThreadRoot — top-level wrapper
+ * 2. ThreadMessages — renders message list with component injection
+ * 3. ThreadViewport — scrollable container with auto-scroll
+ * 4. ThreadEmpty — shown when no messages
+ * 5. ThreadScrollToBottom — button to jump to latest message
+ */
+
+import React, {
+  createContext,
+  forwardRef,
+  useContext,
+  useRef,
+  useEffect,
+  useCallback,
+  useState,
+  useMemo,
+  memo,
+  type FC,
+  type ComponentType,
+  type HTMLAttributes,
+} from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ThreadMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  parts: Array<{ type: string; content?: string; [k: string]: unknown }>;
+  attachments?: File[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface ThreadState {
+  messages: ThreadMessage[];
+  isRunning: boolean;
+  isDisabled?: boolean;
+}
+
+// ─── Context ────────────────────────────────────────────────────────────────
+
+interface ThreadContextValue {
+  state: ThreadState;
+}
+
+const ThreadContext = createContext<ThreadContextValue | null>(null);
+
+export function useThread(): ThreadContextValue {
+  const ctx = useContext(ThreadContext);
+  if (!ctx) throw new Error("useThread must be used within <ThreadRoot>");
+  return ctx;
+}
+
+// ─── ThreadRoot ─────────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/thread/ThreadRoot.tsx (30-37L)
+
+export interface ThreadRootProps extends HTMLAttributes<HTMLDivElement> {
+  state: ThreadState;
+}
+
+/**
+ * Root container for a conversation thread.
+ * @example
+ * <ThreadRoot state={threadState}>
+ *   <ThreadViewport>
+ *     <ThreadMessages components={{ Message: MyMessage }} />
+ *   </ThreadViewport>
+ * </ThreadRoot>
+ */
+export const ThreadRoot = forwardRef<HTMLDivElement, ThreadRootProps>(
+  ({ state, children, ...props }, ref) => {
+    return (
+      <ThreadContext.Provider value={{ state }}>
+        <div ref={ref} {...props}>
+          {children}
+        </div>
+      </ThreadContext.Provider>
+    );
+  }
+);
+ThreadRoot.displayName = "ThreadPrimitive.Root";
+
+// ─── ThreadMessages ─────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/thread/ThreadMessages.tsx (78-221L)
+
+export interface ThreadMessagesProps {
+  components:
+    | { Message: ComponentType<{ message: ThreadMessage; index: number }> }
+    | {
+        UserMessage: ComponentType<{ message: ThreadMessage; index: number }>;
+        AssistantMessage: ComponentType<{ message: ThreadMessage; index: number }>;
+        SystemMessage?: ComponentType<{ message: ThreadMessage; index: number }>;
+      };
+}
+
+/**
+ * Renders all messages using provided component overrides.
+ * Supports single Message component or role-specific components.
+ */
+export const ThreadMessages: FC<ThreadMessagesProps> = memo(({ components }) => {
+  const { state } = useThread();
+
+  const getComponent = useCallback(
+    (role: string) => {
+      if ("Message" in components && components.Message) return components.Message;
+      const c = components as {
+        UserMessage: ComponentType<any>;
+        AssistantMessage: ComponentType<any>;
+        SystemMessage?: ComponentType<any>;
+      };
+      switch (role) {
+        case "user": return c.UserMessage;
+        case "assistant": return c.AssistantMessage;
+        case "system": return c.SystemMessage ?? (() => null);
+        default: return () => null;
+      }
+    },
+    [components]
+  );
+
+  return (
+    <>
+      {state.messages.map((msg, i) => {
+        const Comp = getComponent(msg.role);
+        return <Comp key={msg.id} message={msg} index={i} />;
+      })}
+    </>
+  );
+});
+ThreadMessages.displayName = "ThreadPrimitive.Messages";
+
+// ─── ThreadViewport ─────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/thread/ThreadViewport.tsx + useThreadViewportAutoScroll.tsx
+
+export interface ThreadViewportProps extends HTMLAttributes<HTMLDivElement> {
+  /** Auto-scroll to bottom when new messages arrive */
+  autoScroll?: boolean;
+}
+
+/**
+ * Scrollable viewport with auto-scroll during streaming.
+ * Pauses auto-scroll when user scrolls up manually.
+ */
+export const ThreadViewport = forwardRef<HTMLDivElement, ThreadViewportProps>(
+  ({ autoScroll = true, style, children, ...props }, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { state } = useThread();
+    const [isAtBottom, setIsAtBottom] = useState(true);
+    const isScrollingRef = useRef(false);
+
+    const scrollToBottom = useCallback(() => {
+      if (!containerRef.current) return;
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      setIsAtBottom(true);
+    }, []);
+
+    // Auto-scroll on new messages or running state
+    useEffect(() => {
+      if (autoScroll && isAtBottom) {
+        scrollToBottom();
+      }
+    }, [state.messages.length, state.isRunning, autoScroll, isAtBottom, scrollToBottom]);
+
+    const handleScroll = useCallback(() => {
+      if (!containerRef.current || isScrollingRef.current) return;
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+      setIsAtBottom(atBottom);
+    }, []);
+
+    return (
+      <div
+        ref={(el) => {
+          (containerRef as any).current = el;
+          if (typeof ref === "function") ref(el);
+          else if (ref) (ref as any).current = el;
+        }}
+        onScroll={handleScroll}
+        style={{ overflow: "auto", ...style }}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+ThreadViewport.displayName = "ThreadPrimitive.Viewport";
+
+// ─── ThreadEmpty ────────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/thread/ThreadEmpty.tsx
+
+export interface ThreadEmptyProps {
+  children: React.ReactNode;
+}
+
+/**
+ * Rendered only when the thread has no messages.
+ */
+export const ThreadEmpty: FC<ThreadEmptyProps> = ({ children }) => {
+  const { state } = useThread();
+  return state.messages.length === 0 ? <>{children}</> : null;
+};
+ThreadEmpty.displayName = "ThreadPrimitive.Empty";
+
+// ─── ThreadScrollToBottom ───────────────────────────────────────────────────
+// @source assistant-ui/primitives/thread/ThreadScrollToBottom.tsx
+
+export interface ThreadScrollToBottomProps
+  extends HTMLAttributes<HTMLButtonElement> {}
+
+/**
+ * Button that scrolls the viewport to the bottom.
+ * Only visible when user has scrolled up.
+ */
+export const ThreadScrollToBottom = forwardRef<
+  HTMLButtonElement,
+  ThreadScrollToBottomProps
+>((props, ref) => {
+  // This component should be used inside ThreadViewport
+  const handleClick = useCallback(() => {
+    const viewport = document.querySelector("[data-thread-viewport]");
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
+  }, []);
+
+  return <button ref={ref} onClick={handleClick} type="button" {...props} />;
+});
+ThreadScrollToBottom.displayName = "ThreadPrimitive.ScrollToBottom";
+
+export default {
+  Root: ThreadRoot,
+  Messages: ThreadMessages,
+  Viewport: ThreadViewport,
+  Empty: ThreadEmpty,
+  ScrollToBottom: ThreadScrollToBottom,
+};

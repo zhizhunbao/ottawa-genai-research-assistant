@@ -1,0 +1,260 @@
+/**
+ * Chat Runtime - Pluggable backend adapter for chat primitives
+ *
+ * @module frontend/features/chat/primitives/chat-runtime
+ * @source assistant-ui/packages/react/src/legacy-runtime/RuntimeAdapter.ts (49L)
+ * @source assistant-ui/packages/react/src/legacy-runtime/AssistantRuntimeProvider.tsx
+ * @reference https://github.com/Yonom/assistant-ui
+ * @template S1-M7-F4
+ *
+ * Runtime abstraction:
+ * 1. ChatRuntime interface — defines contract for any backend
+ * 2. LocalRuntime — in-memory implementation for demos/testing
+ * 3. FetchRuntime — connects to REST/SSE backend
+ * 4. RuntimeProvider — React context for runtime injection
+ *
+ * Pattern from assistant-ui: separate UI primitives from backend concerns
+ * via a pluggable runtime adapter.
+ */
+
+import React, { createContext, useContext, useMemo, type FC } from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  parts?: Array<{ type: string; content?: string; [k: string]: unknown }>;
+  metadata?: Record<string, unknown>;
+  createdAt?: Date;
+}
+
+export interface ThreadListItem {
+  id: string;
+  title?: string;
+  lastMessage?: string;
+  updatedAt?: Date;
+}
+
+export interface StreamCallbacks {
+  onToken?: (token: string) => void;
+  onComplete?: (message: ChatMessage) => void;
+  onError?: (error: Error) => void;
+}
+
+// ─── Runtime Interface ──────────────────────────────────────────────────────
+// @source assistant-ui/legacy-runtime/RuntimeAdapter.ts (12-27L)
+
+export interface ChatRuntime {
+  /** Send a message and receive streaming response */
+  sendMessage(
+    messages: ChatMessage[],
+    callbacks: StreamCallbacks
+  ): Promise<void>;
+
+  /** Cancel the current streaming response */
+  cancelRun(): void;
+
+  /** List available threads */
+  listThreads?(): Promise<ThreadListItem[]>;
+
+  /** Create a new thread */
+  createThread?(): Promise<string>;
+
+  /** Load messages for a thread */
+  loadThread?(threadId: string): Promise<ChatMessage[]>;
+
+  /** Delete a thread */
+  deleteThread?(threadId: string): Promise<void>;
+
+  /** Whether the runtime is currently generating */
+  isRunning: boolean;
+
+  /** Available model capabilities */
+  capabilities?: {
+    attachments?: boolean;
+    edit?: boolean;
+    branches?: boolean;
+  };
+}
+
+// ─── Local Runtime (in-memory) ──────────────────────────────────────────────
+
+export class LocalRuntime implements ChatRuntime {
+  isRunning = false;
+  private abortController: AbortController | null = null;
+
+  constructor(
+    private handler: (
+      messages: ChatMessage[],
+      signal: AbortSignal
+    ) => AsyncIterable<string>
+  ) {}
+
+  async sendMessage(
+    messages: ChatMessage[],
+    callbacks: StreamCallbacks
+  ): Promise<void> {
+    this.isRunning = true;
+    this.abortController = new AbortController();
+    const { signal } = this.abortController;
+
+    try {
+      let fullContent = "";
+      for await (const token of this.handler(messages, signal)) {
+        if (signal.aborted) break;
+        fullContent += token;
+        callbacks.onToken?.(token);
+      }
+
+      const assistantMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: fullContent,
+        createdAt: new Date(),
+      };
+      callbacks.onComplete?.(assistantMsg);
+    } catch (error) {
+      if (!signal.aborted) {
+        callbacks.onError?.(error instanceof Error ? error : new Error(String(error)));
+      }
+    } finally {
+      this.isRunning = false;
+      this.abortController = null;
+    }
+  }
+
+  cancelRun(): void {
+    this.abortController?.abort();
+    this.isRunning = false;
+  }
+}
+
+// ─── Fetch Runtime (REST/SSE backend) ───────────────────────────────────────
+
+export class FetchRuntime implements ChatRuntime {
+  isRunning = false;
+  private abortController: AbortController | null = null;
+
+  constructor(
+    private config: {
+      endpoint: string;
+      getHeaders?: () => Record<string, string>;
+    }
+  ) {}
+
+  async sendMessage(
+    messages: ChatMessage[],
+    callbacks: StreamCallbacks
+  ): Promise<void> {
+    this.isRunning = true;
+    this.abortController = new AbortController();
+
+    try {
+      const response = await fetch(this.config.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.config.getHeaders?.(),
+        },
+        body: JSON.stringify({ messages }),
+        signal: this.abortController.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        // Parse SSE format: data: {"content": "..."}
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            const token = parsed.content ?? parsed.choices?.[0]?.delta?.content ?? "";
+            if (token) {
+              fullContent += token;
+              callbacks.onToken?.(token);
+            }
+          } catch {
+            // Non-JSON line, treat as raw token
+            fullContent += data;
+            callbacks.onToken?.(data);
+          }
+        }
+      }
+
+      callbacks.onComplete?.({
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: fullContent,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      if (this.abortController?.signal.aborted) return;
+      callbacks.onError?.(error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      this.isRunning = false;
+      this.abortController = null;
+    }
+  }
+
+  cancelRun(): void {
+    this.abortController?.abort();
+    this.isRunning = false;
+  }
+}
+
+// ─── Runtime Context & Provider ─────────────────────────────────────────────
+// @source assistant-ui/legacy-runtime/AssistantRuntimeProvider.tsx
+
+const RuntimeContext = createContext<ChatRuntime | null>(null);
+
+export function useChatRuntime(): ChatRuntime {
+  const ctx = useContext(RuntimeContext);
+  if (!ctx) throw new Error("useChatRuntime must be used within <RuntimeProvider>");
+  return ctx;
+}
+
+export interface RuntimeProviderProps {
+  runtime: ChatRuntime;
+  children: React.ReactNode;
+}
+
+/**
+ * Provides chat runtime to the component tree.
+ * @example
+ * const runtime = new FetchRuntime({ endpoint: "/api/chat" });
+ * <RuntimeProvider runtime={runtime}>
+ *   <ThreadRoot state={...}>...</ThreadRoot>
+ * </RuntimeProvider>
+ */
+export const RuntimeProvider: FC<RuntimeProviderProps> = ({
+  runtime,
+  children,
+}) => {
+  return (
+    <RuntimeContext.Provider value={runtime}>{children}</RuntimeContext.Provider>
+  );
+};
+
+export default {
+  LocalRuntime,
+  FetchRuntime,
+  RuntimeProvider,
+  useChatRuntime,
+};

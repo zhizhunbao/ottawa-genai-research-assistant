@@ -1,0 +1,686 @@
+/**
+ * Enhanced Streaming Chat Hook — Production-grade SSE connection management
+ *
+ * Upgrades the basic streaming hook with:
+ * - AbortController lifecycle management (cancel mid-stream)
+ * - Automatic retry with exponential backoff
+ * - Token usage tracking (prompt_tokens, completion_tokens)
+ * - Error recovery with categorized error types
+ * - Reasoning/thinking content support
+ * - Tool call streaming support
+ * - Throttled UI updates to prevent render thrashing
+ *
+ * @module features/chat/hooks/use-stream-chat
+ * @source lobe-chat/src/store/chat/slices/aiChat/actions/StreamingHandler.ts (539 lines)
+ * @source lobe-chat/src/store/chat/slices/aiChat/actions/streamingExecutor.ts (949 lines)
+ * @source lobe-chat/src/store/chat/slices/aiChat/actions/streamingStates.ts (54 lines)
+ * @source lobe-chat/src/store/chat/slices/aiChat/actions/types/streaming.ts (124 lines)
+ * @reference https://github.com/lobehub/lobe-chat
+ * @template S1-M6-F1
+ */
+
+// ==================== Types ====================
+
+/** Token usage information returned by the API */
+export interface TokenUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
+/** Model performance metrics */
+export interface ModelPerformance {
+  /** Tokens per second */
+  speed?: number;
+  /** Time to first token (ms) */
+  ttft?: number;
+  /** Total generation time (ms) */
+  duration?: number;
+}
+
+/** Reasoning/thinking state during streaming */
+export interface ReasoningState {
+  content?: string;
+  duration?: number;
+}
+
+/** Tool call information */
+export interface ToolCallInfo {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+/**
+ * Stream chunk types — discriminated union for type-safe chunk handling
+ *
+ * @source lobe-chat/src/store/chat/slices/aiChat/actions/types/streaming.ts L107-123
+ */
+export type StreamChunk =
+  | { type: 'text'; text: string }
+  | { type: 'reasoning'; text: string }
+  | { type: 'tool_calls'; tool_calls: ToolCallInfo[] }
+  | { type: 'stop' };
+
+/** Streaming result after completion */
+export interface StreamingResult {
+  content: string;
+  isFunctionCall: boolean;
+  reasoning?: ReasoningState;
+  toolCalls?: ToolCallInfo[];
+  traceId?: string;
+  usage?: TokenUsage;
+  performance?: ModelPerformance;
+  finishType?: string;
+}
+
+/** Error categories for granular error handling */
+export type StreamErrorType =
+  | 'network'       // connection/timeout
+  | 'auth'          // 401/403
+  | 'rate_limit'    // 429
+  | 'server'        // 5xx
+  | 'parse'         // malformed response
+  | 'abort'         // user cancelled
+  | 'unknown';
+
+export interface StreamError {
+  type: StreamErrorType;
+  message: string;
+  status?: number;
+  retryable: boolean;
+}
+
+/** Retry configuration */
+export interface RetryConfig {
+  /** Maximum number of retry attempts (default: 3) */
+  maxRetries: number;
+  /** Base delay in ms before first retry (default: 1000) */
+  retryDelay: number;
+  /** Maximum delay cap in ms (default: 30000) */
+  maxDelay: number;
+  /** Backoff multiplier (default: 2) */
+  backoffFactor: number;
+}
+
+/** Configuration for the streaming hook */
+export interface StreamChatConfig {
+  /** API base URL */
+  baseUrl: string;
+  /** Function to get auth token */
+  getToken?: () => string | null;
+  /** Retry configuration */
+  retry?: Partial<RetryConfig>;
+  /** Throttle interval for UI updates in ms (default: 50) */
+  throttleMs?: number;
+}
+
+/** Callbacks for streaming events */
+export interface StreamChatCallbacks {
+  /** Called on each text chunk */
+  onMessage?: (content: string) => void;
+  /** Called when reasoning/thinking content is received */
+  onReasoning?: (reasoning: ReasoningState) => void;
+  /** Called when tool calls are received */
+  onToolCalls?: (toolCalls: ToolCallInfo[]) => void;
+  /** Called when streaming completes */
+  onFinish?: (result: StreamingResult) => void;
+  /** Called on error */
+  onError?: (error: StreamError) => void;
+  /** Called when stream is aborted by user */
+  onAbort?: () => void;
+  /** Called on token usage update */
+  onUsage?: (usage: TokenUsage) => void;
+}
+
+// ==================== Constants ====================
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  retryDelay: 1000,
+  maxDelay: 30000,
+  backoffFactor: 2,
+};
+
+const DEFAULT_THROTTLE_MS = 50;
+
+// ==================== StreamingHandler Class ====================
+
+/**
+ * Encapsulates streaming state and chunk processing logic.
+ *
+ * @source lobe-chat/src/store/chat/slices/aiChat/actions/StreamingHandler.ts L46-538
+ * Simplified from lobe-chat's 539-line handler: removed multimodal/image upload,
+ * group chat speaker tag, grounding/search. Kept core patterns:
+ * - Text accumulation with throttled updates
+ * - Reasoning timing (start → end → duration)
+ * - Tool call detection and processing
+ */
+class StreamingHandler {
+  // Text state
+  private output = '';
+
+  // Reasoning state
+  private thinkingContent = '';
+  private thinkingStartAt?: number;
+  private thinkingDuration?: number;
+
+  // Tool call state
+  private isFunctionCall = false;
+  private toolCalls: ToolCallInfo[] = [];
+
+  // Throttle state
+  private lastUpdateTime = 0;
+  private pendingUpdate = false;
+  private updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    private callbacks: StreamChatCallbacks,
+    private throttleMs: number = DEFAULT_THROTTLE_MS,
+  ) {}
+
+  /**
+   * Handle a streaming chunk — dispatches by type
+   *
+   * @source lobe-chat StreamingHandler.handleChunk L96-131
+   */
+  handleChunk(chunk: StreamChunk): void {
+    switch (chunk.type) {
+      case 'text':
+        this.handleTextChunk(chunk.text);
+        break;
+      case 'reasoning':
+        this.handleReasoningChunk(chunk.text);
+        break;
+      case 'tool_calls':
+        this.handleToolCallsChunk(chunk.tool_calls);
+        break;
+      case 'stop':
+        this.endReasoningIfNeeded();
+        this.flushPendingUpdate();
+        break;
+    }
+  }
+
+  /**
+   * Build final result after streaming completes
+   *
+   * @source lobe-chat StreamingHandler.buildFinalResult L473-537
+   */
+  buildResult(finishData?: {
+    traceId?: string;
+    usage?: TokenUsage;
+    performance?: ModelPerformance;
+    type?: string;
+  }): StreamingResult {
+    return {
+      content: this.output,
+      isFunctionCall: this.isFunctionCall,
+      reasoning: this.thinkingContent
+        ? { content: this.thinkingContent, duration: this.thinkingDuration }
+        : undefined,
+      toolCalls: this.toolCalls.length > 0 ? this.toolCalls : undefined,
+      traceId: finishData?.traceId,
+      usage: finishData?.usage,
+      performance: finishData?.performance,
+      finishType: finishData?.type,
+    };
+  }
+
+  /** Get accumulated output content */
+  getOutput(): string {
+    return this.output;
+  }
+
+  /** Cleanup timers */
+  destroy(): void {
+    if (this.updateTimer) {
+      clearTimeout(this.updateTimer);
+      this.updateTimer = null;
+    }
+  }
+
+  // ==================== Private methods ====================
+
+  /**
+   * @source lobe-chat StreamingHandler.handleTextChunk L199-217
+   */
+  private handleTextChunk(text: string): void {
+    this.output += text;
+    this.endReasoningIfNeeded();
+    this.throttledNotify();
+  }
+
+  /**
+   * @source lobe-chat StreamingHandler.handleReasoningChunk L219-226
+   */
+  private handleReasoningChunk(text: string): void {
+    this.startReasoningIfNeeded();
+    this.thinkingContent += text;
+    this.callbacks.onReasoning?.({
+      content: this.thinkingContent,
+    });
+  }
+
+  /**
+   * @source lobe-chat StreamingHandler.handleToolCallsChunk L276-287
+   */
+  private handleToolCallsChunk(toolCalls: ToolCallInfo[]): void {
+    this.isFunctionCall = true;
+    this.toolCalls = toolCalls;
+    this.endReasoningIfNeeded();
+    this.callbacks.onToolCalls?.(toolCalls);
+  }
+
+  /**
+   * @source lobe-chat StreamingHandler.startReasoningIfNeeded L317-322
+   */
+  private startReasoningIfNeeded(): void {
+    if (!this.thinkingStartAt) {
+      this.thinkingStartAt = Date.now();
+    }
+  }
+
+  /**
+   * @source lobe-chat StreamingHandler.endReasoningIfNeeded L324-333
+   */
+  private endReasoningIfNeeded(): void {
+    if (this.thinkingStartAt && !this.thinkingDuration) {
+      this.thinkingDuration = Date.now() - this.thinkingStartAt;
+    }
+  }
+
+  /**
+   * Throttled content update notification.
+   * Prevents render thrashing by batching rapid updates.
+   */
+  private throttledNotify(): void {
+    const now = Date.now();
+    if (now - this.lastUpdateTime >= this.throttleMs) {
+      this.lastUpdateTime = now;
+      this.callbacks.onMessage?.(this.output);
+      this.pendingUpdate = false;
+    } else if (!this.pendingUpdate) {
+      this.pendingUpdate = true;
+      this.updateTimer = setTimeout(() => {
+        this.lastUpdateTime = Date.now();
+        this.callbacks.onMessage?.(this.output);
+        this.pendingUpdate = false;
+        this.updateTimer = null;
+      }, this.throttleMs - (now - this.lastUpdateTime));
+    }
+  }
+
+  /** Flush any pending throttled update immediately */
+  private flushPendingUpdate(): void {
+    if (this.pendingUpdate) {
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+      }
+      this.callbacks.onMessage?.(this.output);
+      this.pendingUpdate = false;
+    }
+  }
+}
+
+// ==================== Error Classification ====================
+
+/**
+ * Classify HTTP errors into StreamError categories.
+ * Determines retryability based on error type.
+ */
+function classifyError(error: unknown, status?: number): StreamError {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return { type: 'abort', message: 'Request cancelled', retryable: false };
+  }
+
+  if (error instanceof TypeError && error.message.includes('fetch')) {
+    return { type: 'network', message: 'Network error', retryable: true };
+  }
+
+  if (status) {
+    if (status === 401 || status === 403) {
+      return { type: 'auth', message: `Authentication error (${status})`, status, retryable: false };
+    }
+    if (status === 429) {
+      return { type: 'rate_limit', message: 'Rate limited', status, retryable: true };
+    }
+    if (status >= 500) {
+      return { type: 'server', message: `Server error (${status})`, status, retryable: true };
+    }
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return { type: 'unknown', message, retryable: false };
+}
+
+// ==================== Core Streaming Function ====================
+
+/**
+ * Execute a streaming chat request with retry and error recovery.
+ *
+ * This is the core function that handles:
+ * 1. Fetch with AbortController
+ * 2. SSE/NDJSON stream parsing
+ * 3. Chunk dispatch to StreamingHandler
+ * 4. Retry on retryable errors
+ * 5. Token usage tracking
+ *
+ * @source lobe-chat streamingExecutor.internal_fetchAIChatMessage L258-557
+ */
+export async function streamChat(
+  config: StreamChatConfig,
+  payload: {
+    messages: Array<{ role: string; content: string }>;
+    model?: string;
+    stream?: boolean;
+    [key: string]: unknown;
+  },
+  callbacks: StreamChatCallbacks,
+  abortController?: AbortController,
+): Promise<StreamingResult> {
+  const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config.retry };
+  const controller = abortController ?? new AbortController();
+  const handler = new StreamingHandler(callbacks, config.throttleMs);
+
+  let lastError: StreamError | null = null;
+
+  for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
+    // Skip retry delay on first attempt
+    if (attempt > 0) {
+      const delay = Math.min(
+        retryConfig.retryDelay * Math.pow(retryConfig.backoffFactor, attempt - 1),
+        retryConfig.maxDelay,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      // Check if aborted during retry wait
+      if (controller.signal.aborted) {
+        handler.destroy();
+        const abortError = classifyError(new DOMException('Aborted', 'AbortError'));
+        callbacks.onAbort?.();
+        throw abortError;
+      }
+    }
+
+    try {
+      const token = config.getToken?.();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${config.baseUrl}/chat/stream`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ...payload, stream: true }),
+        signal: controller.signal,
+      });
+
+      // Handle non-OK responses
+      if (!response.ok) {
+        const error = classifyError(
+          new Error(`HTTP ${response.status}`),
+          response.status,
+        );
+
+        // Auth errors: redirect or throw immediately
+        if (error.type === 'auth') {
+          handler.destroy();
+          callbacks.onError?.(error);
+          throw error;
+        }
+
+        // Retryable errors: continue loop
+        if (error.retryable && attempt < retryConfig.maxRetries) {
+          lastError = error;
+          continue;
+        }
+
+        handler.destroy();
+        callbacks.onError?.(error);
+        throw error;
+      }
+
+      // Parse SSE/NDJSON stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw classifyError(new Error('No response body reader available'));
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finishData: {
+        traceId?: string;
+        usage?: TokenUsage;
+        performance?: ModelPerformance;
+        type?: string;
+      } = {};
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse NDJSON lines (each JSON object terminated by \n)
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          try {
+            const data = JSON.parse(line);
+
+            // Dispatch chunk to StreamingHandler
+            if (data.type === 'text' || data.type === 'reasoning' ||
+                data.type === 'tool_calls' || data.type === 'stop') {
+              handler.handleChunk(data as StreamChunk);
+            }
+
+            // Track finish metadata
+            if (data.type === 'finish' || data.type === 'done') {
+              finishData = {
+                traceId: data.traceId ?? data.trace_id,
+                usage: data.usage,
+                performance: data.performance ?? data.speed,
+                type: data.finish_reason ?? data.type,
+              };
+              if (data.usage) {
+                callbacks.onUsage?.(data.usage);
+              }
+            }
+
+            // Handle SSE format: data: {...}
+            if (data.data && typeof data.data === 'object') {
+              if (data.data.type) {
+                handler.handleChunk(data.data as StreamChunk);
+              }
+            }
+
+            // Handle error events from server
+            if (data.error) {
+              const serverError: StreamError = {
+                type: 'server',
+                message: data.error.message || data.error,
+                retryable: false,
+              };
+              handler.destroy();
+              callbacks.onError?.(serverError);
+              throw serverError;
+            }
+          } catch (parseError) {
+            // Skip parse errors for individual lines (partial JSON, etc.)
+            if ((parseError as StreamError).type) throw parseError;
+            console.warn('[stream-chat] Failed to parse line:', line);
+          }
+        }
+      }
+
+      // Build final result
+      const result = handler.buildResult(finishData);
+      handler.destroy();
+      callbacks.onFinish?.(result);
+      return result;
+
+    } catch (error) {
+      // Abort: don't retry
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        handler.destroy();
+        callbacks.onAbort?.();
+        const abortError = classifyError(error);
+        throw abortError;
+      }
+
+      // Already classified StreamError
+      if ((error as StreamError).type) {
+        throw error;
+      }
+
+      // Classify and potentially retry
+      const streamError = classifyError(error);
+      if (streamError.retryable && attempt < retryConfig.maxRetries) {
+        lastError = streamError;
+        continue;
+      }
+
+      handler.destroy();
+      callbacks.onError?.(streamError);
+      throw streamError;
+    }
+  }
+
+  // All retries exhausted
+  handler.destroy();
+  const finalError = lastError || {
+    type: 'unknown' as StreamErrorType,
+    message: 'All retry attempts exhausted',
+    retryable: false,
+  };
+  callbacks.onError?.(finalError);
+  throw finalError;
+}
+
+// ==================== React Hook ====================
+
+import { useState, useCallback, useRef } from 'react';
+
+/**
+ * Enhanced streaming chat hook — drop-in upgrade for useChatStream.
+ *
+ * Key improvements over the basic hook:
+ * - AbortController for mid-stream cancellation
+ * - Automatic retry with exponential backoff
+ * - Token usage tracking
+ * - Reasoning/thinking content support
+ * - Tool call streaming
+ * - Categorized error handling
+ *
+ * @example
+ * ```tsx
+ * const { sendMessage, abort, isStreaming, error, usage } = useStreamChat({
+ *   baseUrl: '{{API_BASE_URL}}',
+ *   getToken: () => localStorage.getItem('token'),
+ *   retry: { maxRetries: 2 },
+ * });
+ *
+ * // Send with callbacks
+ * await sendMessage(
+ *   [{ role: 'user', content: 'Hello' }],
+ *   {
+ *     onMessage: (content) => setContent(content),
+ *     onReasoning: (r) => setReasoning(r),
+ *     onFinish: (result) => console.log('Done', result),
+ *   },
+ *   { model: 'gpt-4' }
+ * );
+ *
+ * // Cancel mid-stream
+ * abort();
+ * ```
+ */
+export function useStreamChat(config: StreamChatConfig) {
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<StreamError | null>(null);
+  const [usage, setUsage] = useState<TokenUsage | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
+  const sendMessage = useCallback(
+    async (
+      messages: Array<{ role: string; content: string }>,
+      callbacks: StreamChatCallbacks = {},
+      options: {
+        model?: string;
+        [key: string]: unknown;
+      } = {},
+    ): Promise<StreamingResult | null> => {
+      // Abort any existing stream
+      abort();
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      setIsStreaming(true);
+      setError(null);
+      setUsage(null);
+
+      try {
+        const result = await streamChat(
+          config,
+          { messages, ...options },
+          {
+            ...callbacks,
+            onUsage: (u) => {
+              setUsage(u);
+              callbacks.onUsage?.(u);
+            },
+            onAbort: () => {
+              setIsStreaming(false);
+              callbacks.onAbort?.();
+            },
+          },
+          controller,
+        );
+
+        setIsStreaming(false);
+        return result;
+      } catch (err) {
+        const streamError = (err as StreamError).type
+          ? (err as StreamError)
+          : classifyError(err);
+
+        if (streamError.type !== 'abort') {
+          setError(streamError);
+        }
+        setIsStreaming(false);
+        return null;
+      }
+    },
+    [config, abort],
+  );
+
+  return {
+    /** Send a streaming chat message */
+    sendMessage,
+    /** Abort the current stream */
+    abort,
+    /** Whether a stream is currently active */
+    isStreaming,
+    /** Last error (null when no error) */
+    error,
+    /** Token usage from last completed stream */
+    usage,
+  };
+}

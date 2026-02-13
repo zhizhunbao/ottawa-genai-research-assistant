@@ -1,0 +1,379 @@
+/**
+ * ChatAPI - Frontend API layer for chat CRUD and SSE streaming
+ *
+ * Provides:
+ * 1. Chat CRUD: create, list, get, delete conversations
+ * 2. SSE streaming: send messages with streaming response via Vercel AI SDK data protocol
+ * 3. Message history: fetch and persist message history
+ *
+ * Supports two streaming protocols:
+ * - Vercel AI SDK data stream (`0:"text"\n` format) — used by rag-web-ui
+ * - NDJSON stream (`{"type":"content","payload":"..."}\n`) — used by existing use-chat-stream
+ *
+ * @module features/chat/api
+ * @source rag-web-ui/frontend/src/lib/api.ts (fetchApi + api helper, 95 lines)
+ * @source rag-web-ui/frontend/src/app/dashboard/chat/[id]/page.tsx (useChat config, lines 51-68)
+ * @source rag-web-ui/frontend/src/app/dashboard/chat/page.tsx (fetchChats, handleDelete)
+ * @source rag-web-ui/frontend/src/app/dashboard/chat/new/page.tsx (createChat, fetchKnowledgeBases)
+ * @source rag-web-ui/backend/app/api/api_v1/chat.py (endpoint definitions)
+ * @reference https://github.com/xyb/rag-web-ui
+ * @template S1-M3-1 frontend/features/chat/api/chat-api.ts
+ */
+
+// ============================================================
+// Types
+// ============================================================
+
+/** Chat conversation */
+export interface Chat {
+  id: number | string
+  title: string
+  created_at: string
+  messages: ChatMessage[]
+  knowledge_base_ids: number[]
+}
+
+/** A single chat message */
+export interface ChatMessage {
+  id: number | string
+  content: string
+  role: 'user' | 'assistant' | 'system'
+  created_at: string
+}
+
+/** Knowledge base reference */
+export interface KnowledgeBase {
+  id: number
+  name: string
+  description: string
+}
+
+/** Create chat request */
+export interface CreateChatRequest {
+  title: string
+  knowledge_base_ids: number[]
+}
+
+/** SSE stream event types */
+export type StreamEventType = 'content' | 'thought' | 'step' | 'error' | 'done'
+
+/** SSE stream callback options */
+export interface StreamCallbacks {
+  /** Called for each text chunk */
+  onToken?: (token: string) => void
+
+  /** Called for thinking/reasoning content */
+  onThought?: (thought: string) => void
+
+  /** Called for agent step updates */
+  onStep?: (step: unknown) => void
+
+  /** Called when streaming completes */
+  onDone?: () => void
+
+  /** Called on error */
+  onError?: (error: Error) => void
+}
+
+// ============================================================
+// API Error
+// ============================================================
+
+/**
+ * Typed API error with HTTP status code.
+ *
+ * @source rag-web-ui lib/api.ts lines 6-11
+ */
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+// ============================================================
+// Chat API Factory
+// ============================================================
+
+interface ChatApiOptions {
+  /** API base URL (no trailing slash) */
+  baseUrl?: string
+
+  /** Function to get auth token */
+  getToken?: () => string | null
+}
+
+/**
+ * Create a typed chat API client.
+ *
+ * Combines patterns from:
+ * - rag-web-ui's `api` helper (auto-auth, error handling)
+ * - rag-web-ui's chat pages (CRUD endpoints)
+ * - SSE streaming via fetch ReadableStream
+ *
+ * @source rag-web-ui lib/api.ts lines 13-76 — fetchApi pattern
+ */
+export function createChatApi(options: ChatApiOptions = {}) {
+  const {
+    baseUrl = '{{API_BASE_URL}}',
+    getToken = () =>
+      typeof window !== 'undefined'
+        ? localStorage.getItem('token')
+        : null,
+  } = options
+
+  // --------------------------------------------------------
+  // Internal fetch wrapper with auth + error handling
+  // --------------------------------------------------------
+
+  /**
+   * @source rag-web-ui lib/api.ts lines 13-76
+   */
+  async function request<T>(
+    path: string,
+    init?: RequestInit
+  ): Promise<T> {
+    const headers: Record<string, string> = {
+      ...(init?.headers as Record<string, string>),
+    }
+
+    const token = getToken()
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    if (
+      !headers['Content-Type'] &&
+      init?.body &&
+      !(init.body instanceof FormData)
+    ) {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    const res = await fetch(`${baseUrl}${path}`, {
+      ...init,
+      headers,
+    })
+
+    // Handle 401 — auto redirect to login
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
+      throw new ApiError(401, 'Unauthorized — please log in again')
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new ApiError(
+        res.status,
+        errData.detail || errData.message || `HTTP ${res.status}`
+      )
+    }
+
+    return res.json()
+  }
+
+  // --------------------------------------------------------
+  // Chat CRUD
+  // --------------------------------------------------------
+
+  return {
+    /**
+     * List all conversations for the current user.
+     *
+     * @source rag-web-ui chat/page.tsx lines 34-48 — fetchChats
+     * @source Backend GET /chat/
+     */
+    async listChats(skip = 0, limit = 100): Promise<Chat[]> {
+      return request<Chat[]>(`/chat?skip=${skip}&limit=${limit}`)
+    },
+
+    /**
+     * Get a single chat with message history.
+     *
+     * @source rag-web-ui chat/[id]/page.tsx lines 83-149 — fetchChat
+     * @source Backend GET /chat/{chat_id}
+     */
+    async getChat(chatId: number | string): Promise<Chat> {
+      return request<Chat>(`/chat/${chatId}`)
+    },
+
+    /**
+     * Create a new chat conversation linked to knowledge bases.
+     *
+     * @source rag-web-ui chat/new/page.tsx lines 48-80 — handleSubmit
+     * @source Backend POST /chat/
+     */
+    async createChat(data: CreateChatRequest): Promise<Chat> {
+      return request<Chat>('/chat', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
+
+    /**
+     * Delete a chat conversation.
+     *
+     * @source rag-web-ui chat/page.tsx lines 50-69 — handleDelete
+     * @source Backend DELETE /chat/{chat_id}
+     */
+    async deleteChat(chatId: number | string): Promise<void> {
+      await request(`/chat/${chatId}`, { method: 'DELETE' })
+    },
+
+    /**
+     * List available knowledge bases for new chat creation.
+     *
+     * @source rag-web-ui chat/new/page.tsx lines 31-46 — fetchKnowledgeBases
+     */
+    async listKnowledgeBases(): Promise<KnowledgeBase[]> {
+      return request<KnowledgeBase[]>('/knowledge-base')
+    },
+
+    // --------------------------------------------------------
+    // SSE Streaming
+    // --------------------------------------------------------
+
+    /**
+     * Send a message and stream the AI response.
+     *
+     * Supports two streaming protocols:
+     *
+     * 1. **Vercel AI SDK data stream** (rag-web-ui default):
+     *    ```
+     *    0:"base64context__LLM_RESPONSE__"
+     *    0:"Hello "
+     *    0:"world"
+     *    d:{"finishReason":"stop"}
+     *    ```
+     *
+     * 2. **NDJSON stream** (custom backend):
+     *    ```
+     *    {"type":"content","payload":"Hello "}
+     *    {"type":"thought","payload":"I should..."}
+     *    {"type":"step","payload":{...}}
+     *    ```
+     *
+     * @source rag-web-ui chat/[id]/page.tsx lines 51-68 — useChat (Vercel AI SDK)
+     * @source rag-web-ui backend chat.py lines 89-133 — StreamingResponse
+     * @source rag-web-ui backend chat_service.py lines 155-194 — streaming format
+     */
+    async streamMessage(
+      chatId: number | string,
+      messages: Array<{ role: string; content: string }>,
+      callbacks: StreamCallbacks,
+      signal?: AbortSignal
+    ): Promise<void> {
+      const token = getToken()
+
+      const res = await fetch(`${baseUrl}/chat/${chatId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ messages }),
+        signal,
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new ApiError(
+          res.status,
+          errData.detail || errData.message || `Stream error: HTTP ${res.status}`
+        )
+      }
+
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('No readable stream available')
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || '' // last line may be incomplete
+
+          for (const line of lines) {
+            if (!line.trim()) continue
+
+            // Protocol 1: Vercel AI SDK data stream
+            // Format: `0:"text"\n` for content, `d:{json}\n` for data
+            const vercelMatch = line.match(/^(\d+):(.+)$/)
+            if (vercelMatch) {
+              const [, type, payload] = vercelMatch
+
+              if (type === '0') {
+                // Content text — remove wrapping quotes
+                const text = payload.replace(/^"|"$/g, '')
+                // Unescape special chars
+                const unescaped = text
+                  .replace(/\\n/g, '\n')
+                  .replace(/\\"/g, '"')
+                  .replace(/\\\\/g, '\\')
+                callbacks.onToken?.(unescaped)
+              } else if (type === '2') {
+                // Data array
+                try {
+                  const data = JSON.parse(payload)
+                  callbacks.onStep?.(data)
+                } catch { /* skip malformed */ }
+              } else if (type === '3') {
+                // Error
+                callbacks.onError?.(new Error(payload))
+              } else if (type === 'd') {
+                // Finish metadata
+                try {
+                  const meta = JSON.parse(payload)
+                  if (meta.finishReason === 'stop') {
+                    callbacks.onDone?.()
+                  }
+                } catch { /* skip */ }
+              }
+              continue
+            }
+
+            // Protocol 2: NDJSON stream
+            try {
+              const data = JSON.parse(line)
+              if (data.type === 'content') {
+                callbacks.onToken?.(data.payload)
+              } else if (data.type === 'thought') {
+                callbacks.onThought?.(data.payload)
+              } else if (data.type === 'step') {
+                callbacks.onStep?.(data.payload)
+              } else if (data.type === 'error' || data.error) {
+                callbacks.onError?.(new Error(data.payload || data.error))
+              } else if (data.type === 'done') {
+                callbacks.onDone?.()
+              }
+            } catch {
+              // Unknown format — try to emit as raw text
+              callbacks.onToken?.(line)
+            }
+          }
+        }
+
+        // Final flush
+        callbacks.onDone?.()
+      } finally {
+        reader.releaseLock()
+      }
+    },
+  }
+}
+
+/** Default chat API instance */
+export const chatApi = createChatApi()
+
+export default createChatApi

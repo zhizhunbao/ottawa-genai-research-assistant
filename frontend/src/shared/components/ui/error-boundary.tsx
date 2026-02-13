@@ -1,11 +1,10 @@
-/**
- * Error Boundary Component
+﻿/**
+ * ErrorBoundary - Catches JavaScript errors in child components to prevent global crash
  *
- * Catches JavaScript errors in child component trees to prevent global application crash.
- *
- * @template C2 frontend/shared/components/ErrorBoundary.tsx — Global Error Handler
+ * @module shared/components/ui
+ * @template C2 frontend/shared/components/ErrorBoundary.tsx
+ * @reference none
  */
-
 import { Component, ErrorInfo, ReactNode } from 'react'
 
 interface Props {

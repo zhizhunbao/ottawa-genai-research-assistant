@@ -1,0 +1,336 @@
+/**
+ * Composer Primitives - Headless message input building blocks
+ *
+ * @module frontend/features/chat/primitives/composer-primitives
+ * @source assistant-ui/packages/react/src/primitives/composer/ComposerRoot.tsx (60L)
+ * @source assistant-ui/packages/react/src/primitives/composer/ComposerInput.tsx (266L)
+ * @source assistant-ui/packages/react/src/primitives/composer/ComposerSend.tsx
+ * @source assistant-ui/packages/react/src/primitives/composer/ComposerAttachments.tsx
+ * @reference https://github.com/Yonom/assistant-ui
+ * @template S1-M7-F3
+ *
+ * Headless composer primitives:
+ * 1. ComposerRoot — form wrapper with submit handling
+ * 2. ComposerInput — auto-resize textarea with Enter/Ctrl+Enter modes
+ * 3. ComposerSend — submit button (disabled when empty/running)
+ * 4. ComposerAttachments — file attachment area
+ * 5. ComposerCancel — cancel current generation
+ */
+
+import React, {
+  createContext,
+  forwardRef,
+  useContext,
+  useCallback,
+  useRef,
+  useEffect,
+  useState,
+  type FC,
+  type FormEvent,
+  type KeyboardEvent,
+  type HTMLAttributes,
+  type TextareaHTMLAttributes,
+} from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ComposerState {
+  text: string;
+  attachments: File[];
+  isEditing: boolean;
+  isRunning?: boolean;
+}
+
+export type SubmitMode = "enter" | "ctrlEnter" | "none";
+
+// ─── Context ────────────────────────────────────────────────────────────────
+
+interface ComposerContextValue {
+  text: string;
+  setText: (v: string) => void;
+  attachments: File[];
+  addAttachment: (file: File) => void;
+  removeAttachment: (index: number) => void;
+  submit: () => void;
+  cancel: () => void;
+  isRunning: boolean;
+  canSubmit: boolean;
+}
+
+const ComposerContext = createContext<ComposerContextValue | null>(null);
+
+export function useComposer(): ComposerContextValue {
+  const ctx = useContext(ComposerContext);
+  if (!ctx) throw new Error("useComposer must be used within <ComposerRoot>");
+  return ctx;
+}
+
+// ─── ComposerRoot ───────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/composer/ComposerRoot.tsx (37-59L)
+
+export interface ComposerRootProps
+  extends Omit<HTMLAttributes<HTMLFormElement>, "onSubmit"> {
+  /** Called when the user submits a message */
+  onSubmit: (text: string, attachments: File[]) => void;
+  /** Called when the user cancels the current generation */
+  onCancel?: () => void;
+  /** Whether the assistant is currently generating */
+  isRunning?: boolean;
+  /** Initial text value */
+  initialText?: string;
+}
+
+/**
+ * Form wrapper that handles message submission.
+ * @example
+ * <ComposerRoot onSubmit={handleSend} isRunning={isStreaming}>
+ *   <ComposerInput submitMode="enter" />
+ *   <ComposerSend>Send</ComposerSend>
+ * </ComposerRoot>
+ */
+export const ComposerRoot = forwardRef<HTMLFormElement, ComposerRootProps>(
+  (
+    { onSubmit, onCancel, isRunning = false, initialText = "", children, ...props },
+    ref
+  ) => {
+    const [text, setText] = useState(initialText);
+    const [attachments, setAttachments] = useState<File[]>([]);
+
+    const canSubmit = text.trim().length > 0 && !isRunning;
+
+    const submit = useCallback(() => {
+      if (!canSubmit) return;
+      onSubmit(text.trim(), attachments);
+      setText("");
+      setAttachments([]);
+    }, [text, attachments, canSubmit, onSubmit]);
+
+    const cancel = useCallback(() => {
+      onCancel?.();
+    }, [onCancel]);
+
+    const addAttachment = useCallback((file: File) => {
+      setAttachments((prev) => [...prev, file]);
+    }, []);
+
+    const removeAttachment = useCallback((index: number) => {
+      setAttachments((prev) => prev.filter((_, i) => i !== index));
+    }, []);
+
+    const handleSubmit = (e: FormEvent) => {
+      e.preventDefault();
+      submit();
+    };
+
+    return (
+      <ComposerContext.Provider
+        value={{
+          text,
+          setText,
+          attachments,
+          addAttachment,
+          removeAttachment,
+          submit,
+          cancel,
+          isRunning,
+          canSubmit,
+        }}
+      >
+        <form ref={ref} onSubmit={handleSubmit} {...props}>
+          {children}
+        </form>
+      </ComposerContext.Provider>
+    );
+  }
+);
+ComposerRoot.displayName = "ComposerPrimitive.Root";
+
+// ─── ComposerInput ──────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/composer/ComposerInput.tsx (109-263L)
+
+export interface ComposerInputProps
+  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange"> {
+  /** Enter to submit or Ctrl+Enter to submit */
+  submitMode?: SubmitMode;
+  /** Auto-focus on mount */
+  autoFocus?: boolean;
+  /** Cancel composition on Escape */
+  cancelOnEscape?: boolean;
+}
+
+/**
+ * Auto-resizing textarea with keyboard submission.
+ * @example
+ * <ComposerInput submitMode="enter" placeholder="Type..." />
+ */
+export const ComposerInput = forwardRef<HTMLTextAreaElement, ComposerInputProps>(
+  (
+    {
+      submitMode = "enter",
+      autoFocus = false,
+      cancelOnEscape = true,
+      onKeyDown,
+      style,
+      ...props
+    },
+    ref
+  ) => {
+    const { text, setText, submit, cancel, isRunning } = useComposer();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Auto-resize
+    useEffect(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }, [text]);
+
+    // Auto-focus
+    useEffect(() => {
+      if (autoFocus && textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, [autoFocus]);
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
+
+      // Ignore IME composition
+      if (e.nativeEvent.isComposing) return;
+
+      // Escape to cancel
+      if (e.key === "Escape" && cancelOnEscape) {
+        cancel();
+        return;
+      }
+
+      if (e.key !== "Enter") return;
+      if (isRunning) return;
+
+      let shouldSubmit = false;
+      if (submitMode === "enter" && !e.shiftKey) {
+        shouldSubmit = true;
+      } else if (submitMode === "ctrlEnter" && (e.ctrlKey || e.metaKey)) {
+        shouldSubmit = true;
+      }
+
+      if (shouldSubmit) {
+        e.preventDefault();
+        submit();
+      }
+    };
+
+    return (
+      <textarea
+        ref={(el) => {
+          (textareaRef as any).current = el;
+          if (typeof ref === "function") ref(el);
+          else if (ref) (ref as any).current = el;
+        }}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={1}
+        style={{
+          resize: "none",
+          overflow: "hidden",
+          minHeight: "40px",
+          maxHeight: "200px",
+          ...style,
+        }}
+        disabled={isRunning}
+        {...props}
+      />
+    );
+  }
+);
+ComposerInput.displayName = "ComposerPrimitive.Input";
+
+// ─── ComposerSend ───────────────────────────────────────────────────────────
+// @source assistant-ui/primitives/composer/ComposerSend.tsx
+
+export interface ComposerSendProps
+  extends HTMLAttributes<HTMLButtonElement> {
+  /** Custom disabled state (auto-disabled when empty/running) */
+  disabled?: boolean;
+}
+
+/**
+ * Submit button, auto-disabled when input is empty or assistant is running.
+ */
+export const ComposerSend = forwardRef<HTMLButtonElement, ComposerSendProps>(
+  ({ disabled, ...props }, ref) => {
+    const { canSubmit } = useComposer();
+    return (
+      <button
+        ref={ref}
+        type="submit"
+        disabled={disabled ?? !canSubmit}
+        {...props}
+      />
+    );
+  }
+);
+ComposerSend.displayName = "ComposerPrimitive.Send";
+
+// ─── ComposerCancel ─────────────────────────────────────────────────────────
+
+export interface ComposerCancelProps extends HTMLAttributes<HTMLButtonElement> {}
+
+/**
+ * Cancel button for stopping current generation.
+ */
+export const ComposerCancel = forwardRef<HTMLButtonElement, ComposerCancelProps>(
+  (props, ref) => {
+    const { cancel, isRunning } = useComposer();
+    if (!isRunning) return null;
+    return (
+      <button ref={ref} type="button" onClick={cancel} {...props} />
+    );
+  }
+);
+ComposerCancel.displayName = "ComposerPrimitive.Cancel";
+
+// ─── ComposerAttachments ────────────────────────────────────────────────────
+// @source assistant-ui/primitives/composer/ComposerAttachments.tsx
+
+export interface ComposerAttachmentsProps {
+  /** Custom renderer for each attachment */
+  component?: FC<{ file: File; index: number; onRemove: () => void }>;
+}
+
+/**
+ * Renders attached files with a remove button.
+ */
+export const ComposerAttachments: FC<ComposerAttachmentsProps> = ({
+  component: Comp,
+}) => {
+  const { attachments, removeAttachment } = useComposer();
+  if (attachments.length === 0) return null;
+
+  return (
+    <div>
+      {attachments.map((file, i) =>
+        Comp ? (
+          <Comp key={i} file={file} index={i} onRemove={() => removeAttachment(i)} />
+        ) : (
+          <span key={i}>
+            {file.name}{" "}
+            <button type="button" onClick={() => removeAttachment(i)}>×</button>
+          </span>
+        )
+      )}
+    </div>
+  );
+};
+ComposerAttachments.displayName = "ComposerPrimitive.Attachments";
+
+export default {
+  Root: ComposerRoot,
+  Input: ComposerInput,
+  Send: ComposerSend,
+  Cancel: ComposerCancel,
+  Attachments: ComposerAttachments,
+};

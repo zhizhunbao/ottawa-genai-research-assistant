@@ -1,0 +1,489 @@
+"""
+RAG Pipeline - End-to-end retrieval-augmented generation orchestrator.
+
+@module backend/rag/rag-pipeline
+@source open-webui/backend/open_webui/apps/rag/main.py (pipeline orchestration)
+@source open-webui/backend/open_webui/apps/rag/utils.py (utility functions)
+@reference https://github.com/open-webui/open-webui
+@template S3-M5-F1
+
+Unified RAG pipeline that orchestrates embedding → retrieval → reranking → generation.
+Provides a single entry point that abstracts away the underlying storage backend.
+
+Pipeline stages:
+1. Document ingestion: chunk → embed → store
+2. Query processing: embed query → search → rerank
+3. Context assembly: format retrieved chunks into prompt context
+4. Answer generation: LLM call with context + chat history
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, AsyncIterator, Optional
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Configuration ───────────────────────────────────────────────────────────
+
+class SearchMode(str, Enum):
+    """Search modes supported by the pipeline."""
+    VECTOR = "vector"
+    KEYWORD = "keyword"
+    HYBRID = "hybrid"
+
+
+@dataclass
+class RAGConfig:
+    """Configuration for the RAG pipeline."""
+    
+    # Embedding
+    embedding_model: str = "text-embedding-3-small"
+    embedding_batch_size: int = 100
+    
+    # Chunking
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
+    
+    # Retrieval
+    search_mode: SearchMode = SearchMode.HYBRID
+    top_k: int = 5
+    similarity_threshold: float = 0.3
+    
+    # Reranking
+    rerank_enabled: bool = True
+    rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    rerank_top_k: int = 3
+    
+    # Generation
+    llm_model: str = "gpt-4o-mini"
+    max_context_tokens: int = 8000
+    temperature: float = 0.7
+    include_citations: bool = True
+
+
+# ─── Types ───────────────────────────────────────────────────────────────────
+
+@dataclass
+class Document:
+    """A source document before chunking."""
+    id: str
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    filename: str = ""
+
+
+@dataclass
+class Chunk:
+    """A document chunk with embedding."""
+    id: str
+    document_id: str
+    content: str
+    embedding: list[float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    
+
+@dataclass
+class RetrievedChunk:
+    """A chunk with its retrieval score."""
+    chunk: Chunk
+    score: float
+    source: str = ""  # "vector" | "keyword" | "reranked"
+
+
+@dataclass
+class RAGResponse:
+    """Response from the RAG pipeline."""
+    answer: str
+    sources: list[RetrievedChunk]
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+# ─── Abstract Interfaces ────────────────────────────────────────────────────
+
+class EmbeddingProvider(ABC):
+    """Interface for embedding generation."""
+    
+    @abstractmethod
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings for a batch of texts."""
+        ...
+    
+    @abstractmethod
+    async def embed_query(self, query: str) -> list[float]:
+        """Generate embedding for a single query."""
+        ...
+
+
+class VectorStore(ABC):
+    """Interface for vector storage and search."""
+    
+    @abstractmethod
+    async def upsert(self, chunks: list[Chunk]) -> None:
+        """Store chunks with their embeddings."""
+        ...
+    
+    @abstractmethod
+    async def search(
+        self, query_embedding: list[float], top_k: int = 5, **filters
+    ) -> list[tuple[Chunk, float]]:
+        """Search for similar chunks by vector similarity."""
+        ...
+    
+    @abstractmethod
+    async def keyword_search(
+        self, query: str, top_k: int = 5, **filters
+    ) -> list[tuple[Chunk, float]]:
+        """Full-text keyword search."""
+        ...
+    
+    @abstractmethod
+    async def delete(self, document_id: str) -> None:
+        """Delete all chunks for a document."""
+        ...
+
+
+class Reranker(ABC):
+    """Interface for result reranking."""
+    
+    @abstractmethod
+    async def rerank(
+        self, query: str, chunks: list[Chunk], top_k: int = 3
+    ) -> list[tuple[Chunk, float]]:
+        """Rerank chunks by relevance to query."""
+        ...
+
+
+class LLMProvider(ABC):
+    """Interface for LLM generation."""
+    
+    @abstractmethod
+    async def generate(
+        self, messages: list[dict], **kwargs
+    ) -> str:
+        """Generate a response from messages."""
+        ...
+    
+    @abstractmethod
+    async def generate_stream(
+        self, messages: list[dict], **kwargs
+    ) -> AsyncIterator[str]:
+        """Stream a response from messages."""
+        ...
+
+
+# ─── Text Chunker ────────────────────────────────────────────────────────────
+
+class TextChunker:
+    """
+    Simple recursive text chunker.
+    @source open-webui utils.py chunking logic
+    """
+    
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.separators = ["\n\n", "\n", ". ", " ", ""]
+    
+    def chunk(self, document: Document) -> list[Chunk]:
+        """Split a document into chunks."""
+        texts = self._split_text(document.content)
+        chunks = []
+        for i, text in enumerate(texts):
+            chunks.append(Chunk(
+                id=f"{document.id}_chunk_{i}",
+                document_id=document.id,
+                content=text,
+                metadata={
+                    **document.metadata,
+                    "chunk_index": i,
+                    "filename": document.filename,
+                },
+            ))
+        return chunks
+    
+    def _split_text(self, text: str) -> list[str]:
+        """Recursively split text using separator hierarchy."""
+        return self._recursive_split(text, self.separators)
+    
+    def _recursive_split(self, text: str, separators: list[str]) -> list[str]:
+        if len(text) <= self.chunk_size:
+            return [text] if text.strip() else []
+        
+        if not separators:
+            # Force split at chunk_size
+            chunks = []
+            for i in range(0, len(text), self.chunk_size - self.chunk_overlap):
+                chunk = text[i : i + self.chunk_size]
+                if chunk.strip():
+                    chunks.append(chunk)
+            return chunks
+        
+        sep = separators[0]
+        parts = text.split(sep) if sep else list(text)
+        
+        chunks = []
+        current = ""
+        
+        for part in parts:
+            candidate = current + sep + part if current else part
+            if len(candidate) > self.chunk_size and current:
+                chunks.append(current)
+                # Overlap: keep end of current chunk
+                overlap_text = current[-self.chunk_overlap :] if self.chunk_overlap else ""
+                current = overlap_text + sep + part if overlap_text else part
+            else:
+                current = candidate
+        
+        if current.strip():
+            chunks.append(current)
+        
+        # If any chunk is still too large, split with next separator
+        final_chunks = []
+        for chunk in chunks:
+            if len(chunk) > self.chunk_size:
+                final_chunks.extend(
+                    self._recursive_split(chunk, separators[1:])
+                )
+            else:
+                final_chunks.append(chunk)
+        
+        return final_chunks
+
+
+# ─── RAG Pipeline ────────────────────────────────────────────────────────────
+# @source open-webui/apps/rag/main.py — pipeline orchestration
+
+class RAGPipeline:
+    """
+    End-to-end RAG pipeline orchestrator.
+    
+    Coordinates chunking, embedding, indexing, retrieval, reranking,
+    and generation through pluggable provider interfaces.
+    """
+    
+    def __init__(
+        self,
+        config: RAGConfig,
+        embedding: EmbeddingProvider,
+        vector_store: VectorStore,
+        llm: LLMProvider,
+        reranker: Reranker | None = None,
+    ):
+        self.config = config
+        self.embedding = embedding
+        self.vector_store = vector_store
+        self.llm = llm
+        self.reranker = reranker
+        self.chunker = TextChunker(config.chunk_size, config.chunk_overlap)
+    
+    # ── Ingestion ────────────────────────────────────────────────────────
+    
+    async def ingest(self, documents: list[Document]) -> int:
+        """
+        Ingest documents: chunk → embed → store.
+        Returns the number of chunks created.
+        """
+        all_chunks: list[Chunk] = []
+        
+        # Step 1: Chunk documents
+        for doc in documents:
+            chunks = self.chunker.chunk(doc)
+            all_chunks.extend(chunks)
+            logger.info(
+                f"Document {doc.id} ({doc.filename}): {len(chunks)} chunks"
+            )
+        
+        if not all_chunks:
+            return 0
+        
+        # Step 2: Embed in batches
+        batch_size = self.config.embedding_batch_size
+        for i in range(0, len(all_chunks), batch_size):
+            batch = all_chunks[i : i + batch_size]
+            texts = [c.content for c in batch]
+            embeddings = await self.embedding.embed(texts)
+            for chunk, emb in zip(batch, embeddings):
+                chunk.embedding = emb
+        
+        # Step 3: Store
+        await self.vector_store.upsert(all_chunks)
+        logger.info(f"Ingested {len(all_chunks)} chunks from {len(documents)} documents")
+        
+        return len(all_chunks)
+    
+    async def delete_document(self, document_id: str) -> None:
+        """Remove all chunks for a document."""
+        await self.vector_store.delete(document_id)
+        logger.info(f"Deleted document {document_id}")
+    
+    # ── Retrieval ────────────────────────────────────────────────────────
+    
+    async def retrieve(
+        self,
+        query: str,
+        top_k: int | None = None,
+        **filters,
+    ) -> list[RetrievedChunk]:
+        """
+        Retrieve relevant chunks for a query.
+        @source open-webui/apps/rag/utils.py — retrieval logic
+        """
+        k = top_k or self.config.top_k
+        mode = self.config.search_mode
+        
+        results: list[RetrievedChunk] = []
+        
+        if mode in (SearchMode.VECTOR, SearchMode.HYBRID):
+            query_embedding = await self.embedding.embed_query(query)
+            vector_results = await self.vector_store.search(
+                query_embedding, k, **filters
+            )
+            for chunk, score in vector_results:
+                if score >= self.config.similarity_threshold:
+                    results.append(RetrievedChunk(
+                        chunk=chunk, score=score, source="vector"
+                    ))
+        
+        if mode in (SearchMode.KEYWORD, SearchMode.HYBRID):
+            keyword_results = await self.vector_store.keyword_search(
+                query, k, **filters
+            )
+            for chunk, score in keyword_results:
+                results.append(RetrievedChunk(
+                    chunk=chunk, score=score, source="keyword"
+                ))
+        
+        # Deduplicate by chunk ID (hybrid may return duplicates)
+        seen = set()
+        unique = []
+        for r in results:
+            if r.chunk.id not in seen:
+                seen.add(r.chunk.id)
+                unique.append(r)
+        results = unique
+        
+        # Rerank if enabled
+        if self.config.rerank_enabled and self.reranker and results:
+            chunks = [r.chunk for r in results]
+            reranked = await self.reranker.rerank(
+                query, chunks, self.config.rerank_top_k
+            )
+            results = [
+                RetrievedChunk(chunk=c, score=s, source="reranked")
+                for c, s in reranked
+            ]
+        
+        # Sort and limit
+        results.sort(key=lambda r: r.score, reverse=True)
+        return results[:k]
+    
+    # ── Generation ───────────────────────────────────────────────────────
+    
+    async def query(
+        self,
+        question: str,
+        chat_history: list[dict] | None = None,
+    ) -> RAGResponse:
+        """
+        Full RAG query: retrieve → assemble context → generate answer.
+        """
+        start = time.time()
+        
+        # Step 1: Retrieve
+        retrieved = await self.retrieve(question)
+        
+        # Step 2: Build context
+        context = self._build_context(retrieved)
+        
+        # Step 3: Build messages
+        messages = self._build_messages(question, context, chat_history)
+        
+        # Step 4: Generate
+        answer = await self.llm.generate(
+            messages,
+            temperature=self.config.temperature,
+            model=self.config.llm_model,
+        )
+        
+        elapsed = time.time() - start
+        logger.info(f"RAG query completed in {elapsed:.2f}s ({len(retrieved)} chunks)")
+        
+        return RAGResponse(
+            answer=answer,
+            sources=retrieved,
+            metadata={
+                "elapsed_seconds": elapsed,
+                "chunks_retrieved": len(retrieved),
+                "search_mode": self.config.search_mode.value,
+            },
+        )
+    
+    async def query_stream(
+        self,
+        question: str,
+        chat_history: list[dict] | None = None,
+    ) -> AsyncIterator[str]:
+        """
+        Streaming RAG query: retrieve → assemble → stream answer.
+        """
+        retrieved = await self.retrieve(question)
+        context = self._build_context(retrieved)
+        messages = self._build_messages(question, context, chat_history)
+        
+        async for token in self.llm.generate_stream(
+            messages,
+            temperature=self.config.temperature,
+            model=self.config.llm_model,
+        ):
+            yield token
+    
+    def _build_context(self, chunks: list[RetrievedChunk]) -> str:
+        """Format retrieved chunks into a context string."""
+        if not chunks:
+            return "No relevant context found."
+        
+        parts = []
+        for i, rc in enumerate(chunks, 1):
+            source = rc.chunk.metadata.get("filename", "unknown")
+            parts.append(
+                f"[Source {i}: {source}]\n{rc.chunk.content}\n"
+            )
+        
+        return "\n---\n".join(parts)
+    
+    def _build_messages(
+        self,
+        question: str,
+        context: str,
+        chat_history: list[dict] | None = None,
+    ) -> list[dict]:
+        """Build LLM messages with RAG context."""
+        citation_instruction = ""
+        if self.config.include_citations:
+            citation_instruction = (
+                " When referencing information from the context, "
+                "cite the source using [Source N] notation."
+            )
+        
+        system_prompt = (
+            "You are a helpful research assistant. Answer the user's question "
+            "based on the provided context. If the context doesn't contain "
+            "relevant information, say so clearly."
+            f"{citation_instruction}\n\n"
+            f"Context:\n{context}"
+        )
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if chat_history:
+            messages.extend(chat_history)
+        
+        messages.append({"role": "user", "content": question})
+        
+        return messages

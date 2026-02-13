@@ -1,0 +1,240 @@
+/**
+ * useCitation - Hook for parsing citation data from AI responses and fetching source info
+ *
+ * Handles the full citation data lifecycle:
+ * 1. Parse citation markers from raw AI response (base64 encoded or JSON)
+ * 2. Extract Citation[] from parsed data
+ * 3. Fetch source metadata (file name, knowledge base) from backend API
+ * 4. Provide citation info map for display components
+ *
+ * @module features/chat/citation
+ * @source rag-web-ui/frontend/src/components/chat/answer.tsx (useEffect citation fetch, lines 56-95)
+ * @source rag-web-ui/frontend/src/app/dashboard/chat/[id]/page.tsx (processedMessages logic)
+ * @reference https://github.com/xyb/rag-web-ui
+ * @template S1-M1-5 frontend/features/chat/citation/use-citation.ts
+ */
+
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import type { Citation, CitationInfo, CitationSource } from './types'
+import { groupCitationsBySource } from './citation-popover'
+
+// ============================================================
+// Citation Parser
+// ============================================================
+
+interface RawRetrievalContext {
+  page_content: string
+  metadata: Record<string, unknown>
+}
+
+interface ParsedMessage {
+  /** Cleaned content without embedded citation data */
+  content: string
+
+  /** Extracted citations from the response */
+  citations: Citation[]
+}
+
+/**
+ * Parse AI response to extract embedded citation data.
+ *
+ * Supports two formats:
+ * 1. Base64 encoded: `<base64_context>__LLM_RESPONSE__<answer>`
+ * 2. JSON structured: `{"citations": [...], "answer": "..."}`
+ *
+ * @source rag-web-ui page.tsx lines 155-191 — processMessageContent function
+ */
+export function parseMessageCitations(rawContent: string): ParsedMessage {
+  if (!rawContent) {
+    return { content: '', citations: [] }
+  }
+
+  // Format 1: Base64 + delimiter
+  if (rawContent.includes('__LLM_RESPONSE__')) {
+    try {
+      const [base64Part, responseText] = rawContent.split('__LLM_RESPONSE__')
+
+      const contextData = base64Part
+        ? (JSON.parse(atob(base64Part.trim())) as {
+            context: RawRetrievalContext[]
+          })
+        : null
+
+      const citations: Citation[] =
+        contextData?.context.map((chunk, index) => ({
+          id: index + 1,
+          text: chunk.page_content,
+          metadata: {
+            source_file: String(chunk.metadata.source ?? ''),
+            page_num: chunk.metadata.page_num as number | undefined,
+            section_title: String(chunk.metadata.section_title ?? ''),
+            confidence: chunk.metadata.confidence as number | undefined,
+            kb_id: String(chunk.metadata.kb_id ?? ''),
+            document_id: String(chunk.metadata.document_id ?? ''),
+            ...chunk.metadata,
+          },
+        })) ?? []
+
+      return {
+        content: responseText?.trim() ?? '',
+        citations,
+      }
+    } catch (e) {
+      console.error('Failed to parse base64 citation data:', e)
+      return { content: rawContent, citations: [] }
+    }
+  }
+
+  // Format 2: JSON structured response
+  try {
+    const parsed = JSON.parse(rawContent)
+    if (parsed.citations && parsed.answer) {
+      return {
+        content: parsed.answer,
+        citations: parsed.citations.map((c: any, idx: number) => ({
+          id: idx + 1,
+          text: c.text || c.content || c.page_content || '',
+          metadata: {
+            source_file: c.source_file || c.source || '',
+            page_num: c.page_num ?? c.page,
+            section_title: c.section_title ?? '',
+            confidence: c.confidence ?? c.score,
+            ...c.metadata,
+          },
+        })),
+      }
+    }
+  } catch {
+    // Not JSON — treat as plain markdown (no embedded citations)
+  }
+
+  // Plain markdown — citations may come separately
+  return { content: rawContent, citations: [] }
+}
+
+// ============================================================
+// Citation Info Fetcher
+// ============================================================
+
+interface UseCitationOptions {
+  /** API base URL for fetching citation source info */
+  apiBaseUrl?: string
+
+  /** Custom fetch function (for auth headers, etc.) */
+  fetchFn?: typeof fetch
+
+  /** Whether to auto-fetch citation info */
+  autoFetch?: boolean
+}
+
+interface UseCitationReturn {
+  /** Citation info map (keyed by source ID) */
+  citationInfoMap: Record<string, CitationInfo>
+
+  /** Grouped citation sources */
+  citationSources: CitationSource[]
+
+  /** Loading state for citation info fetch */
+  isLoading: boolean
+
+  /** Fetch citation info for a set of citations */
+  fetchCitationInfo: (citations: Citation[]) => Promise<void>
+}
+
+/**
+ * Hook to manage citation data fetching and grouping.
+ *
+ * @source rag-web-ui answer.tsx lines 56-95 — useEffect fetchCitationInfo
+ */
+export function useCitation(
+  citations: Citation[],
+  options: UseCitationOptions = {}
+): UseCitationReturn {
+  const {
+    apiBaseUrl = '{{API_BASE_URL}}',
+    fetchFn = fetch,
+    autoFetch = true,
+  } = options
+
+  const [citationInfoMap, setCitationInfoMap] = useState<Record<string, CitationInfo>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Group citations by source
+  const citationSources = useMemo(
+    () => groupCitationsBySource(citations),
+    [citations]
+  )
+
+  // Fetch citation info from backend
+  const fetchCitationInfo = useCallback(
+    async (citationsToFetch: Citation[]) => {
+      if (citationsToFetch.length === 0) return
+
+      setIsLoading(true)
+      const infoMap: Record<string, CitationInfo> = {}
+
+      // Deduplicate by source key
+      const uniqueSources = new Map<
+        string,
+        { kb_id: string; document_id: string }
+      >()
+
+      for (const citation of citationsToFetch) {
+        const { kb_id, document_id } = citation.metadata
+        if (!kb_id || !document_id) continue
+
+        const key = `${kb_id}-${document_id}`
+        if (!uniqueSources.has(key)) {
+          uniqueSources.set(key, {
+            kb_id: String(kb_id),
+            document_id: String(document_id),
+          })
+        }
+      }
+
+      // Fetch info for each unique source
+      const fetchPromises = Array.from(uniqueSources.entries()).map(
+        async ([key, { kb_id, document_id }]) => {
+          try {
+            const [kbRes, docRes] = await Promise.all([
+              fetchFn(`${apiBaseUrl}/knowledge-base/${kb_id}`).then((r) => r.json()),
+              fetchFn(`${apiBaseUrl}/knowledge-base/${kb_id}/documents/${document_id}`).then((r) => r.json()),
+            ])
+
+            const fileName = docRes.file_name || docRes.name || 'Unknown'
+            const extension = fileName.split('.').pop() || ''
+
+            infoMap[key] = {
+              knowledgeBaseName: kbRes.name || 'Unknown',
+              documentFileName: fileName,
+              fileExtension: extension,
+            }
+          } catch (error) {
+            console.error(`Failed to fetch citation info for ${key}:`, error)
+          }
+        }
+      )
+
+      await Promise.all(fetchPromises)
+      setCitationInfoMap((prev) => ({ ...prev, ...infoMap }))
+      setIsLoading(false)
+    },
+    [apiBaseUrl, fetchFn]
+  )
+
+  // Auto-fetch on citations change
+  useEffect(() => {
+    if (autoFetch && citations.length > 0) {
+      fetchCitationInfo(citations)
+    }
+  }, [citations, autoFetch, fetchCitationInfo])
+
+  return {
+    citationInfoMap,
+    citationSources,
+    isLoading,
+    fetchCitationInfo,
+  }
+}
+
+export default useCitation

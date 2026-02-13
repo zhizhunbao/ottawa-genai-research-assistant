@@ -1,0 +1,329 @@
+/**
+ * Advanced Parameters - Temperature, Top-P, Max Tokens detail controls
+ *
+ * @module frontend/features/chat/settings/advanced-params
+ * @source open-webui/src/lib/components/chat/Settings/Advanced.svelte → TSX
+ * @reference https://github.com/open-webui/open-webui
+ * @template S1-M8-F2
+ *
+ * Standalone advanced parameter editor with:
+ * - Detailed tooltips for each parameter
+ * - Reset-to-default buttons
+ * - Validation ranges from OpenAI API spec
+ * - Collapsible sections
+ */
+
+import React, { type FC, useState } from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface AdvancedParams {
+  temperature: number;
+  topP: number;
+  topK?: number;
+  maxTokens: number;
+  frequencyPenalty: number;
+  presencePenalty: number;
+  repetitionPenalty?: number;
+  seed: number | null;
+  stop?: string[];
+}
+
+export const PARAM_DEFAULTS: AdvancedParams = {
+  temperature: 0.7,
+  topP: 1.0,
+  topK: undefined,
+  maxTokens: 4096,
+  frequencyPenalty: 0.0,
+  presencePenalty: 0.0,
+  repetitionPenalty: undefined,
+  seed: null,
+  stop: [],
+};
+
+export interface ParamConfig {
+  key: keyof AdvancedParams;
+  label: string;
+  tooltip: string;
+  min: number;
+  max: number;
+  step: number;
+  type: "slider" | "number" | "text";
+}
+
+export const PARAM_CONFIGS: ParamConfig[] = [
+  {
+    key: "temperature",
+    label: "Temperature",
+    tooltip:
+      "Controls randomness. Higher values (e.g., 1.5) make output more creative; lower values (e.g., 0.2) make it more focused and deterministic.",
+    min: 0,
+    max: 2,
+    step: 0.1,
+    type: "slider",
+  },
+  {
+    key: "topP",
+    label: "Top P (Nucleus Sampling)",
+    tooltip:
+      "Controls diversity via nucleus sampling. 0.5 means half of all likelihood-weighted options are considered.",
+    min: 0,
+    max: 1,
+    step: 0.05,
+    type: "slider",
+  },
+  {
+    key: "maxTokens",
+    label: "Max Tokens",
+    tooltip: "Maximum number of tokens to generate in the response.",
+    min: 1,
+    max: 131072,
+    step: 256,
+    type: "number",
+  },
+  {
+    key: "frequencyPenalty",
+    label: "Frequency Penalty",
+    tooltip:
+      "Penalizes new tokens based on their existing frequency in the text. Positive values decrease repetition.",
+    min: -2,
+    max: 2,
+    step: 0.1,
+    type: "slider",
+  },
+  {
+    key: "presencePenalty",
+    label: "Presence Penalty",
+    tooltip:
+      "Penalizes new tokens based on whether they appear in the text so far. Positive values encourage new topics.",
+    min: -2,
+    max: 2,
+    step: 0.1,
+    type: "slider",
+  },
+];
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const st = {
+  container: {
+    padding: "16px",
+    background: "var(--card-bg, #ffffff)",
+    borderRadius: "var(--radius-lg, 12px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+  } as React.CSSProperties,
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    cursor: "pointer",
+    marginBottom: "12px",
+  } as React.CSSProperties,
+
+  title: {
+    fontSize: "var(--text-sm, 14px)",
+    fontWeight: 600,
+    color: "var(--text-primary, #1e293b)",
+  } as React.CSSProperties,
+
+  field: {
+    marginBottom: "16px",
+  } as React.CSSProperties,
+
+  labelRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "4px",
+  } as React.CSSProperties,
+
+  label: {
+    fontSize: "var(--text-sm, 14px)",
+    fontWeight: 500,
+    color: "var(--text-primary, #1e293b)",
+  } as React.CSSProperties,
+
+  valueDisplay: {
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--text-secondary, #64748b)",
+    fontFamily: "monospace",
+  } as React.CSSProperties,
+
+  tooltip: {
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--text-secondary, #64748b)",
+    marginBottom: "6px",
+    lineHeight: 1.4,
+  } as React.CSSProperties,
+
+  slider: {
+    width: "100%",
+    accentColor: "var(--color-brand, #4318ff)",
+  } as React.CSSProperties,
+
+  resetBtn: {
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--color-brand, #4318ff)",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "2px 6px",
+    borderRadius: "var(--radius-sm, 4px)",
+    transition: "background 0.15s ease",
+  } as React.CSSProperties,
+
+  input: {
+    width: "100%",
+    padding: "6px 10px",
+    fontSize: "var(--text-sm, 14px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+    borderRadius: "var(--radius-sm, 6px)",
+    background: "var(--input-bg, #ffffff)",
+    color: "var(--text-primary, #1e293b)",
+    outline: "none",
+  } as React.CSSProperties,
+};
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
+export interface AdvancedParamsProps {
+  params: AdvancedParams;
+  onChange: (params: AdvancedParams) => void;
+  /** Start collapsed */
+  defaultCollapsed?: boolean;
+  className?: string;
+}
+
+export const AdvancedParamsEditor: FC<AdvancedParamsProps> = ({
+  params,
+  onChange,
+  defaultCollapsed = true,
+  className,
+}) => {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  const update = <K extends keyof AdvancedParams>(
+    key: K,
+    value: AdvancedParams[K]
+  ) => {
+    onChange({ ...params, [key]: value });
+  };
+
+  const resetToDefault = (key: keyof AdvancedParams) => {
+    onChange({ ...params, [key]: PARAM_DEFAULTS[key] });
+  };
+
+  return (
+    <div style={st.container} className={className}>
+      <div style={st.header} onClick={() => setCollapsed(!collapsed)}>
+        <span style={st.title}>Advanced Parameters</span>
+        <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+          {collapsed ? "▶" : "▼"}
+        </span>
+      </div>
+
+      {!collapsed && (
+        <div>
+          {PARAM_CONFIGS.map((cfg) => {
+            const value = params[cfg.key];
+            return (
+              <div key={cfg.key} style={st.field}>
+                <div style={st.labelRow}>
+                  <span style={st.label}>{cfg.label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={st.valueDisplay}>
+                      {value ?? "—"}
+                    </span>
+                    <button
+                      type="button"
+                      style={st.resetBtn}
+                      onClick={() => resetToDefault(cfg.key)}
+                      title="Reset to default"
+                    >
+                      ↺
+                    </button>
+                  </div>
+                </div>
+                <div style={st.tooltip}>{cfg.tooltip}</div>
+                {cfg.type === "slider" ? (
+                  <input
+                    type="range"
+                    min={cfg.min}
+                    max={cfg.max}
+                    step={cfg.step}
+                    value={(value as number) ?? cfg.min}
+                    onChange={(e) => update(cfg.key, parseFloat(e.target.value) as any)}
+                    style={st.slider}
+                  />
+                ) : (
+                  <input
+                    type="number"
+                    min={cfg.min}
+                    max={cfg.max}
+                    step={cfg.step}
+                    value={(value as number) ?? ""}
+                    onChange={(e) =>
+                      update(
+                        cfg.key,
+                        e.target.value ? parseFloat(e.target.value) : (null as any)
+                      )
+                    }
+                    style={st.input}
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          {/* Seed */}
+          <div style={st.field}>
+            <div style={st.labelRow}>
+              <span style={st.label}>Seed</span>
+              <span style={st.valueDisplay}>{params.seed ?? "Random"}</span>
+            </div>
+            <div style={st.tooltip}>
+              Set a fixed seed for deterministic output. Same seed + same input = same output.
+            </div>
+            <input
+              type="number"
+              placeholder="Random"
+              value={params.seed ?? ""}
+              onChange={(e) =>
+                update("seed", e.target.value ? parseInt(e.target.value) : null)
+              }
+              style={st.input}
+            />
+          </div>
+
+          {/* Stop Sequences */}
+          <div style={st.field}>
+            <div style={st.labelRow}>
+              <span style={st.label}>Stop Sequences</span>
+            </div>
+            <div style={st.tooltip}>
+              Up to 4 sequences where the API will stop generating further tokens. Comma-separated.
+            </div>
+            <input
+              type="text"
+              placeholder="e.g., \n, ###, [END]"
+              value={(params.stop ?? []).join(", ")}
+              onChange={(e) =>
+                update(
+                  "stop",
+                  e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                )
+              }
+              style={st.input}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdvancedParamsEditor;

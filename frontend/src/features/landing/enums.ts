@@ -1,11 +1,10 @@
-/**
- * Home Feature Enums & Static Configuration
+﻿/**
+ * LandingEnums - Visual configurations and feature mappings for the landing page
  *
- * Visual configurations, statistics metadata, and feature mappings for the landing page.
- *
- * @template — Custom Implementation
+ * @module features/landing
+ * @template none
+ * @reference none
  */
-
 import {
   BarChart3,
   FileText,

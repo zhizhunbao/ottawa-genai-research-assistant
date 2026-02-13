@@ -1,0 +1,230 @@
+/**
+ * MessageMarkdown - Enhanced react-markdown renderer with citation support
+ *
+ * Renders AI response markdown with:
+ * - Inline citation links [1] → Popover with source details
+ * - Code block syntax highlighting with copy button
+ * - GFM (tables, strikethrough, task lists)
+ * - Think block rendering (DeepSeek <think> tags)
+ * - Loading skeleton when content is empty
+ *
+ * @module features/chat/citation
+ * @source rag-web-ui/frontend/src/components/chat/answer.tsx (full Answer component)
+ * @source rag-web-ui/frontend/src/app/dashboard/chat/[id]/page.tsx (markdownParse fn, lines 193-199)
+ * @reference https://github.com/xyb/rag-web-ui
+ * @template S1-M1-4 frontend/features/chat/citation/message-markdown.tsx
+ */
+
+import React, { useMemo, useCallback, useState } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import { Copy, Check } from 'lucide-react'
+import { Skeleton } from '{{ALIAS}}/shared/components/ui/skeleton'
+import { createCitationLink } from './citation-link'
+import {
+  CitationSourceList,
+  CitationDetailModal,
+  groupCitationsBySource,
+} from './citation-popover'
+import type { Citation, CitationInfo, CitationSource, MessageMarkdownProps } from './types'
+
+// ============================================================
+// Citation Format Normalizer
+// ============================================================
+
+/**
+ * Normalize various citation formats in markdown to standard [citation](N) link format.
+ *
+ * Handles: [[citation:1]], [[Citation:1]], [citation:1], [Citation1]
+ * Output:  [citation](1) — which react-markdown renders as <a href="1">
+ *
+ * @source rag-web-ui page.tsx lines 193-199 — markdownParse function
+ */
+function normalizeCitationMarkers(text: string): string {
+  return text
+    .replace(/\[\[([cC])itation/g, '[citation')
+    .replace(/[cC]itation:(\d+)]]/g, 'citation:$1]')
+    .replace(/\[\[([cC]itation:\d+)]](?!])/g, '[$1]')
+    .replace(/\[[cC]itation:(\d+)]/g, '[citation]($1)')
+}
+
+/**
+ * Process think blocks from DeepSeek-style models.
+ *
+ * Converts <think>...</think> tags to collapsible markdown sections.
+ *
+ * @source rag-web-ui answer.tsx lines 50-54 — processedMarkdown useMemo
+ */
+function processThinkBlocks(text: string): string {
+  return text
+    .replace(/<think>/g, '\n<details>\n<summary>💭 Thinking...</summary>\n\n```\n')
+    .replace(/<\/think>/g, '\n```\n\n</details>\n')
+}
+
+// ============================================================
+// Code Block Component
+// ============================================================
+
+interface CodeBlockProps {
+  children?: React.ReactNode
+  className?: string
+  node?: unknown
+  [key: string]: unknown
+}
+
+/** Code block with copy button and language label */
+function CodeBlock({ children, className, ...rest }: CodeBlockProps) {
+  const [copied, setCopied] = useState(false)
+  const match = /language-(\w+)/.exec(className || '')
+  const language = match ? match[1] : ''
+  const isInline = !match
+
+  // Handle copy
+  const handleCopy = useCallback(() => {
+    const text = String(children).replace(/\n$/, '')
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [children])
+
+  // Inline code
+  if (isInline) {
+    return (
+      <code
+        className="px-1.5 py-0.5 rounded-md bg-muted text-sm font-mono"
+        {...rest}
+      >
+        {children}
+      </code>
+    )
+  }
+
+  // Block code with header
+  return (
+    <div className="relative group rounded-lg overflow-hidden my-3 border border-border/50">
+      {/* Language label + copy button */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/60 text-xs text-muted-foreground border-b border-border/50">
+        <span className="font-mono">{language || 'code'}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 hover:text-foreground transition-colors"
+          aria-label="Copy code"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3 w-3" />
+              <span>Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Code content */}
+      <pre className="p-3 overflow-x-auto text-sm">
+        <code className={className} {...rest}>
+          {children}
+        </code>
+      </pre>
+    </div>
+  )
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+/**
+ * Enhanced markdown renderer with citation support.
+ *
+ * @source rag-web-ui answer.tsx — full Answer component pattern
+ */
+export const MessageMarkdown: React.FC<MessageMarkdownProps> = ({
+  content,
+  citations = [],
+  className = '',
+}) => {
+  // Citation info from API (could be fetched or passed in)
+  const [citationInfoMap] = useState<Record<string, CitationInfo>>({})
+
+  // Process markdown: normalize citations + handle think blocks
+  const processedContent = useMemo(() => {
+    let processed = normalizeCitationMarkers(content)
+    processed = processThinkBlocks(processed)
+    return processed
+  }, [content])
+
+  // Create citation link component bound to current citations
+  const CitationLinkComponent = useMemo(
+    () => createCitationLink(citations, citationInfoMap),
+    [citations, citationInfoMap]
+  )
+
+  // Group citations by source for the source list
+  const citationSources = useMemo(
+    () => groupCitationsBySource(citations),
+    [citations]
+  )
+
+  // Modal state
+  const [selectedSource, setSelectedSource] = useState<CitationSource | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  const handleSourceClick = useCallback((source: CitationSource) => {
+    setSelectedSource(source)
+    setModalOpen(true)
+  }, [])
+
+  // Loading skeleton
+  if (!content) {
+    return (
+      <div className="flex flex-col gap-2 py-2">
+        <Skeleton className="max-w-sm h-4" />
+        <Skeleton className="max-w-lg h-4" />
+        <Skeleton className="max-w-2xl h-4" />
+        <Skeleton className="max-w-lg h-4" />
+        <Skeleton className="max-w-xl h-4" />
+      </div>
+    )
+  }
+
+  return (
+    <div className={className}>
+      {/* Markdown content */}
+      <div className="prose prose-sm dark:prose-invert max-w-full prose-pre:p-0 prose-pre:bg-transparent">
+        <Markdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight]}
+          components={{
+            a: CitationLinkComponent,
+            code: CodeBlock as any,
+          }}
+        >
+          {processedContent}
+        </Markdown>
+      </div>
+
+      {/* Citation source list (expandable) */}
+      {citationSources.length > 0 && (
+        <CitationSourceList
+          sources={citationSources}
+          onSourceClick={handleSourceClick}
+        />
+      )}
+
+      {/* Citation detail modal */}
+      <CitationDetailModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        source={selectedSource}
+      />
+    </div>
+  )
+}
+
+export default MessageMarkdown

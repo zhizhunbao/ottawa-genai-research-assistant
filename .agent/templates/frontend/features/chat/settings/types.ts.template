@@ -1,0 +1,83 @@
+/**
+ * Chat Settings Types - TypeScript type definitions
+ *
+ * @module frontend/features/chat/settings/types
+ * @source open-webui/src/lib/components/chat/Settings/
+ * @template S1-M8-F3
+ */
+
+// ─── Model Configuration ────────────────────────────────────────────────────
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  provider?: string;
+  contextWindow?: number;
+  maxOutput?: number;
+  capabilities?: ModelCapabilities;
+}
+
+export interface ModelCapabilities {
+  vision?: boolean;
+  functionCalling?: boolean;
+  jsonMode?: boolean;
+  streaming?: boolean;
+}
+
+// ─── Chat Settings ──────────────────────────────────────────────────────────
+
+export interface ChatSettings {
+  /** Selected model ID */
+  model: string;
+  /** System prompt for the conversation */
+  systemPrompt: string;
+  /** Sampling temperature (0-2) */
+  temperature: number;
+  /** Nucleus sampling threshold (0-1) */
+  topP: number;
+  /** Top-K sampling (provider-specific) */
+  topK?: number;
+  /** Maximum tokens to generate */
+  maxTokens: number;
+  /** Context window length */
+  contextLength: number;
+  /** Frequency penalty (-2 to 2) */
+  frequencyPenalty: number;
+  /** Presence penalty (-2 to 2) */
+  presencePenalty: number;
+  /** Repetition penalty (provider-specific) */
+  repetitionPenalty?: number;
+  /** Response format */
+  responseFormat: "text" | "json_object";
+  /** Seed for deterministic output */
+  seed: number | null;
+  /** Stop sequences */
+  stop?: string[];
+  /** Whether to stream the response */
+  stream: boolean;
+}
+
+export const DEFAULT_CHAT_SETTINGS: ChatSettings = {
+  model: "gpt-4o-mini",
+  systemPrompt: "You are a helpful assistant.",
+  temperature: 0.7,
+  topP: 1.0,
+  maxTokens: 4096,
+  contextLength: 16384,
+  frequencyPenalty: 0.0,
+  presencePenalty: 0.0,
+  responseFormat: "text",
+  seed: null,
+  stop: [],
+  stream: true,
+};
+
+// ─── Settings Events ────────────────────────────────────────────────────────
+
+export type SettingsChangeHandler = (settings: ChatSettings) => void;
+
+export interface ChatSettingsState {
+  settings: ChatSettings;
+  isDirty: boolean;
+  isValid: boolean;
+}

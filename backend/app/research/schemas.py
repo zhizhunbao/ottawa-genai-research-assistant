@@ -84,6 +84,15 @@ class ChatRequest(BaseModel):
     use_rag: bool = Field(default=True, description="Whether to use Retrieval-Augmented Generation")
 
 
+class StreamChatRequest(BaseModel):
+    """流式聊天请求 Schema (SSE)"""
+
+    messages: list[ChatMessage] = Field(..., min_length=1, description="The conversation history")
+    use_rag: bool = Field(default=True, description="Whether to use RAG")
+    temperature: float = Field(default=0.7, ge=0, le=2, description="LLM temperature")
+    stream: bool = Field(default=True, description="Enable streaming (always true for this endpoint)")
+
+
 class ChatResponse(BaseModel):
     """聊天响应 Schema"""
 

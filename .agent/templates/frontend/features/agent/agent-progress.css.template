@@ -1,0 +1,32 @@
+/**
+ * Agent Progress Styles - CSS for agent execution visualization
+ *
+ * @module frontend/features/agent
+ * @source joyagent-jdgenie/ui/src/components/ActionView + PlanView
+ * @template S4-M2-F3
+ */
+
+@keyframes agent-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+:root {
+  --agent-primary: #3b82f6;
+  --agent-success: #22c55e;
+  --agent-error: #ef4444;
+  --agent-border: #e5e7eb;
+  --agent-bg: #ffffff;
+  --agent-bg-muted: #f9fafb;
+  --agent-bg-success: #f0fdf4;
+  --agent-bg-error: #fef2f2;
+  --agent-text-muted: #6b7280;
+}
+
+.agent-plan-timeline {
+  transition: height 0.3s ease;
+}
+
+.agent-spinner {
+  animation: agent-spin 1s linear infinite;
+}

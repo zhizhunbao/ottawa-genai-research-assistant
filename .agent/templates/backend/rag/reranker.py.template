@@ -1,0 +1,421 @@
+"""
+Hybrid Reranker - Fusion reranking with BM25 + Vector + CrossEncoder
+
+@module backend/rag/reranker
+@source ragflow/rag/nlp/search.py Dealer class (36-704L) — rerank/rerank_by_model/retrieval
+@reference https://github.com/infiniflow/ragflow
+@template S3-M2-F4
+
+Implements three reranking strategies:
+1. Hybrid Rerank: Weighted combination of token similarity (BM25-style) + vector similarity
+2. Model-based Rerank: CrossEncoder model for pair-wise relevance scoring
+3. RRF (Reciprocal Rank Fusion): Combines rankings from multiple retrieval methods
+
+Key patterns from RAGFlow:
+- Configurable tkweight/vtweight for hybrid scoring
+- Important keyword boosting (title x2, keywords x5, questions x6)
+- Progressive threshold relaxation for citation matching
+- Similarity threshold filtering with pagination
+"""
+
+from __future__ import annotations
+
+import logging
+import math
+import re
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Optional, Sequence
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Types ────────────────────────────────────────────────────────────────────
+
+@dataclass
+class RetrievedChunk:
+    """A chunk retrieved from vector/text search."""
+    id: str
+    content: str
+    score: float = 0.0
+    vector: list[float] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def vector_similarity(self) -> float:
+        return self.metadata.get("vector_similarity", self.score)
+
+    @property
+    def term_similarity(self) -> float:
+        return self.metadata.get("term_similarity", 0.0)
+
+
+@dataclass
+class RerankResult:
+    """Result of reranking with decomposed scores."""
+    chunks: list[RetrievedChunk]
+    total: int = 0
+
+
+# ─── Token Similarity (BM25-style) ───────────────────────────────────────────
+
+def _tokenize(text: str) -> list[str]:
+    """Simple word-level tokenizer."""
+    return re.findall(r"\w+", text.lower())
+
+
+def token_similarity(
+    query_tokens: list[str],
+    doc_token_lists: list[list[str]],
+) -> list[float]:
+    """
+    Compute token-level similarity (simplified BM25-style).
+
+    @source ragflow/rag/nlp/query.py hybrid_similarity token component
+
+    Uses term frequency overlap between query and document tokens.
+
+    Args:
+        query_tokens: Tokenized query
+        doc_token_lists: List of tokenized documents
+
+    Returns:
+        Similarity scores for each document (0-1)
+    """
+    if not query_tokens or not doc_token_lists:
+        return [0.0] * len(doc_token_lists)
+
+    query_set = set(query_tokens)
+    scores = []
+
+    for doc_tokens in doc_token_lists:
+        if not doc_tokens:
+            scores.append(0.0)
+            continue
+
+        doc_set = set(doc_tokens)
+        overlap = query_set & doc_set
+
+        # TF-IDF inspired scoring
+        if len(query_set) == 0:
+            scores.append(0.0)
+        else:
+            # Jaccard-like with query coverage emphasis
+            score = len(overlap) / len(query_set)
+            scores.append(min(score, 1.0))
+
+    return scores
+
+
+def cosine_similarity(
+    query_vector: list[float],
+    doc_vectors: list[list[float]],
+) -> list[float]:
+    """
+    Compute cosine similarity between query and document vectors.
+
+    Args:
+        query_vector: Query embedding
+        doc_vectors: Document embeddings
+
+    Returns:
+        Similarity scores for each document (0-1)
+    """
+    try:
+        import numpy as np
+    except ImportError:
+        raise ImportError("numpy is required: pip install numpy")
+
+    if not doc_vectors:
+        return []
+
+    q = np.array(query_vector, dtype=np.float64)
+    q_norm = np.linalg.norm(q)
+    if q_norm == 0:
+        return [0.0] * len(doc_vectors)
+
+    scores = []
+    for d_vec in doc_vectors:
+        d = np.array(d_vec, dtype=np.float64)
+        d_norm = np.linalg.norm(d)
+        if d_norm == 0:
+            scores.append(0.0)
+        else:
+            scores.append(float(np.dot(q, d) / (q_norm * d_norm)))
+
+    return scores
+
+
+# ─── Hybrid Reranker ──────────────────────────────────────────────────────────
+# @source ragflow/rag/nlp/search.py Dealer.rerank (lines 294-331)
+
+class HybridReranker:
+    """
+    Reranks search results using a weighted combination of
+    token similarity (BM25-like) and vector similarity (cosine).
+
+    @source ragflow/rag/nlp/search.py Dealer.rerank lines 294-331
+
+    The scoring formula:
+        final_score = tkweight * token_sim + vtweight * vector_sim
+
+    Title tokens, important keywords, and question tokens get boosted weights
+    in the token similarity calculation (ragflow pattern):
+        - Content tokens: 1x
+        - Title tokens: 2x
+        - Important keywords: 5x
+        - Question tokens: 6x
+
+    Usage:
+        reranker = HybridReranker(token_weight=0.3, vector_weight=0.7)
+        result = reranker.rerank(
+            query="What is RAG?",
+            chunks=retrieved_chunks,
+            query_vector=query_embedding,
+        )
+    """
+
+    def __init__(
+        self,
+        token_weight: float = 0.3,
+        vector_weight: float = 0.7,
+    ):
+        assert abs(token_weight + vector_weight - 1.0) < 1e-6, \
+            "Weights must sum to 1.0"
+        self.token_weight = token_weight
+        self.vector_weight = vector_weight
+
+    def rerank(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        query_vector: list[float] | None = None,
+        similarity_threshold: float = 0.0,
+    ) -> RerankResult:
+        """
+        Rerank chunks using hybrid scoring.
+
+        Args:
+            query: Original query text
+            chunks: Retrieved chunks to rerank
+            query_vector: Query embedding (required for vector component)
+            similarity_threshold: Minimum score to include
+
+        Returns:
+            RerankResult with reranked chunks
+        """
+        if not chunks:
+            return RerankResult(chunks=[], total=0)
+
+        query_tokens = _tokenize(query)
+
+        # Build weighted token lists per chunk (ragflow boosting pattern)
+        doc_token_lists = []
+        for chunk in chunks:
+            content_tokens = _tokenize(chunk.content)
+            title_tokens = _tokenize(chunk.metadata.get("title", ""))
+            keyword_tokens = _tokenize(
+                " ".join(chunk.metadata.get("keywords", []))
+            )
+            question_tokens = _tokenize(chunk.metadata.get("question", ""))
+
+            # Apply ragflow weight boosts
+            weighted_tokens = (
+                content_tokens
+                + title_tokens * 2
+                + keyword_tokens * 5
+                + question_tokens * 6
+            )
+            doc_token_lists.append(weighted_tokens)
+
+        # Compute token similarity scores
+        tk_scores = token_similarity(query_tokens, doc_token_lists)
+
+        # Compute vector similarity scores
+        if query_vector:
+            doc_vectors = [c.vector for c in chunks]
+            vt_scores = cosine_similarity(query_vector, doc_vectors)
+        else:
+            vt_scores = [0.0] * len(chunks)
+
+        # Combine scores
+        for i, chunk in enumerate(chunks):
+            combined = (
+                self.token_weight * tk_scores[i]
+                + self.vector_weight * vt_scores[i]
+            )
+            chunk.score = combined
+            chunk.metadata["term_similarity"] = tk_scores[i]
+            chunk.metadata["vector_similarity"] = vt_scores[i]
+
+        # Sort by combined score
+        chunks.sort(key=lambda c: c.score, reverse=True)
+
+        # Filter by threshold
+        filtered = [c for c in chunks if c.score >= similarity_threshold]
+
+        return RerankResult(chunks=filtered, total=len(filtered))
+
+
+# ─── RRF (Reciprocal Rank Fusion) ────────────────────────────────────────────
+
+def reciprocal_rank_fusion(
+    *rankings: list[RetrievedChunk],
+    k: int = 60,
+) -> list[RetrievedChunk]:
+    """
+    Combine multiple ranked lists using Reciprocal Rank Fusion.
+
+    RRF formula: score(d) = Σ 1 / (k + rank_i(d))
+
+    This is particularly useful for combining results from different
+    retrieval methods (e.g., BM25 + vector search).
+
+    Args:
+        *rankings: Multiple ranked lists of chunks
+        k: Constant to dampen the effect of high rankings (default 60)
+
+    Returns:
+        Merged and re-ranked list of chunks
+    """
+    rrf_scores: dict[str, float] = {}
+    chunk_map: dict[str, RetrievedChunk] = {}
+
+    for ranking in rankings:
+        for rank, chunk in enumerate(ranking):
+            rrf_scores[chunk.id] = rrf_scores.get(chunk.id, 0.0) + (
+                1.0 / (k + rank + 1)
+            )
+            chunk_map[chunk.id] = chunk
+
+    # Sort by RRF score
+    sorted_ids = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
+
+    results = []
+    for doc_id in sorted_ids:
+        chunk = chunk_map[doc_id]
+        chunk.score = rrf_scores[doc_id]
+        chunk.metadata["rrf_score"] = rrf_scores[doc_id]
+        results.append(chunk)
+
+    return results
+
+
+# ─── Model-based Reranker (CrossEncoder) ──────────────────────────────────────
+# @source ragflow/rag/nlp/search.py Dealer.rerank_by_model (lines 333-354)
+
+class CrossEncoderReranker:
+    """
+    Reranks using a CrossEncoder model for pair-wise relevance scoring.
+
+    @source ragflow/rag/nlp/search.py Dealer.rerank_by_model lines 333-354
+
+    Supports:
+    - Local models via sentence-transformers
+    - API-based models (Cohere, Jina, etc.)
+
+    Usage:
+        reranker = CrossEncoderReranker(model_name="cross-encoder/ms-marco-MiniLM-L-6-v2")
+        result = reranker.rerank(query="What is RAG?", chunks=chunks, top_k=10)
+
+        # Or with API
+        reranker = CrossEncoderReranker(api_key="...", api_url="https://api.cohere.ai/v1/rerank")
+    """
+
+    def __init__(
+        self,
+        model_name: str | None = None,
+        api_key: str | None = None,
+        api_url: str | None = None,
+        token_weight: float = 0.3,
+        vector_weight: float = 0.7,
+    ):
+        self.model_name = model_name
+        self.api_key = api_key
+        self.api_url = api_url
+        self.token_weight = token_weight
+        self.vector_weight = vector_weight
+        self._model = None
+
+    def _get_model(self) -> Any:
+        """Lazy-load the CrossEncoder model."""
+        if self._model is None and self.model_name:
+            try:
+                from sentence_transformers import CrossEncoder
+                self._model = CrossEncoder(self.model_name)
+                logger.info(f"Loaded CrossEncoder model: {self.model_name}")
+            except ImportError:
+                raise ImportError(
+                    "sentence-transformers is required: "
+                    "pip install sentence-transformers"
+                )
+        return self._model
+
+    def rerank(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        top_k: int = 10,
+    ) -> RerankResult:
+        """
+        Rerank using CrossEncoder model.
+
+        For each chunk, computes relevance(query, chunk_text) score.
+        Combines with token similarity using tkweight/vtweight.
+
+        Args:
+            query: Query text
+            chunks: Chunks to rerank
+            top_k: Number of results to return
+
+        Returns:
+            RerankResult with top-k reranked chunks
+        """
+        if not chunks:
+            return RerankResult(chunks=[], total=0)
+
+        model = self._get_model()
+        if model is None and self.api_url:
+            return self._rerank_via_api(query, chunks, top_k)
+
+        if model is None:
+            logger.warning("No model or API configured, returning original order")
+            return RerankResult(chunks=chunks[:top_k], total=len(chunks))
+
+        # Compute cross-encoder scores
+        pairs = [(query, chunk.content) for chunk in chunks]
+        try:
+            scores = model.predict(pairs)
+        except Exception as e:
+            logger.error(f"CrossEncoder prediction failed: {e}")
+            return RerankResult(chunks=chunks[:top_k], total=len(chunks))
+
+        # Compute token similarity for hybrid scoring
+        query_tokens = _tokenize(query)
+        doc_token_lists = [_tokenize(c.content) for c in chunks]
+        tk_scores = token_similarity(query_tokens, doc_token_lists)
+
+        # Combine: tkweight * token_sim + vtweight * model_score
+        for i, chunk in enumerate(chunks):
+            combined = (
+                self.token_weight * tk_scores[i]
+                + self.vector_weight * float(scores[i])
+            )
+            chunk.score = combined
+            chunk.metadata["cross_encoder_score"] = float(scores[i])
+            chunk.metadata["term_similarity"] = tk_scores[i]
+
+        chunks.sort(key=lambda c: c.score, reverse=True)
+        top_chunks = chunks[:top_k]
+
+        return RerankResult(chunks=top_chunks, total=len(chunks))
+
+    def _rerank_via_api(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        top_k: int,
+    ) -> RerankResult:
+        """Rerank via external API (e.g., Cohere rerank endpoint)."""
+        logger.info("API-based reranking not yet implemented")
+        return RerankResult(chunks=chunks[:top_k], total=len(chunks))

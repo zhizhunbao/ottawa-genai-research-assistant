@@ -1,0 +1,260 @@
+/**
+ * ScrollToBottom - Scroll control buttons (top/bottom) with new message indicator
+ *
+ * A pair of floating buttons that appears when the message list overflows.
+ * Shows scroll-to-top when not at top, scroll-to-bottom when not at bottom.
+ * Includes a new-message count badge when unread messages arrive below viewport.
+ *
+ * @module features/chat/components
+ * @source chatbot-ui/components/chat/chat-scroll-buttons.tsx (42 lines)
+ * @source lobe-chat/ChatList/components/BackBottom (floating back-to-bottom UX)
+ * @source lobe-chat/ChatList/components/VirtualizedList.tsx lines 178-183 (BackBottom integration)
+ * @reference https://github.com/mckaywrigley/chatbot-ui
+ * @reference https://github.com/lobehub/lobe-chat
+ * @template S1-M5-3 frontend/features/chat/components/scroll-to-bottom.tsx
+ */
+
+'use client'
+
+import { memo, useEffect, useRef, useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+
+// ============================================================
+// Types
+// ============================================================
+
+export interface ScrollToBottomProps {
+  /** Whether the container is scrolled to the top */
+  isAtTop: boolean
+  /** Whether the container is scrolled to the bottom */
+  isAtBottom: boolean
+  /** Whether the content overflows the viewport */
+  isOverflowing: boolean
+  /** Handler to scroll to top */
+  scrollToTop: () => void
+  /** Handler to scroll to bottom */
+  scrollToBottom: () => void
+  /** Number of new unread messages below viewport */
+  newMessageCount?: number
+  /** Position mode: 'absolute' (inside container) or 'fixed' */
+  position?: 'absolute' | 'fixed'
+}
+
+// ============================================================
+// Component
+// ============================================================
+
+/**
+ * Floating scroll control buttons.
+ *
+ * Layout mirrors chatbot-ui's ChatScrollButtons with enhancements:
+ * - New message count badge (not in original)
+ * - Smooth entrance/exit animation
+ * - Accessible button labels
+ *
+ * @source chatbot-ui chat-scroll-buttons.tsx lines 15-41
+ */
+export const ScrollToBottom = memo<ScrollToBottomProps>(
+  ({
+    isAtTop,
+    isAtBottom,
+    isOverflowing,
+    scrollToTop,
+    scrollToBottom,
+    newMessageCount = 0,
+    position = 'absolute',
+  }) => {
+    // Don't render if no overflow
+    if (!isOverflowing) return null
+
+    const buttonStyle: React.CSSProperties = {
+      width: 36,
+      height: 36,
+      borderRadius: '50%',
+      border: '1px solid var(--color-border, #e2e8f0)',
+      background: 'var(--color-bg-elevated, #fff)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--color-text-secondary, #64748b)',
+      transition: 'all 200ms ease-out',
+      position: 'relative',
+    }
+
+    const hoverStyle = `
+      .scroll-btn:hover {
+        background: var(--color-bg-hover, #f1f5f9) !important;
+        color: var(--color-text, #334155) !important;
+        transform: scale(1.05);
+      }
+    `
+
+    return (
+      <>
+        <style>{hoverStyle}</style>
+        <div
+          style={{
+            position,
+            ...(position === 'absolute'
+              ? { bottom: 16, right: 16, zIndex: 10 }
+              : { bottom: 80, right: 24, zIndex: 50 }),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          {/* Scroll to Top */}
+          {!isAtTop && (
+            <button
+              className="scroll-btn"
+              onClick={scrollToTop}
+              aria-label="Scroll to top"
+              style={{
+                ...buttonStyle,
+                animation: 'fadeInUp 200ms ease-out',
+              }}
+            >
+              <ChevronUp size={18} />
+            </button>
+          )}
+
+          {/* Scroll to Bottom */}
+          {!isAtBottom && (
+            <button
+              className="scroll-btn"
+              onClick={scrollToBottom}
+              aria-label="Scroll to bottom"
+              style={{
+                ...buttonStyle,
+                animation: 'fadeInUp 200ms ease-out',
+              }}
+            >
+              <ChevronDown size={18} />
+
+              {/* New message badge */}
+              {newMessageCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    background: 'var(--color-primary, #6366f1)',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                    animation: 'bounceIn 300ms ease-out',
+                  }}
+                >
+                  {newMessageCount > 99 ? '99+' : newMessageCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+      </>
+    )
+  }
+)
+
+ScrollToBottom.displayName = 'ScrollToBottom'
+
+// ============================================================
+// Hook: useScrollPosition
+// ============================================================
+
+/**
+ * Convenience hook to track scroll position state for use with ScrollToBottom.
+ *
+ * @source chatbot-ui chat-hooks/use-scroll.tsx (adapted, 88 lines)
+ *
+ * @example
+ * ```tsx
+ * const { scrollRef, ...scrollState } = useScrollPosition()
+ *
+ * return (
+ *   <div ref={scrollRef} onScroll={scrollState.handleScroll}>
+ *     {messages}
+ *     <ScrollToBottom {...scrollState} />
+ *   </div>
+ * )
+ * ```
+ */
+export function useScrollPosition() {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [isAtTop, setIsAtTop] = useState(false)
+  const [isAtBottom, setIsAtBottom] = useState(true)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const top = el.scrollTop === 0
+    setIsAtTop(top)
+
+    const bottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 24
+    setIsAtBottom(bottom)
+
+    setIsOverflowing(el.scrollHeight > el.clientHeight)
+  }
+
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const scrollToBottom = () => {
+    const el = scrollRef.current
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }
+  }
+
+  // Check overflow on mount and content changes
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => {
+      setIsOverflowing(el.scrollHeight > el.clientHeight)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return {
+    scrollRef,
+    isAtTop,
+    isAtBottom,
+    isOverflowing,
+    scrollToTop,
+    scrollToBottom,
+    handleScroll,
+  }
+}
+
+// ============================================================
+// CSS (inject or import separately)
+// ============================================================
+
+/**
+ * ```css
+ * @keyframes fadeInUp {
+ *   from { opacity: 0; transform: translateY(8px); }
+ *   to { opacity: 1; transform: translateY(0); }
+ * }
+ *
+ * @keyframes bounceIn {
+ *   0% { transform: scale(0); }
+ *   60% { transform: scale(1.2); }
+ *   100% { transform: scale(1); }
+ * }
+ * ```
+ */

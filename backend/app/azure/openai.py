@@ -246,3 +246,58 @@ class AzureOpenAIService:
             temperature=temperature,
             system_prompt=messages[0]["content"] if messages else None,
         )
+
+    async def rag_chat_stream(
+        self,
+        query: str,
+        context: list[str] | None = None,
+        sources: list[dict] | None = None,
+        chat_history: list[dict] | None = None,
+        temperature: float = 0.7,
+    ) -> AsyncIterator[str]:
+        """
+        RAG-enhanced streaming chat — yields text tokens.
+
+        Same prompt engineering as rag_chat but uses streaming output.
+
+        Args:
+            query: User question
+            context: Retrieved document content (plain text list)
+            sources: Structured search results (with title, content, page_number)
+            chat_history: Chat history
+            temperature: Temperature parameter
+
+        Yields:
+            Generated text tokens
+        """
+        from app.azure.prompts import build_system_messages
+
+        if sources:
+            messages = build_system_messages(
+                query=query,
+                sources=sources,
+                chat_history=chat_history,
+            )
+        elif context:
+            simple_sources = [
+                {"title": f"Source {i+1}", "content": text, "score": 0.0}
+                for i, text in enumerate(context)
+            ]
+            messages = build_system_messages(
+                query=query,
+                sources=simple_sources,
+                chat_history=chat_history,
+            )
+        else:
+            messages = build_system_messages(
+                query=query,
+                sources=[],
+                chat_history=chat_history,
+            )
+
+        async for token in self.chat_completion_stream(
+            messages=messages[1:],
+            temperature=temperature,
+            system_prompt=messages[0]["content"] if messages else None,
+        ):
+            yield token

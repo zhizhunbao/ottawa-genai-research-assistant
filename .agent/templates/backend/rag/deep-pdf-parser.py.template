@@ -1,0 +1,511 @@
+"""
+Deep PDF Parser - Multi-strategy document parsing with layout analysis
+
+@module backend/rag/deep-pdf-parser
+@source ragflow/deepdoc/parser/pdf_parser.py (1860L) + ragflow/rag/app/naive.py Pdf class (544-580L)
+@reference https://github.com/infiniflow/ragflow
+@template S3-M2-F1
+
+Distilled from RAGFlow's RAGFlowPdfParser (1860 lines). Extracts the core
+parseable patterns: OCR + layout recognition + table structure + text merge.
+Strips HuggingFace model initialization (layout_recognizer, table_structure_recognizer,
+OCR) — those should be injected via constructor.
+
+Key patterns extracted:
+1. Multi-stage pipeline: OCR → Layout → Table → TextMerge → Extract
+2. Parser strategy registry (deepdoc/mineru/docling/plaintext)
+3. Callback-based progress reporting
+4. Separate text sections vs table extraction
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Optional, Protocol
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Types ────────────────────────────────────────────────────────────────────
+
+class LayoutType(str, Enum):
+    """Layout element types detected during document analysis."""
+    TEXT = "text"
+    TITLE = "title"
+    TABLE = "table"
+    FIGURE = "figure"
+    CAPTION = "caption"
+    HEADER = "header"
+    FOOTER = "footer"
+    PAGE_NUMBER = "page_number"
+    LIST = "list"
+    CODE = "code"
+
+
+@dataclass
+class BoundingBox:
+    """Bounding box coordinates (normalized 0-1 or absolute pixels)."""
+    x0: float
+    y0: float  # top
+    x1: float
+    y1: float  # bottom
+    page: int = 0
+
+    @property
+    def width(self) -> float:
+        return self.x1 - self.x0
+
+    @property
+    def height(self) -> float:
+        return self.y1 - self.y0
+
+    @property
+    def area(self) -> float:
+        return self.width * self.height
+
+    def overlaps(self, other: "BoundingBox", threshold: float = 0.5) -> bool:
+        """Check if this box overlaps with another beyond a threshold."""
+        x_overlap = max(0, min(self.x1, other.x1) - max(self.x0, other.x0))
+        y_overlap = max(0, min(self.y1, other.y1) - max(self.y0, other.y0))
+        overlap_area = x_overlap * y_overlap
+        min_area = min(self.area, other.area)
+        if min_area == 0:
+            return False
+        return (overlap_area / min_area) >= threshold
+
+
+@dataclass
+class LayoutElement:
+    """A detected layout element with text and position."""
+    text: str
+    layout_type: LayoutType
+    bbox: BoundingBox
+    confidence: float = 1.0
+    page_number: int = 0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ParsedSection:
+    """A text section extracted from the document."""
+    text: str
+    tag: str = ""  # e.g., "title", "text", "table"
+    page_number: int = 0
+    image: Any = None  # PIL Image or None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ParsedTable:
+    """An extracted table with HTML representation."""
+    html: str
+    caption: str = ""
+    page_number: int = 0
+    image: Any = None  # PIL Image of the table region
+    bbox: Optional[BoundingBox] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ParseResult:
+    """Complete result from document parsing."""
+    sections: list[ParsedSection]
+    tables: list[ParsedTable]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    page_count: int = 0
+
+
+# Type alias for progress callback
+# callback(progress: float, message: str)
+ProgressCallback = Callable[[float, str], None]
+
+
+# ─── Parser Protocol ─────────────────────────────────────────────────────────
+
+class DocumentParser(Protocol):
+    """Protocol for document parsers."""
+
+    def parse(
+        self,
+        file_path: str | Path,
+        binary: bytes | None = None,
+        from_page: int = 0,
+        to_page: int = 100000,
+        callback: ProgressCallback | None = None,
+        **kwargs: Any,
+    ) -> ParseResult:
+        """Parse a document and return sections + tables."""
+        ...
+
+
+# ─── Base PDF Parser ─────────────────────────────────────────────────────────
+# @source ragflow/deepdoc/parser/pdf_parser.py RAGFlowPdfParser class (55-1769L)
+
+class BasePdfParser(ABC):
+    """
+    Abstract base class for PDF parsing.
+
+    Subclasses implement the 5-stage pipeline:
+    1. __images__: Extract page images (OCR if needed)
+    2. _layouts_rec: Detect layout elements (text, table, figure regions)
+    3. _table_transformer_job: Recognize table structure
+    4. _text_merge: Merge text boxes into coherent paragraphs
+    5. _extract_table_figure: Extract tables and figures as separate objects
+
+    @source ragflow/deepdoc/parser/pdf_parser.py lines 55-108 (__init__)
+    """
+
+    def __init__(
+        self,
+        ocr_engine: Any = None,
+        layout_recognizer: Any = None,
+        table_recognizer: Any = None,
+        **kwargs: Any,
+    ):
+        self.ocr = ocr_engine
+        self.layout_recognizer = layout_recognizer
+        self.table_recognizer = table_recognizer
+        self.boxes: list[dict[str, Any]] = []
+        self.page_images: list[Any] = []  # PIL Images per page
+        self.page_layout: list[list[LayoutElement]] = []
+
+    @abstractmethod
+    def _extract_text(
+        self,
+        input_path: str | bytes,
+        from_page: int,
+        to_page: int,
+        zoom: int = 3,
+        callback: ProgressCallback | None = None,
+    ) -> None:
+        """Stage 1: Extract text/OCR from pages, populate self.boxes."""
+        ...
+
+    @abstractmethod
+    def _detect_layouts(self, zoom: int = 3) -> None:
+        """Stage 2: Detect layout regions (text, table, figure, etc.)."""
+        ...
+
+    @abstractmethod
+    def _recognize_tables(self, zoom: int = 3) -> list[ParsedTable]:
+        """Stage 3: Recognize table structure within detected table regions."""
+        ...
+
+    @abstractmethod
+    def _merge_text(self, zoom: int = 3) -> None:
+        """Stage 4: Merge adjacent text boxes into paragraphs."""
+        ...
+
+    def parse(
+        self,
+        file_path: str | Path,
+        binary: bytes | None = None,
+        from_page: int = 0,
+        to_page: int = 100000,
+        zoom: int = 3,
+        callback: ProgressCallback | None = None,
+        **kwargs: Any,
+    ) -> ParseResult:
+        """
+        Run the full 5-stage PDF parsing pipeline.
+
+        @source ragflow/rag/app/naive.py Pdf.__call__ lines 548-580
+        Pipeline: OCR → Layout → Table → TextMerge → Extract
+
+        Args:
+            file_path: Path to PDF file
+            binary: Raw PDF bytes (alternative to file_path)
+            from_page: Starting page (0-indexed)
+            to_page: Ending page (exclusive)
+            zoom: Zoom factor for OCR resolution (default 3)
+            callback: Progress callback (progress 0-1, message)
+
+        Returns:
+            ParseResult with sections and tables
+        """
+        _cb = callback or (lambda p, m: None)
+        input_data = binary if binary else str(file_path)
+
+        # Stage 1: OCR / text extraction
+        _cb(0.1, "OCR started")
+        self._extract_text(input_data, from_page, to_page, zoom, _cb)
+        _cb(0.4, "OCR finished")
+
+        # Stage 2: Layout detection
+        _cb(0.5, "Layout analysis started")
+        self._detect_layouts(zoom)
+        _cb(0.6, "Layout analysis finished")
+
+        # Stage 3: Table recognition
+        _cb(0.65, "Table analysis started")
+        tables = self._recognize_tables(zoom)
+        _cb(0.7, "Table analysis finished")
+
+        # Stage 4: Text merging
+        _cb(0.75, "Merging text blocks")
+        self._merge_text(zoom)
+        _cb(0.85, "Text merged")
+
+        # Stage 5: Build final sections
+        sections = [
+            ParsedSection(
+                text=box.get("text", ""),
+                tag=box.get("tag", "text"),
+                page_number=box.get("page_number", 0),
+            )
+            for box in self.boxes
+            if box.get("text", "").strip()
+        ]
+
+        _cb(1.0, "Parsing complete")
+
+        return ParseResult(
+            sections=sections,
+            tables=tables,
+            page_count=len(self.page_images),
+            metadata={"zoom": zoom, "from_page": from_page, "to_page": to_page},
+        )
+
+
+# ─── Simple Text Parser ──────────────────────────────────────────────────────
+# @source ragflow/deepdoc/parser/pdf_parser.py PlainParser
+
+class PlainTextPdfParser(BasePdfParser):
+    """
+    Minimal PDF parser using pdfplumber for text extraction only.
+    No OCR, no layout analysis. Fast but limited.
+    """
+
+    def _extract_text(self, input_path, from_page, to_page, zoom=3, callback=None):
+        """Extract text using pdfplumber."""
+        try:
+            import pdfplumber
+        except ImportError:
+            raise ImportError("pdfplumber is required: pip install pdfplumber")
+
+        pdf = pdfplumber.open(input_path) if isinstance(input_path, str) else pdfplumber.open(
+            __import__("io").BytesIO(input_path)
+        )
+
+        self.boxes = []
+        pages = pdf.pages[from_page:to_page]
+        for i, page in enumerate(pages):
+            text = page.extract_text() or ""
+            for line in text.split("\n"):
+                line = line.strip()
+                if line:
+                    self.boxes.append({
+                        "text": line,
+                        "page_number": from_page + i,
+                        "tag": "text",
+                    })
+            if callback:
+                callback((i + 1) / len(pages) * 0.4, f"Page {from_page + i + 1}")
+
+        pdf.close()
+
+    def _detect_layouts(self, zoom=3):
+        """No layout detection for plain text parser."""
+        pass
+
+    def _recognize_tables(self, zoom=3) -> list[ParsedTable]:
+        """No table recognition for plain text parser."""
+        return []
+
+    def _merge_text(self, zoom=3):
+        """Simple consecutive line merging for plain text parser."""
+        if not self.boxes:
+            return
+
+        merged = []
+        current = self.boxes[0].copy()
+
+        for box in self.boxes[1:]:
+            # Merge if same page and looks like continuation
+            if (
+                box["page_number"] == current["page_number"]
+                and not current["text"].endswith((".", "!", "?", "。", "！", "？"))
+                and len(current["text"]) < 200
+            ):
+                current["text"] += " " + box["text"]
+            else:
+                merged.append(current)
+                current = box.copy()
+
+        merged.append(current)
+        self.boxes = merged
+
+
+# ─── Parser Registry ─────────────────────────────────────────────────────────
+# @source ragflow/rag/app/naive.py PARSERS dict (lines 222-229)
+
+class ParserRegistry:
+    """
+    Registry for document parser strategies.
+
+    Follows the Strategy pattern from ragflow, where different parser backends
+    (deepdoc, mineru, docling, plaintext) can be selected at runtime.
+
+    Usage:
+        registry = ParserRegistry()
+        registry.register("plaintext", PlainTextPdfParser)
+        parser = registry.get("plaintext")
+        result = parser.parse("document.pdf")
+    """
+
+    def __init__(self) -> None:
+        self._parsers: dict[str, type[BasePdfParser]] = {}
+        # Register default parser
+        self.register("plaintext", PlainTextPdfParser)
+
+    def register(self, name: str, parser_cls: type[BasePdfParser]) -> None:
+        """Register a parser strategy."""
+        self._parsers[name] = parser_cls
+
+    def get(self, name: str = "plaintext", **kwargs: Any) -> BasePdfParser:
+        """Instantiate a registered parser."""
+        if name not in self._parsers:
+            available = ", ".join(self._parsers.keys())
+            raise ValueError(
+                f"Unknown parser '{name}'. Available: {available}"
+            )
+        return self._parsers[name](**kwargs)
+
+    @property
+    def available(self) -> list[str]:
+        """List of registered parser names."""
+        return list(self._parsers.keys())
+
+
+# Default global registry
+parser_registry = ParserRegistry()
+
+
+# ─── DOCX Parser ──────────────────────────────────────────────────────────────
+# @source ragflow/rag/app/naive.py Docx class (lines 232-498)
+
+class DocxParser:
+    """
+    DOCX document parser with image extraction and table handling.
+
+    Walks through document body elements (paragraphs and tables) in order,
+    extracts text with style information, images, and HTML tables.
+
+    Key patterns from ragflow:
+    - Paragraph + table interleaved iteration
+    - Image extraction via relationship parts
+    - Page break detection via XML inspection
+    - Table HTML generation with colspan
+    - Nearest heading lookup for table context
+    """
+
+    def parse(
+        self,
+        file_path: str | Path,
+        binary: bytes | None = None,
+        from_page: int = 0,
+        to_page: int = 100000,
+        callback: ProgressCallback | None = None,
+    ) -> ParseResult:
+        """Parse a DOCX file into sections and tables."""
+        try:
+            from docx import Document
+        except ImportError:
+            raise ImportError("python-docx is required: pip install python-docx")
+
+        from io import BytesIO
+
+        doc = Document(str(file_path)) if not binary else Document(BytesIO(binary))
+        sections: list[ParsedSection] = []
+        tables: list[ParsedTable] = []
+        page_num = 0
+        table_idx = 0
+
+        for block in doc._element.body:
+            if page_num > to_page:
+                break
+
+            if block.tag.endswith("p"):
+                # Paragraph
+                from docx.text.paragraph import Paragraph
+                p = Paragraph(block, doc)
+
+                if from_page <= page_num < to_page:
+                    text = p.text.strip()
+                    style_name = p.style.name if p.style else ""
+
+                    if text:
+                        tag = "title" if "Heading" in style_name else "text"
+                        sections.append(ParsedSection(
+                            text=self._clean(text),
+                            tag=tag,
+                            page_number=page_num,
+                            metadata={"style": style_name},
+                        ))
+
+                # Detect page breaks
+                for run in p.runs:
+                    xml = run._element.xml
+                    if "lastRenderedPageBreak" in xml or (
+                        "w:br" in xml and 'type="page"' in xml
+                    ):
+                        page_num += 1
+
+            elif block.tag.endswith("tbl"):
+                # Table
+                if from_page <= page_num <= to_page:
+                    from docx.table import Table as DocxTable
+                    tb = DocxTable(block, doc)
+                    html = self._table_to_html(tb)
+                    tables.append(ParsedTable(
+                        html=html,
+                        page_number=page_num,
+                    ))
+                table_idx += 1
+
+        return ParseResult(
+            sections=sections,
+            tables=tables,
+            page_count=page_num + 1,
+        )
+
+    @staticmethod
+    def _clean(line: str) -> str:
+        """Clean whitespace from text line."""
+        return re.sub(r"\u3000", " ", line).strip()
+
+    @staticmethod
+    def _table_to_html(table: Any) -> str:
+        """
+        Convert a DOCX table to HTML with colspan detection.
+        @source ragflow/rag/app/naive.py lines 470-493
+        """
+        html = "<table>"
+        for row in table.rows:
+            html += "<tr>"
+            col_idx = 0
+            try:
+                while col_idx < len(row.cells):
+                    span = 1
+                    cell = row.cells[col_idx]
+                    for j in range(col_idx + 1, len(row.cells)):
+                        if cell.text == row.cells[j].text:
+                            span += 1
+                            col_idx = j
+                        else:
+                            break
+                    col_idx += 1
+                    if span == 1:
+                        html += f"<td>{cell.text}</td>"
+                    else:
+                        html += f"<td colspan='{span}'>{cell.text}</td>"
+            except Exception as e:
+                logger.warning(f"Error parsing table row: {e}")
+            html += "</tr>"
+        html += "</table>"
+        return html

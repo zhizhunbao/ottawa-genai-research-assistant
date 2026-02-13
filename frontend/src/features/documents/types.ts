@@ -1,7 +1,9 @@
-/**
- * Document Feature Types
+﻿/**
+ * DocumentTypes - Document metadata, status, and upload type definitions
  *
+ * @module features/documents
  * @template T6 backend/features/documents/types.ts — Document Management Entities
+ * @reference none
  */
 
 export enum DocumentStatus {

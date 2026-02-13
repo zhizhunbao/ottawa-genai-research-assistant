@@ -1,0 +1,288 @@
+/**
+ * ChatHelpers - Utility functions for chat formatting, truncation, and token estimation
+ *
+ * Pure utility functions used across chat components:
+ * - Message content formatting and sanitization
+ * - Text truncation with word-boundary awareness
+ * - Token count estimation (approximate, no tiktoken dependency)
+ * - Clipboard helpers
+ * - Timestamp formatting
+ *
+ * @module features/chat/components
+ * @source chatbot-ui/lib/chat-setting-limits.ts (model limits and validation)
+ * @source chatbot-ui/components/chat/chat-messages.tsx (sort + dedup pattern)
+ * @source lobe-chat/src/utils/format.ts (formatTokenNumber)
+ * @reference https://github.com/mckaywrigley/chatbot-ui
+ * @reference https://github.com/lobehub/lobe-chat
+ * @template S1-M5-5 frontend/features/chat/components/chat-helpers.ts
+ */
+
+// ============================================================
+// Token Estimation
+// ============================================================
+
+/**
+ * Approximate token count using character-based heuristic.
+ *
+ * Rule of thumb: ~4 characters per token for English text.
+ * For precise counting, use `tiktoken` or `gpt-tokenizer`.
+ *
+ * @param text - text to estimate
+ * @returns approximate token count
+ */
+export function estimateTokens(text: string): number {
+  if (!text) return 0
+  // English: ~4 chars per token; CJK: ~1.5 chars per token
+  const cjkRegex = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/g
+  const cjkChars = (text.match(cjkRegex) || []).length
+  const otherChars = text.length - cjkChars
+
+  return Math.ceil(otherChars / 4 + cjkChars / 1.5)
+}
+
+/**
+ * Format a token number to human-readable form.
+ *
+ * @source lobe-chat utils/format — formatTokenNumber
+ *
+ * @example
+ * formatTokenNumber(128000) // "128K"
+ * formatTokenNumber(1000000) // "1M"
+ */
+export function formatTokenNumber(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    const m = tokens / 1_000_000
+    return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`
+  }
+  if (tokens >= 1_000) {
+    const k = tokens / 1_000
+    return k % 1 === 0 ? `${k}K` : `${k.toFixed(1)}K`
+  }
+  return String(tokens)
+}
+
+// ============================================================
+// Text Truncation
+// ============================================================
+
+/**
+ * Truncate text to a max length with word-boundary awareness.
+ *
+ * @param text - text to truncate
+ * @param maxLength - max character count
+ * @param suffix - suffix to append (default: "...")
+ */
+export function truncateText(
+  text: string,
+  maxLength: number,
+  suffix = '...'
+): string {
+  if (!text || text.length <= maxLength) return text
+
+  // Find last space before maxLength to avoid breaking words
+  const trimmed = text.slice(0, maxLength)
+  const lastSpace = trimmed.lastIndexOf(' ')
+
+  if (lastSpace > maxLength * 0.6) {
+    return trimmed.slice(0, lastSpace) + suffix
+  }
+
+  return trimmed + suffix
+}
+
+/**
+ * Truncate message content for preview display.
+ *
+ * Strips markdown formatting and limits to specified length.
+ */
+export function truncateForPreview(
+  content: string,
+  maxLength = 100
+): string {
+  const stripped = stripMarkdown(content)
+  return truncateText(stripped, maxLength)
+}
+
+// ============================================================
+// Markdown / Formatting
+// ============================================================
+
+/**
+ * Strip basic markdown formatting from text.
+ *
+ * Removes: headers, bold, italic, links, images, code blocks, lists.
+ */
+export function stripMarkdown(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, '[code]')   // code blocks
+    .replace(/`([^`]+)`/g, '$1')             // inline code
+    .replace(/!\[.*?\]\(.*?\)/g, '[image]')  // images
+    .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')   // links
+    .replace(/#{1,6}\s+/g, '')               // headers
+    .replace(/(\*{1,3}|_{1,3})(.*?)\1/g, '$2') // bold/italic
+    .replace(/^\s*[-*+]\s+/gm, '')           // unordered lists
+    .replace(/^\s*\d+\.\s+/gm, '')           // ordered lists
+    .replace(/>\s+/gm, '')                   // blockquotes
+    .replace(/\n{2,}/g, '\n')                // collapse newlines
+    .trim()
+}
+
+/**
+ * Extract the first line as a summary title.
+ *
+ * Used for auto-generating topic titles from message content.
+ */
+export function extractTitle(content: string, maxLength = 50): string {
+  const stripped = stripMarkdown(content)
+  const firstLine = stripped.split('\n')[0] || ''
+  return truncateText(firstLine.trim(), maxLength)
+}
+
+// ============================================================
+// Clipboard
+// ============================================================
+
+/**
+ * Copy text to clipboard with fallback for older browsers.
+ *
+ * @param text - text to copy
+ * @returns true if successful
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const result = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return result
+  } catch {
+    return false
+  }
+}
+
+// ============================================================
+// Timestamp Formatting
+// ============================================================
+
+/**
+ * Format timestamp to relative time string.
+ *
+ * @param timestamp - unix ms timestamp
+ *
+ * @example
+ * formatRelativeTime(Date.now() - 60000) // "1 minute ago"
+ */
+export function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp
+  const seconds = Math.floor(diff / 1000)
+
+  if (seconds < 10) return 'just now'
+  if (seconds < 60) return `${seconds}s ago`
+
+  const minutes = Math.floor(seconds / 60)
+  if (minutes === 1) return '1 minute ago'
+  if (minutes < 60) return `${minutes} minutes ago`
+
+  const hours = Math.floor(minutes / 60)
+  if (hours === 1) return '1 hour ago'
+  if (hours < 24) return `${hours} hours ago`
+
+  const days = Math.floor(hours / 24)
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days} days ago`
+
+  return new Date(timestamp).toLocaleDateString()
+}
+
+/**
+ * Format timestamp to short time (HH:MM).
+ */
+export function formatMessageTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+/**
+ * Format timestamp to full datetime string.
+ */
+export function formatFullTimestamp(timestamp: number): string {
+  return new Date(timestamp).toLocaleString([], {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
+// ============================================================
+// Message Sorting & Dedup
+// ============================================================
+
+/**
+ * Sort messages by creation time.
+ *
+ * @source chatbot-ui chat-messages.tsx line 17 — sort by sequence_number
+ */
+export function sortByTime<T extends { createdAt: number }>(messages: T[]): T[] {
+  return [...messages].sort((a, b) => a.createdAt - b.createdAt)
+}
+
+/**
+ * Remove duplicate messages by ID.
+ *
+ * @source chatbot-ui chat-messages.tsx lines 19-23 — dedup by id
+ */
+export function deduplicateById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+}
+
+// ============================================================
+// Context Window Validation
+// ============================================================
+
+/**
+ * Check if message history fits within the context window.
+ *
+ * @source chatbot-ui lib/chat-setting-limits.ts (concept)
+ *
+ * @param messages - array of message content strings
+ * @param contextWindow - max token count for the model
+ * @param reserveTokens - tokens to reserve for the response (default: 1024)
+ * @returns { fits, totalTokens, remainingTokens }
+ */
+export function validateContextWindow(
+  messages: string[],
+  contextWindow: number,
+  reserveTokens = 1024
+): {
+  fits: boolean
+  totalTokens: number
+  remainingTokens: number
+} {
+  const totalTokens = messages.reduce((sum, m) => sum + estimateTokens(m), 0)
+  const available = contextWindow - reserveTokens
+  return {
+    fits: totalTokens <= available,
+    totalTokens,
+    remainingTokens: Math.max(0, available - totalTokens),
+  }
+}

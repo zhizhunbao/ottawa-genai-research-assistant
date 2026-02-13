@@ -1,0 +1,339 @@
+"""
+Naive Chunker - Adaptive text chunking with regex pattern matching
+
+@module backend/rag/naive-chunker
+@source ragflow/rag/app/naive.py chunk() function (737-1077L)
+@reference https://github.com/infiniflow/ragflow
+@template S3-M2-F2
+
+RAGFlow's adaptive chunking strategy that handles multiple document types
+(PDF, DOCX, Markdown, Excel, TXT) with configurable delimiters, token limits,
+and title-aware context. This template extracts the core chunking algorithm
+while removing ragflow-specific service dependencies.
+
+Key patterns:
+1. Token-based chunk size control (not character-based)
+2. Configurable delimiter hierarchy (sentence → paragraph → section)
+3. Title/heading context injection into chunks
+4. Table-as-HTML chunk preservation
+5. Multi-format file type dispatch
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Types ────────────────────────────────────────────────────────────────────
+
+@dataclass
+class ChunkConfig:
+    """
+    Configuration for the chunking strategy.
+    @source ragflow/rag/app/naive.py parser_config defaults (line 748)
+    """
+    chunk_token_num: int = 512
+    """Maximum tokens per chunk."""
+
+    delimiter: str = "\n!?。；！？"
+    """Characters used as sentence/section boundaries."""
+
+    layout_recognize: str = "DeepDOC"
+    """Layout recognition engine to use."""
+
+    analyze_hyperlink: bool = False
+    """Whether to extract and follow hyperlinks."""
+
+    table_context_size: int = 0
+    """Number of surrounding paragraphs to include with table chunks."""
+
+    image_context_size: int = 0
+    """Number of surrounding paragraphs to include with image chunks."""
+
+    children_delimiter: str = ""
+    """Delimiter for child document splitting."""
+
+    overlap_token_num: int = 64
+    """Number of overlapping tokens between consecutive chunks."""
+
+
+@dataclass
+class Chunk:
+    """A single chunk of text with metadata."""
+    content: str
+    """The main text content."""
+
+    content_with_weight: str = ""
+    """Weighted content for search (includes title tokens)."""
+
+    doc_name: str = ""
+    """Source document name."""
+
+    image: Any = None
+    """Associated image (PIL Image or None)."""
+
+    table_html: str = ""
+    """HTML representation if this chunk is a table."""
+
+    page_number: int = 0
+    """Page number in source document."""
+
+    position: int = 0
+    """Position index within document."""
+
+    tokens: int = 0
+    """Estimated token count."""
+
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+# ─── Token Counter (pluggable) ────────────────────────────────────────────────
+
+def estimate_tokens(text: str, method: str = "word") -> int:
+    """
+    Estimate the number of tokens in a text string.
+
+    Args:
+        text: Input text
+        method: Counting method - "word" (fast), "tiktoken" (accurate), "char4" (CJK-friendly)
+
+    Returns:
+        Estimated token count
+    """
+    if not text:
+        return 0
+
+    if method == "tiktoken":
+        try:
+            import tiktoken
+            enc = tiktoken.encoding_for_model("gpt-4")
+            return len(enc.encode(text))
+        except ImportError:
+            method = "word"
+
+    if method == "char4":
+        # Rough: 1 CJK char ≈ 1 token, 4 Latin chars ≈ 1 token
+        cjk_count = len(re.findall(r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]", text))
+        latin_count = len(text) - cjk_count
+        return cjk_count + latin_count // 4
+
+    # Default: word-based estimation
+    return len(text.split())
+
+
+# ─── Naive Merge ──────────────────────────────────────────────────────────────
+# @source ragflow/rag/nlp/__init__.py naive_merge pattern
+
+def naive_merge(
+    sections: list[tuple[str, str]],
+    chunk_token_num: int = 512,
+    delimiter: str = "\n!?。；！？",
+) -> list[str]:
+    """
+    Merge consecutive text sections into chunks respecting token limits.
+
+    The algorithm:
+    1. Split each section by delimiter characters
+    2. Greedily accumulate pieces until token limit is reached
+    3. Start new chunk when limit exceeded
+
+    @source ragflow/rag/nlp/__init__.py naive_merge function
+
+    Args:
+        sections: List of (text, tag) tuples from parser
+        delimiter: Characters that mark natural break points
+        chunk_token_num: Maximum tokens per chunk
+
+    Returns:
+        List of merged text chunks
+    """
+    if not sections:
+        return []
+
+    # Build delimiter regex
+    deli_pattern = "|".join(re.escape(d) for d in delimiter if d.strip())
+    if not deli_pattern:
+        deli_pattern = r"\n"
+
+    chunks: list[str] = []
+    current_chunk = ""
+    current_tokens = 0
+
+    for text, _tag in sections:
+        if not text.strip():
+            continue
+
+        # Split by delimiters but keep delimiters attached
+        pieces = re.split(f"({deli_pattern})", text)
+
+        for piece in pieces:
+            piece_tokens = estimate_tokens(piece)
+
+            if current_tokens + piece_tokens > chunk_token_num and current_chunk:
+                # Current chunk is full, save it and start new
+                chunks.append(current_chunk.strip())
+                current_chunk = piece
+                current_tokens = piece_tokens
+            else:
+                current_chunk += piece
+                current_tokens += piece_tokens
+
+    # Don't forget the last chunk
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
+
+# ─── Chunker Class ────────────────────────────────────────────────────────────
+
+class NaiveChunker:
+    """
+    Adaptive document chunker inspired by RAGFlow's naive chunking strategy.
+
+    Handles text content from any document parser and produces token-bounded chunks
+    with metadata for downstream embedding and retrieval.
+
+    @source ragflow/rag/app/naive.py chunk() function (737-1077L)
+
+    Usage:
+        chunker = NaiveChunker(config=ChunkConfig(chunk_token_num=512))
+        chunks = chunker.chunk_text(sections, doc_name="report.pdf")
+        chunks = chunker.chunk_tables(tables, doc_name="report.pdf")
+    """
+
+    def __init__(self, config: ChunkConfig | None = None):
+        self.config = config or ChunkConfig()
+
+    def chunk_text(
+        self,
+        sections: list[tuple[str, str]],
+        doc_name: str = "",
+    ) -> list[Chunk]:
+        """
+        Chunk text sections into token-bounded pieces.
+
+        Args:
+            sections: List of (text, tag) tuples from document parser
+            doc_name: Source document name for metadata
+
+        Returns:
+            List of Chunk objects
+        """
+        merged = naive_merge(
+            sections,
+            chunk_token_num=self.config.chunk_token_num,
+            delimiter=self.config.delimiter,
+        )
+
+        # Build title tokens for search weighting
+        title_tokens = re.sub(r"\.[a-zA-Z]+$", "", doc_name)
+
+        chunks: list[Chunk] = []
+        for i, text in enumerate(merged):
+            token_count = estimate_tokens(text)
+            chunks.append(Chunk(
+                content=text,
+                content_with_weight=text,
+                doc_name=doc_name,
+                position=i,
+                tokens=token_count,
+                metadata={
+                    "title_tokens": title_tokens,
+                    "chunk_index": i,
+                    "total_chunks": len(merged),
+                },
+            ))
+
+        return chunks
+
+    def chunk_tables(
+        self,
+        tables: list[dict[str, Any]],
+        doc_name: str = "",
+        context_sections: list[tuple[str, str]] | None = None,
+    ) -> list[Chunk]:
+        """
+        Create chunks from extracted tables.
+
+        Each table becomes its own chunk (HTML preserved for structure).
+        Optionally injects surrounding text context.
+
+        Args:
+            tables: List of table dicts with 'html', 'caption', etc.
+            doc_name: Source document name
+            context_sections: Surrounding text sections for context injection
+
+        Returns:
+            List of Chunk objects representing tables
+        """
+        chunks: list[Chunk] = []
+
+        for i, table in enumerate(tables):
+            html = table.get("html", "")
+            caption = table.get("caption", "")
+            page = table.get("page_number", 0)
+
+            # Build context from surrounding sections
+            context = ""
+            if context_sections and self.config.table_context_size > 0:
+                # Simple: take N sections around the table's position
+                ctx_parts = [
+                    s[0] for s in context_sections[:self.config.table_context_size]
+                ]
+                context = " ".join(ctx_parts)
+
+            content = f"{caption}\n{html}" if caption else html
+            if context:
+                content = f"{context}\n\n{content}"
+
+            chunks.append(Chunk(
+                content=content,
+                content_with_weight=content,
+                doc_name=doc_name,
+                table_html=html,
+                page_number=page,
+                position=i,
+                tokens=estimate_tokens(content),
+                metadata={
+                    "is_table": True,
+                    "caption": caption,
+                    "table_index": i,
+                },
+            ))
+
+        return chunks
+
+    def chunk_document(
+        self,
+        sections: list[tuple[str, str]],
+        tables: list[dict[str, Any]] | None = None,
+        doc_name: str = "",
+    ) -> list[Chunk]:
+        """
+        Chunk an entire document (text + tables) in one call.
+
+        Args:
+            sections: Text sections from parser
+            tables: Extracted tables from parser
+            doc_name: Document name
+
+        Returns:
+            Combined list of text and table chunks
+        """
+        text_chunks = self.chunk_text(sections, doc_name)
+        table_chunks = self.chunk_tables(
+            tables or [], doc_name, context_sections=sections
+        )
+
+        all_chunks = text_chunks + table_chunks
+        logger.info(
+            f"Chunked '{doc_name}': {len(text_chunks)} text chunks, "
+            f"{len(table_chunks)} table chunks"
+        )
+        return all_chunks

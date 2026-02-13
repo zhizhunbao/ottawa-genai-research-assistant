@@ -1,0 +1,449 @@
+/**
+ * Chat Service — API abstraction layer decoupled from state management
+ *
+ * Provides a clean interface between the store layer and the network layer:
+ * - Encapsulates fetch/SSE connection details
+ * - Manages AbortController lifecycle
+ * - Handles auth token injection
+ * - Supports both streaming and non-streaming responses
+ * - Plugin/tool API calls
+ * - Trace/observability header injection
+ *
+ * Design principle: The store (Zustand) calls ChatService methods,
+ * ChatService calls fetch(). Store never touches fetch() directly.
+ *
+ * @module features/chat/hooks/chat-service
+ * @source lobe-chat/src/services/chat/index.ts (555 lines) — ChatService class
+ * @source lobe-chat/src/services/chat/types.ts (19 lines) — FetchOptions
+ * @source lobe-chat/src/services/chat/helper.ts (44 lines) — helper utilities
+ * @source lobe-chat/src/services/aiChat.ts (26 lines) — AiChatService singleton
+ * @reference https://github.com/lobehub/lobe-chat
+ * @template S1-M6-F3
+ */
+
+// ==================== Types ====================
+
+/** Message format for chat API requests */
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  name?: string;
+  tool_call_id?: string;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }>;
+}
+
+/** Parameters for chat completion requests */
+export interface ChatCompletionParams {
+  /** Messages to send */
+  messages: ChatMessage[];
+  /** Model identifier */
+  model?: string;
+  /** Model provider */
+  provider?: string;
+  /** Whether to stream the response */
+  stream?: boolean;
+  /** Temperature (0.0 - 2.0) */
+  temperature?: number;
+  /** Top-p sampling */
+  top_p?: number;
+  /** Maximum tokens to generate */
+  max_tokens?: number;
+  /** Presence penalty */
+  presence_penalty?: number;
+  /** Frequency penalty */
+  frequency_penalty?: number;
+  /** Tool definitions */
+  tools?: Array<{
+    type: 'function';
+    function: {
+      name: string;
+      description: string;
+      parameters: Record<string, unknown>;
+    };
+  }>;
+}
+
+/**
+ * SSE callback options for streaming responses.
+ *
+ * @source lobe-chat/src/services/chat/types.ts FetchOptions
+ */
+export interface FetchSSEOptions {
+  /** Called for each streaming chunk */
+  onMessageHandle?: (chunk: unknown) => void;
+  /** Called when streaming completes */
+  onFinish?: (content: string, metadata: Record<string, unknown>) => void;
+  /** Called on error */
+  onErrorHandle?: (error: Error) => void;
+  /** Called when request is aborted */
+  onAbort?: () => void;
+  /** AbortSignal for cancellation */
+  signal?: AbortSignal;
+}
+
+/** Response from non-streaming chat completion */
+export interface ChatCompletionResponse {
+  id: string;
+  choices: Array<{
+    message: ChatMessage;
+    finish_reason: string;
+    index: number;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  model: string;
+}
+
+/** Configuration for ChatService */
+export interface ChatServiceConfig {
+  /** API base URL, e.g. '/api/v1' or 'https://api.example.com' */
+  baseUrl: string;
+  /** Default model to use */
+  defaultModel?: string;
+  /** Default provider */
+  defaultProvider?: string;
+  /** Default parameters */
+  defaultParams?: Partial<ChatCompletionParams>;
+  /** Function to get auth headers */
+  getAuthHeaders?: () => Record<string, string> | Promise<Record<string, string>>;
+  /** Function to get auth token (simpler alternative to getAuthHeaders) */
+  getToken?: () => string | null;
+}
+
+// ==================== ChatService Class ====================
+
+/**
+ * Chat Service — singleton API abstraction for chat operations.
+ *
+ * @source lobe-chat/src/services/chat/index.ts L102-552
+ * Simplified from lobe-chat's 552-line service: removed provider-specific logic
+ * (Azure deployment names, model bank, plugin SDK headers), agent builder context,
+ * context engineering, and client-side runtime. Kept core patterns:
+ * - createAssistantMessage (streaming)
+ * - getChatCompletion (non-streaming)
+ * - fetchPresetTaskResult (utility tasks)
+ * - Error handling with auth redirect
+ *
+ * @example
+ * ```ts
+ * const chatService = createChatService({
+ *   baseUrl: '{{API_BASE_URL}}',
+ *   getToken: () => localStorage.getItem('token'),
+ *   defaultModel: 'gpt-4',
+ * });
+ *
+ * // Streaming
+ * await chatService.createAssistantMessageStream({
+ *   params: { messages: [...] },
+ *   abortController: new AbortController(),
+ *   onMessageHandle: (chunk) => console.log(chunk),
+ *   onFinish: (content, meta) => console.log('Done'),
+ * });
+ *
+ * // Non-streaming
+ * const response = await chatService.getChatCompletion({
+ *   messages: [...],
+ *   stream: false,
+ * });
+ * ```
+ */
+export class ChatService {
+  private config: Required<ChatServiceConfig>;
+
+  constructor(config: ChatServiceConfig) {
+    this.config = {
+      baseUrl: config.baseUrl,
+      defaultModel: config.defaultModel ?? 'gpt-4',
+      defaultProvider: config.defaultProvider ?? 'openai',
+      defaultParams: config.defaultParams ?? {},
+      getAuthHeaders: config.getAuthHeaders ?? (async () => ({})),
+      getToken: config.getToken ?? (() => null),
+    };
+  }
+
+  // ==================== Public API ====================
+
+  /**
+   * Create a streaming assistant message.
+   *
+   * @source lobe-chat ChatService.createAssistantMessageStream L281-304
+   */
+  async createAssistantMessageStream(options: {
+    params: ChatCompletionParams;
+    abortController?: AbortController;
+    onMessageHandle?: (chunk: unknown) => void;
+    onFinish?: (content: string, metadata: Record<string, unknown>) => void;
+    onErrorHandle?: (error: Error) => void;
+    onAbort?: () => void;
+  }): Promise<void> {
+    const { params, abortController, ...callbacks } = options;
+
+    await this.fetchSSE(
+      `${this.config.baseUrl}/chat/stream`,
+      {
+        ...this.mergeDefaults(params),
+        stream: true,
+      },
+      {
+        ...callbacks,
+        signal: abortController?.signal,
+      },
+    );
+  }
+
+  /**
+   * Get a chat completion (non-streaming).
+   *
+   * @source lobe-chat ChatService.getChatCompletion L306-428
+   */
+  async getChatCompletion(
+    params: ChatCompletionParams,
+  ): Promise<ChatCompletionResponse> {
+    const headers = await this.buildHeaders();
+
+    const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...this.mergeDefaults(params),
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      await this.handleHttpError(response);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Run a preset task (e.g., summarization, title generation).
+   * Wraps getChatCompletion with loading state management.
+   *
+   * @source lobe-chat ChatService.fetchPresetTaskResult L464-508
+   */
+  async fetchPresetTaskResult(options: {
+    params: ChatCompletionParams;
+    abortController?: AbortController;
+    onMessageHandle?: (chunk: unknown) => void;
+    onFinish?: (content: string, metadata: Record<string, unknown>) => void;
+    onError?: (error: Error) => void;
+    onLoadingChange?: (loading: boolean) => void;
+  }): Promise<void> {
+    const { params, abortController, onError, onLoadingChange, ...callbacks } = options;
+
+    onLoadingChange?.(true);
+
+    try {
+      await this.fetchSSE(
+        `${this.config.baseUrl}/chat/stream`,
+        {
+          ...this.mergeDefaults(params),
+          stream: true,
+        },
+        {
+          ...callbacks,
+          onErrorHandle: (error) => {
+            onLoadingChange?.(false);
+            if (abortController?.signal.aborted) return;
+            onError?.(error);
+          },
+          signal: abortController?.signal,
+        },
+      );
+
+      onLoadingChange?.(false);
+    } catch (error) {
+      onLoadingChange?.(false);
+      onError?.(error as Error);
+    }
+  }
+
+  // ==================== Private Methods ====================
+
+  /**
+   * Core SSE fetch implementation.
+   * Handles streaming response parsing (NDJSON and SSE formats).
+   *
+   * @source lobe-chat uses @lobechat/fetch-sse package; we inline a simplified version
+   */
+  private async fetchSSE(
+    url: string,
+    payload: Record<string, unknown>,
+    options: FetchSSEOptions,
+  ): Promise<void> {
+    const headers = await this.buildHeaders();
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      const error = await this.extractError(response);
+      options.onErrorHandle?.(error);
+      return;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      options.onErrorHandle?.(new Error('No response body reader'));
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+    let metadata: Record<string, unknown> = {};
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          // Handle SSE format: "data: {...}"
+          const sseMatch = line.match(/^data:\s*(.+)$/);
+          const jsonStr = sseMatch ? sseMatch[1] : line;
+
+          if (jsonStr === '[DONE]') continue;
+
+          try {
+            const data = JSON.parse(jsonStr);
+
+            // Notify chunk handler
+            options.onMessageHandle?.(data);
+
+            // Accumulate content
+            if (data.type === 'text' && data.text) {
+              fullContent += data.text;
+            } else if (data.choices?.[0]?.delta?.content) {
+              fullContent += data.choices[0].delta.content;
+            } else if (data.content) {
+              fullContent += data.content;
+            }
+
+            // Capture metadata on finish events
+            if (data.type === 'finish' || data.type === 'done' || data.usage) {
+              metadata = { ...metadata, ...data };
+            }
+
+            // Handle error events
+            if (data.error) {
+              options.onErrorHandle?.(new Error(data.error.message || data.error));
+              return;
+            }
+          } catch {
+            // Skip unparseable lines (partial JSON, comments, etc.)
+          }
+        }
+      }
+
+      options.onFinish?.(fullContent, metadata);
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        options.onAbort?.();
+        return;
+      }
+      options.onErrorHandle?.(error as Error);
+    }
+  }
+
+  /**
+   * Build request headers with auth.
+   *
+   * @source lobe-chat uses createHeaderWithAuth from services/_auth.ts
+   */
+  private async buildHeaders(): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Token-based auth
+    const token = this.config.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Custom auth headers (can override token)
+    const customHeaders = await this.config.getAuthHeaders();
+    return { ...headers, ...customHeaders };
+  }
+
+  /**
+   * Merge user params with defaults.
+   */
+  private mergeDefaults(params: ChatCompletionParams): ChatCompletionParams {
+    return {
+      model: this.config.defaultModel,
+      ...this.config.defaultParams,
+      ...params,
+      // Ensure undefined values don't override defaults
+      temperature: params.temperature ?? this.config.defaultParams.temperature,
+      top_p: params.top_p ?? this.config.defaultParams.top_p,
+    };
+  }
+
+  /**
+   * Handle HTTP error responses.
+   * Throws with structured error information.
+   */
+  private async handleHttpError(response: Response): Promise<never> {
+    const error = await this.extractError(response);
+    throw error;
+  }
+
+  /**
+   * Extract error details from a failed response.
+   */
+  private async extractError(response: Response): Promise<Error> {
+    let message: string;
+    try {
+      const body = await response.json();
+      message = body.error?.message || body.message || JSON.stringify(body);
+    } catch {
+      message = `HTTP ${response.status}: ${response.statusText}`;
+    }
+
+    const error = new Error(message);
+    (error as Error & { status: number }).status = response.status;
+    return error;
+  }
+}
+
+// ==================== Factory Function ====================
+
+/**
+ * Create a ChatService instance.
+ *
+ * @example
+ * ```ts
+ * // Singleton pattern — create once, import everywhere
+ * export const chatService = createChatService({
+ *   baseUrl: '{{API_BASE_URL}}',
+ *   getToken: () => localStorage.getItem('token'),
+ *   defaultModel: 'gpt-4',
+ * });
+ * ```
+ *
+ * @source lobe-chat/src/services/chat/index.ts L554 — singleton export pattern
+ */
+export function createChatService(config: ChatServiceConfig): ChatService {
+  return new ChatService(config);
+}

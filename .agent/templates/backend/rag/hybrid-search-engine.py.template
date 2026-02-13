@@ -1,0 +1,495 @@
+"""
+Hybrid Search Engine - SQLite FTS5 + Vector + Reciprocal Rank Fusion
+
+@module backend/rag/hybrid-search-engine
+@source sqlite-rag/src/sqlite_rag/engine.py Engine class (344L)
+@reference https://github.com/plandex-ai/sqlite-rag
+@template S3-M3-F1
+
+All-in-one hybrid search in a single .db file:
+- FTS5 full-text search for keyword matching
+- Vector similarity search via numpy cosine
+- Reciprocal Rank Fusion (RRF) to merge rankings
+- Sentence-level highlighting within matched chunks
+
+Zero external service dependencies — ideal for dev/test/small deployments.
+
+Key patterns from sqlite-rag:
+1. CTE-based RRF SQL query merging FTS5 + vector results
+2. Configurable weight_fts / weight_vec for tuning
+3. Two-level search: document chunks → sentences for highlighting
+4. SQLite connection-based architecture (single .db file)
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+import sqlite3
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Callable, Optional, Sequence
+from uuid import uuid4
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Configuration ────────────────────────────────────────────────────────────
+
+@dataclass
+class HybridSearchConfig:
+    """
+    Configuration for the hybrid search engine.
+
+    @source sqlite-rag/src/sqlite_rag/settings.py
+    """
+    db_path: str = ":memory:"
+    """Path to SQLite database file."""
+
+    embedding_dim: int = 384
+    """Dimension of embedding vectors."""
+
+    chunk_size: int = 512
+    """Maximum tokens per chunk."""
+
+    chunk_overlap: int = 50
+    """Token overlap between consecutive chunks."""
+
+    rrf_k: int = 60
+    """RRF constant (higher = more uniform ranking). Default from paper: 60."""
+
+    weight_fts: float = 1.0
+    """Weight for full-text search in RRF."""
+
+    weight_vec: float = 1.0
+    """Weight for vector search in RRF."""
+
+    top_k: int = 10
+    """Default number of results to return."""
+
+    top_k_sentences: int = 3
+    """Number of highlighted sentences per chunk."""
+
+
+# ─── Data Models ──────────────────────────────────────────────────────────────
+
+@dataclass
+class Document:
+    """A document to be indexed."""
+    content: str
+    uri: str = ""
+    id: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not self.id:
+            self.id = str(uuid4())
+
+
+@dataclass
+class Chunk:
+    """A chunk of text with its embedding."""
+    content: str
+    embedding: list[float] | None = None
+    document_id: str = ""
+    title: str = ""
+    head_overlap: str = ""
+
+
+@dataclass
+class SentenceMatch:
+    """A sentence match within a chunk for highlighting."""
+    content: str
+    start_offset: int = 0
+    end_offset: int = 0
+    rank: int = 0
+    distance: float = 0.0
+
+
+@dataclass
+class SearchResult:
+    """
+    A single search result with RRF scores.
+
+    @source sqlite-rag/src/sqlite_rag/models/document_result.py
+    """
+    document_id: str
+    document_uri: str
+    chunk_content: str
+    chunk_id: int = 0
+    combined_rank: float = 0.0
+    vec_rank: int | None = None
+    fts_rank: int | None = None
+    vec_distance: float | None = None
+    fts_score: float | None = None
+    sentences: list[SentenceMatch] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+# ─── Embedding Function Protocol ─────────────────────────────────────────────
+
+EmbedFn = Callable[[str], list[float]]
+
+
+# ─── Schema ───────────────────────────────────────────────────────────────────
+
+_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS documents (
+    id TEXT PRIMARY KEY,
+    content TEXT NOT NULL,
+    uri TEXT DEFAULT '',
+    metadata TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chunks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id TEXT NOT NULL REFERENCES documents(id),
+    content TEXT NOT NULL,
+    embedding BLOB,
+    FOREIGN KEY (document_id) REFERENCES documents(id)
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
+    content,
+    content='chunks',
+    content_rowid='id'
+);
+
+CREATE TABLE IF NOT EXISTS sentences (
+    id TEXT PRIMARY KEY,
+    chunk_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    embedding BLOB,
+    start_offset INTEGER DEFAULT 0,
+    end_offset INTEGER DEFAULT 0,
+    FOREIGN KEY (chunk_id) REFERENCES chunks(id)
+);
+"""
+
+
+# ─── Hybrid Search Engine ────────────────────────────────────────────────────
+# @source sqlite-rag/src/sqlite_rag/engine.py Engine class (17-344L)
+
+class HybridSearchEngine:
+    """
+    SQLite-based hybrid search engine combining FTS5 + vector similarity.
+
+    Uses Reciprocal Rank Fusion (RRF) to merge full-text and vector rankings.
+    Everything lives in a single .db file — no external services needed.
+
+    @source sqlite-rag/src/sqlite_rag/engine.py Engine class (344 lines)
+
+    Usage:
+        engine = HybridSearchEngine(
+            config=HybridSearchConfig(db_path="research.db"),
+            embed_fn=my_embedding_function,
+        )
+        engine.initialize()
+        engine.add_document(Document(content="...", uri="paper.pdf"))
+        results = engine.search("quantum computing", top_k=5)
+    """
+
+    def __init__(
+        self,
+        config: HybridSearchConfig | None = None,
+        embed_fn: EmbedFn | None = None,
+    ):
+        self.config = config or HybridSearchConfig()
+        self._embed_fn = embed_fn
+        self._conn: sqlite3.Connection | None = None
+
+    def initialize(self) -> None:
+        """Create database connection and schema."""
+        self._conn = sqlite3.connect(self.config.db_path)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.executescript(_SCHEMA_SQL)
+        self._conn.commit()
+        logger.info(f"Initialized hybrid search DB: {self.config.db_path}")
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        if self._conn is None:
+            raise RuntimeError("Engine not initialized. Call initialize() first.")
+        return self._conn
+
+    def set_embed_fn(self, fn: EmbedFn) -> None:
+        """Set the embedding function."""
+        self._embed_fn = fn
+
+    def _embed(self, text: str) -> list[float]:
+        """Generate embedding for text."""
+        if self._embed_fn is None:
+            raise RuntimeError("No embedding function configured. Call set_embed_fn().")
+        return self._embed_fn(text)
+
+    def _serialize_vec(self, vec: list[float]) -> bytes:
+        """Serialize vector to bytes for SQLite storage."""
+        import struct
+        return struct.pack(f"{len(vec)}f", *vec)
+
+    def _deserialize_vec(self, data: bytes) -> list[float]:
+        """Deserialize vector from bytes."""
+        import struct
+        n = len(data) // 4
+        return list(struct.unpack(f"{n}f", data))
+
+    # ── Document Management ──────────────────────────────────────────────────
+
+    def add_document(
+        self,
+        document: Document,
+        chunks: list[str] | None = None,
+    ) -> str:
+        """
+        Add a document: chunk it, embed chunks, store in DB.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.add_document
+
+        Args:
+            document: Document to add
+            chunks: Pre-chunked text (if None, the content is stored as one chunk)
+
+        Returns:
+            Document ID
+        """
+        cursor = self.conn.cursor()
+
+        # Insert document
+        cursor.execute(
+            "INSERT INTO documents (id, content, uri, metadata) VALUES (?, ?, ?, ?)",
+            (document.id, document.content, document.uri, json.dumps(document.metadata)),
+        )
+
+        # Chunk the content
+        text_chunks = chunks or [document.content]
+
+        for chunk_text in text_chunks:
+            embedding = self._embed(chunk_text)
+            embedding_bytes = self._serialize_vec(embedding)
+
+            cursor.execute(
+                "INSERT INTO chunks (document_id, content, embedding) VALUES (?, ?, ?)",
+                (document.id, chunk_text, embedding_bytes),
+            )
+            chunk_id = cursor.lastrowid
+
+            # FTS index
+            cursor.execute(
+                "INSERT INTO chunks_fts (rowid, content) VALUES (?, ?)",
+                (chunk_id, chunk_text),
+            )
+
+        self.conn.commit()
+        logger.info(f"Added document '{document.uri}' ({len(text_chunks)} chunks)")
+        return document.id
+
+    def remove_document(self, document_id: str) -> bool:
+        """
+        Remove a document and all related chunks/sentences.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.remove_document
+        """
+        cursor = self.conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM documents WHERE id = ?", (document_id,))
+        if cursor.fetchone()[0] == 0:
+            return False
+
+        # Delete sentences
+        cursor.execute(
+            "DELETE FROM sentences WHERE chunk_id IN (SELECT id FROM chunks WHERE document_id = ?)",
+            (document_id,),
+        )
+
+        # Delete FTS entries
+        cursor.execute(
+            "DELETE FROM chunks_fts WHERE rowid IN (SELECT id FROM chunks WHERE document_id = ?)",
+            (document_id,),
+        )
+
+        # Delete chunks
+        cursor.execute("DELETE FROM chunks WHERE document_id = ?", (document_id,))
+
+        # Delete document
+        cursor.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+
+        self.conn.commit()
+        return True
+
+    def list_documents(self) -> list[Document]:
+        """List all indexed documents."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, content, uri, metadata FROM documents")
+        return [
+            Document(
+                id=row["id"],
+                content=row["content"],
+                uri=row["uri"],
+                metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+            )
+            for row in cursor.fetchall()
+        ]
+
+    # ── Search ───────────────────────────────────────────────────────────────
+
+    def search(self, query: str, top_k: int | None = None) -> list[SearchResult]:
+        """
+        Hybrid search using FTS5 + vector similarity with RRF fusion.
+
+        @source sqlite-rag/src/sqlite_rag/engine.py Engine.search (lines 127-150)
+
+        Pipeline:
+        1. Generate query embedding
+        2. Run FTS5 search (keyword matching)
+        3. Run vector search (cosine similarity)
+        4. Merge with Reciprocal Rank Fusion
+        5. Return top-k results
+
+        Args:
+            query: Search query text
+            top_k: Number of results (default from config)
+
+        Returns:
+            List of SearchResult with decomposed scores
+        """
+        top_k = top_k or self.config.top_k
+
+        # Prepare queries
+        fts_query = " ".join(re.findall(r"\b\w+\b", query.lower())) + "*"
+        query_embedding = self._embed(query)
+        query_vec_bytes = self._serialize_vec(query_embedding)
+
+        # Run hybrid search
+        results = self._search_hybrid(query_vec_bytes, fts_query, top_k)
+
+        return results
+
+    def _search_hybrid(
+        self,
+        query_embedding: bytes,
+        fts_query: str,
+        top_k: int,
+    ) -> list[SearchResult]:
+        """
+        Execute hybrid search using Python-based RRF fusion.
+
+        @source sqlite-rag/src/sqlite_rag/engine.py Engine.search_documents (lines 152-253)
+
+        Since we don't have sqlite-vec extension, we do vector search in Python
+        and merge with FTS5 results using RRF.
+        """
+        import numpy as np
+
+        cursor = self.conn.cursor()
+        query_vec = np.array(self._deserialize_vec(query_embedding))
+        q_norm = np.linalg.norm(query_vec)
+
+        # ── Vector search (Python-side) ──────────────────────────────────
+        cursor.execute(
+            "SELECT id, document_id, content, embedding FROM chunks WHERE embedding IS NOT NULL"
+        )
+        vec_results: list[tuple[int, float]] = []  # (chunk_id, distance)
+
+        for row in cursor.fetchall():
+            doc_vec = np.array(self._deserialize_vec(row["embedding"]))
+            d_norm = np.linalg.norm(doc_vec)
+            if q_norm > 0 and d_norm > 0:
+                cosine_sim = float(np.dot(query_vec, doc_vec) / (q_norm * d_norm))
+                distance = 1.0 - cosine_sim  # cosine distance
+            else:
+                distance = 2.0
+            vec_results.append((row["id"], distance))
+
+        vec_results.sort(key=lambda x: x[1])
+        vec_results = vec_results[:top_k]
+
+        # Build rank mapping
+        vec_rank_map: dict[int, int] = {
+            chunk_id: rank + 1 for rank, (chunk_id, _) in enumerate(vec_results)
+        }
+        vec_dist_map: dict[int, float] = {
+            chunk_id: dist for chunk_id, dist in vec_results
+        }
+
+        # ── FTS5 search ──────────────────────────────────────────────────
+        fts_rank_map: dict[int, int] = {}
+        fts_score_map: dict[int, float] = {}
+        try:
+            cursor.execute(
+                "SELECT rowid, rank FROM chunks_fts WHERE chunks_fts MATCH ? LIMIT ?",
+                (fts_query, top_k),
+            )
+            for rank_idx, row in enumerate(cursor.fetchall()):
+                fts_rank_map[row["rowid"]] = rank_idx + 1
+                fts_score_map[row["rowid"]] = row["rank"]
+        except sqlite3.OperationalError:
+            # FTS query syntax error, skip FTS results
+            pass
+
+        # ── RRF fusion ───────────────────────────────────────────────────
+        # @source sqlite-rag engine.py lines 188-204
+        all_chunk_ids = set(vec_rank_map.keys()) | set(fts_rank_map.keys())
+        rrf_scores: dict[int, float] = {}
+
+        for chunk_id in all_chunk_ids:
+            vec_rrf = 0.0
+            fts_rrf = 0.0
+            if chunk_id in vec_rank_map:
+                vec_rrf = 1.0 / (self.config.rrf_k + vec_rank_map[chunk_id])
+            if chunk_id in fts_rank_map:
+                fts_rrf = 1.0 / (self.config.rrf_k + fts_rank_map[chunk_id])
+            rrf_scores[chunk_id] = (
+                vec_rrf * self.config.weight_vec + fts_rrf * self.config.weight_fts
+            )
+
+        # Sort by RRF score descending
+        sorted_ids = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
+        sorted_ids = sorted_ids[:top_k]
+
+        # ── Build results ────────────────────────────────────────────────
+        results: list[SearchResult] = []
+        for chunk_id in sorted_ids:
+            cursor.execute(
+                """SELECT c.id, c.content, c.document_id, d.uri, d.metadata
+                   FROM chunks c JOIN documents d ON c.document_id = d.id
+                   WHERE c.id = ?""",
+                (chunk_id,),
+            )
+            row = cursor.fetchone()
+            if row:
+                results.append(SearchResult(
+                    document_id=row["document_id"],
+                    document_uri=row["uri"],
+                    chunk_content=row["content"],
+                    chunk_id=chunk_id,
+                    combined_rank=rrf_scores[chunk_id],
+                    vec_rank=vec_rank_map.get(chunk_id),
+                    fts_rank=fts_rank_map.get(chunk_id),
+                    vec_distance=vec_dist_map.get(chunk_id),
+                    fts_score=fts_score_map.get(chunk_id),
+                    metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+                ))
+
+        return results
+
+    # ── Lifecycle ────────────────────────────────────────────────────────────
+
+    def close(self) -> None:
+        """Close the database connection."""
+        if self._conn:
+            self._conn.close()
+            self._conn = None
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        self.initialize()
+        return self
+
+    def __exit__(self, *args):
+        self.close()

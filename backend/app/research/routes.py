@@ -6,7 +6,10 @@ API endpoints for RAG-powered research assistance and semantic query handling.
 @template A7 backend/domain/router.py — API Routes
 """
 
+import json
+
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
 from app.core.dependencies import OptionalOpenAIService, OptionalSearchService
 from app.core.schemas import ApiResponse
@@ -15,10 +18,20 @@ from app.research.schemas import (
     ChatResponse,
     SearchQuery,
     SearchResponse,
+    StreamChatRequest,
 )
 from app.research.service import ResearchService
 
 router = APIRouter(prefix="/api/v1/research", tags=["research"])
+
+
+async def _format_ndjson(gen):
+    """Convert async generator of dicts to NDJSON stream."""
+    try:
+        async for event in gen:
+            yield json.dumps(event, ensure_ascii=False) + "\n"
+    except Exception as error:
+        yield json.dumps({"error": str(error)}, ensure_ascii=False) + "\n"
 
 
 @router.post("/search", response_model=ApiResponse[SearchResponse])
@@ -27,10 +40,10 @@ async def search(
     search_service: OptionalSearchService,
     openai_service: OptionalOpenAIService,
 ) -> ApiResponse[SearchResponse]:
-    """执行语义搜索
+    """Execute semantic search
 
-    根据查询在知识库中搜索相关文档。
-    如果配置了 Azure AI Search，使用混合搜索 (Vector + BM25)。
+    Searches relevant documents in the knowledge base.
+    Uses hybrid search (Vector + BM25) if Azure AI Search is configured.
     """
     service = ResearchService(
         search_service=search_service,
@@ -46,10 +59,9 @@ async def chat(
     search_service: OptionalSearchService,
     openai_service: OptionalOpenAIService,
 ) -> ApiResponse[ChatResponse]:
-    """RAG 增强的聊天
+    """RAG-enhanced chat (non-streaming)
 
-    处理用户消息并返回 AI 助手的回复。
-    如果启用 RAG，先搜索相关文档作为上下文，再用 LLM 生成回复。
+    Processes user messages, retrieves relevant context, and generates an AI response.
     """
     service = ResearchService(
         search_service=search_service,
@@ -57,3 +69,34 @@ async def chat(
     )
     result = await service.chat(request)
     return ApiResponse.ok(result)
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    request: StreamChatRequest,
+    search_service: OptionalSearchService,
+    openai_service: OptionalOpenAIService,
+) -> StreamingResponse:
+    """RAG-enhanced streaming chat (SSE/NDJSON)
+
+    Streams AI response tokens in real-time via NDJSON protocol.
+
+    Event types:
+    - `sources`: Retrieved document references
+    - `text`: LLM generated text token
+    - `confidence`: Confidence score (0-1)
+    - `chart`: Optional chart data for visualization
+    - `done`: End of stream signal
+    """
+    service = ResearchService(
+        search_service=search_service,
+        openai_service=openai_service,
+    )
+    return StreamingResponse(
+        _format_ndjson(service.chat_stream(request)),
+        media_type="application/x-ndjson",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

@@ -1,7 +1,9 @@
-/**
- * Global API Type Definitions
+﻿/**
+ * ApiTypes - Shared API response and pagination type definitions
  *
+ * @module core/types
  * @template T6 backend/core/types/api.ts — API Response & Pagination Patterns
+ * @reference none
  */
 
 export interface ApiResponse<T> {

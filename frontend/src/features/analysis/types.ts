@@ -1,7 +1,9 @@
-/**
- * Analysis & Visualization Types
+﻿/**
+ * AnalysisTypes - Chart and visualization type definitions
  *
+ * @module features/analysis
  * @template T6 backend/features/analysis/types.ts — Chart & Analysis Entities
+ * @reference none
  */
 
 export enum ChartType {
@@ -17,7 +19,7 @@ export interface ChartDataPoint {
     category?: string
 }
 
-/** 图表数据（来自后端 ChartData schema） */
+/** Chart data structure matching backend ChartData schema. */
 export interface ChartData {
     type: 'line' | 'bar' | 'pie'
     title?: string

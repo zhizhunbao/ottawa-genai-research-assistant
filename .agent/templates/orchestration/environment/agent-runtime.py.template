@@ -1,0 +1,351 @@
+"""
+Agent Runtime Environment + LLM Provider Registry
+
+@module orchestration/environment/agent-runtime
+@source MetaGPT/metagpt/environment/base_env.py Environment class (248L)
+@source MetaGPT/metagpt/provider/llm_provider_registry.py (49L)
+@reference https://github.com/geekan/MetaGPT
+@template S4-M3-F1
+
+Multi-agent runtime environment with:
+- Role/agent management (add, get, remove)
+- Message bus (publish/subscribe with address routing)
+- Environment memory (shared conversation history)
+- Concurrent role execution (asyncio.gather)
+
+LLM Provider Registry with:
+- Decorator-based provider registration
+- Factory function for instance creation
+- Support for OpenAI, Anthropic, local models
+
+Key patterns from MetaGPT:
+1. Environment.add_role → role.set_env(self) bidirectional binding
+2. publish_message → route to matching member_addrs
+3. Environment.run(k) → asyncio.gather all non-idle roles
+4. LLMProviderRegistry decorator → create_llm_instance factory
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Iterable, Optional
+
+logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LLM Provider Registry
+# @source MetaGPT/metagpt/provider/llm_provider_registry.py (49L)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class LLMType(str, Enum):
+    """Supported LLM provider types."""
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    GOOGLE = "google"
+    LOCAL = "local"
+    LITELLM = "litellm"
+
+
+@dataclass
+class LLMConfig:
+    """Configuration for an LLM provider."""
+    api_type: LLMType = LLMType.OPENAI
+    model: str = "gpt-4o-mini"
+    api_key: str = ""
+    base_url: str = ""
+    temperature: float = 0.7
+    max_tokens: int = 4096
+    use_system_prompt: bool = True
+    extra: dict[str, Any] = field(default_factory=dict)
+
+
+class BaseLLM(ABC):
+    """
+    Base class for LLM providers.
+
+    @source MetaGPT/metagpt/provider/base_llm.py
+    """
+    use_system_prompt: bool = True
+
+    def __init__(self, config: LLMConfig):
+        self.config = config
+
+    @abstractmethod
+    async def aask(self, prompt: str, system: str = "") -> str:
+        """Send a prompt and get a response."""
+        ...
+
+    @abstractmethod
+    async def aask_stream(self, prompt: str, system: str = ""):
+        """Send a prompt and stream the response."""
+        ...
+
+
+class LLMProviderRegistry:
+    """
+    Registry for LLM providers.
+
+    @source MetaGPT/metagpt/provider/llm_provider_registry.py (12-22)
+
+    Usage:
+        @register_provider(LLMType.OPENAI)
+        class OpenAIProvider(BaseLLM):
+            ...
+
+        llm = create_llm_instance(LLMConfig(api_type=LLMType.OPENAI))
+    """
+
+    def __init__(self):
+        self.providers: dict[LLMType, type[BaseLLM]] = {}
+
+    def register(self, key: LLMType, provider_cls: type[BaseLLM]) -> None:
+        """Register a provider class."""
+        self.providers[key] = provider_cls
+
+    def get_provider(self, enum: LLMType) -> type[BaseLLM]:
+        """Get provider class by type."""
+        if enum not in self.providers:
+            available = ", ".join(k.value for k in self.providers)
+            raise ValueError(
+                f"Unknown LLM type '{enum.value}'. Available: {available}"
+            )
+        return self.providers[enum]
+
+
+# Singleton registry instance
+LLM_REGISTRY = LLMProviderRegistry()
+
+
+def register_provider(keys: LLMType | list[LLMType]):
+    """
+    Decorator to register LLM provider classes.
+
+    @source MetaGPT/metagpt/provider/llm_provider_registry.py (24-35)
+    """
+    def decorator(cls: type[BaseLLM]):
+        if isinstance(keys, list):
+            for key in keys:
+                LLM_REGISTRY.register(key, cls)
+        else:
+            LLM_REGISTRY.register(keys, cls)
+        return cls
+    return decorator
+
+
+def create_llm_instance(config: LLMConfig) -> BaseLLM:
+    """
+    Factory: create LLM instance from config.
+
+    @source MetaGPT/metagpt/provider/llm_provider_registry.py (38-44)
+    """
+    provider_cls = LLM_REGISTRY.get_provider(config.api_type)
+    llm = provider_cls(config)
+    if llm.use_system_prompt and not config.use_system_prompt:
+        llm.use_system_prompt = config.use_system_prompt
+    return llm
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Message Bus
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class Message:
+    """A message in the agent environment."""
+    content: str
+    role: str = "user"
+    sender: str = ""
+    send_to: set[str] = field(default_factory=set)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def dump(self) -> dict[str, Any]:
+        return {
+            "content": self.content,
+            "role": self.role,
+            "sender": self.sender,
+            "send_to": list(self.send_to),
+            "metadata": self.metadata,
+        }
+
+
+class Memory:
+    """
+    Shared memory / message history.
+
+    @source MetaGPT/metagpt/memory/memory.py
+    """
+
+    def __init__(self):
+        self._messages: list[Message] = []
+
+    def add(self, message: Message) -> None:
+        self._messages.append(message)
+
+    def get(self, k: int = 0) -> list[Message]:
+        """Get last k messages (0 = all)."""
+        if k <= 0:
+            return list(self._messages)
+        return self._messages[-k:]
+
+    def get_by_role(self, role: str) -> list[Message]:
+        return [m for m in self._messages if m.role == role]
+
+    def clear(self) -> None:
+        self._messages.clear()
+
+    @property
+    def count(self) -> int:
+        return len(self._messages)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Agent Role (Base)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class BaseRole(ABC):
+    """
+    Base class for agent roles.
+
+    Each role has:
+    - A name and profile
+    - An environment reference
+    - A message queue
+    - An idle flag
+    """
+
+    def __init__(self, name: str = "", profile: str = ""):
+        self.name = name or self.__class__.__name__
+        self.profile = profile
+        self._env: Optional[Environment] = None
+        self._msg_queue: list[Message] = []
+        self._is_idle: bool = True
+
+    def set_env(self, env: Environment) -> None:
+        self._env = env
+
+    def put_message(self, message: Message) -> None:
+        self._msg_queue.append(message)
+        self._is_idle = False
+
+    @property
+    def is_idle(self) -> bool:
+        return self._is_idle
+
+    @abstractmethod
+    async def run(self) -> Message | None:
+        """Execute this role's turn."""
+        ...
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Environment
+# @source MetaGPT/metagpt/environment/base_env.py Environment class (124-248)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class Environment:
+    """
+    Multi-agent runtime environment.
+
+    @source MetaGPT/metagpt/environment/base_env.py Environment class
+
+    Hosts a set of roles, manages message routing, and orchestrates
+    concurrent execution. Roles publish messages to the environment,
+    which routes them to matching recipients.
+
+    Usage:
+        env = Environment(desc="Research team")
+        env.add_roles([Researcher(), Writer(), Reviewer()])
+        env.publish_message(Message(content="...", send_to={"Researcher"}))
+        await env.run(k=3)  # 3 rounds of execution
+    """
+
+    def __init__(self, desc: str = ""):
+        self.desc = desc
+        self.roles: dict[str, BaseRole] = {}
+        self.member_addrs: dict[str, set[str]] = {}
+        self.history = Memory()
+
+    def add_role(self, role: BaseRole) -> None:
+        """
+        Add a role to the environment.
+
+        @source MetaGPT base_env.py lines 156-162
+        """
+        self.roles[role.name] = role
+        role.set_env(self)
+
+    def add_roles(self, roles: Iterable[BaseRole]) -> None:
+        """
+        Add multiple roles.
+
+        @source MetaGPT base_env.py lines 164-173
+        """
+        for role in roles:
+            self.roles[role.name] = role
+        for role in roles:
+            role.set_env(self)
+
+    def publish_message(self, message: Message) -> bool:
+        """
+        Route message to matching recipients.
+
+        @source MetaGPT base_env.py lines 175-195
+        """
+        logger.debug(f"publish_message: {message.dump()}")
+        found = False
+
+        if message.send_to:
+            for role_name in message.send_to:
+                role = self.roles.get(role_name)
+                if role:
+                    role.put_message(message)
+                    found = True
+        else:
+            # Broadcast to all roles
+            for role in self.roles.values():
+                if role.name != message.sender:
+                    role.put_message(message)
+                    found = True
+
+        if not found:
+            logger.warning(f"Message no recipients: {message.dump()}")
+
+        self.history.add(message)
+        return found
+
+    async def run(self, k: int = 1) -> None:
+        """
+        Run all non-idle roles for k rounds.
+
+        @source MetaGPT base_env.py lines 197-211
+        """
+        for round_num in range(k):
+            futures = []
+            for role in self.roles.values():
+                if not role.is_idle:
+                    futures.append(role.run())
+
+            if futures:
+                await asyncio.gather(*futures)
+
+            logger.debug(f"Round {round_num + 1}/{k}, idle={self.is_idle}")
+
+    def get_role(self, name: str) -> BaseRole | None:
+        return self.roles.get(name)
+
+    def get_roles(self) -> dict[str, BaseRole]:
+        return self.roles
+
+    @property
+    def role_names(self) -> list[str]:
+        return list(self.roles.keys())
+
+    @property
+    def is_idle(self) -> bool:
+        """True if all roles are idle."""
+        return all(r.is_idle for r in self.roles.values())

@@ -1,0 +1,392 @@
+/**
+ * ModelSelect - AI model selector dropdown with provider grouping
+ *
+ * A dropdown/select component that lists available AI models grouped by provider.
+ * Shows model capabilities (vision, function calling, context window) as badges.
+ * Commonly placed in the chat header or settings panel.
+ *
+ * @module features/chat/components
+ * @source lobe-chat/src/components/ModelSelect/index.tsx (361 lines — full tagged UI)
+ * @source lobe-chat/src/features/ModelSelect/ (provider grouping + model card rendering)
+ * @reference https://github.com/lobehub/lobe-chat
+ * @template S1-M5-4 frontend/features/chat/components/model-select.tsx
+ */
+
+'use client'
+
+import { memo, useState, useRef, useEffect, type CSSProperties } from 'react'
+import { ChevronDown, Check, Zap, Eye, Wrench, Paperclip } from 'lucide-react'
+
+// ============================================================
+// Types
+// ============================================================
+
+export interface ModelOption {
+  /** Model ID (e.g., "gpt-4o") */
+  id: string
+  /** Display name (e.g., "GPT-4o") */
+  label: string
+  /** Provider ID (e.g., "openai") */
+  provider: string
+  /** Provider display name */
+  providerLabel?: string
+  /** Context window tokens */
+  contextWindow?: number
+  /** Model abilities */
+  abilities?: {
+    vision?: boolean
+    functionCall?: boolean
+    fileUpload?: boolean
+  }
+  /** Whether this is a new model */
+  isNew?: boolean
+}
+
+export interface ModelSelectProps {
+  /** Available models grouped by provider */
+  models: ModelOption[]
+  /** Currently selected model ID */
+  value: string
+  /** Selection change handler */
+  onChange: (modelId: string) => void
+  /** Additional CSS class */
+  className?: string
+  /** Compact mode (shows only icon + model name) */
+  compact?: boolean
+  /** Disabled state */
+  disabled?: boolean
+}
+
+// ============================================================
+// Model Capability Badges
+// ============================================================
+
+/**
+ * Feature capability badges for a model.
+ *
+ * @source lobe-chat ModelSelect/index.tsx lines 96-158 — FeatureTags
+ */
+function ModelBadges({ model }: { model: ModelOption }) {
+  const badges: Array<{
+    icon: typeof Eye
+    color: string
+    label: string
+    enabled: boolean
+  }> = [
+    {
+      icon: Eye,
+      color: '#f59e0b',
+      label: 'Vision',
+      enabled: !!model.abilities?.vision,
+    },
+    {
+      icon: Wrench,
+      color: '#3b82f6',
+      label: 'Function Call',
+      enabled: !!model.abilities?.functionCall,
+    },
+    {
+      icon: Paperclip,
+      color: '#10b981',
+      label: 'File Upload',
+      enabled: !!model.abilities?.fileUpload,
+    },
+  ]
+
+  const activeBadges = badges.filter((b) => b.enabled)
+  if (activeBadges.length === 0 && !model.contextWindow) return null
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+      {activeBadges.map(({ icon: Icon, color, label }) => (
+        <span
+          key={label}
+          title={label}
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: `${color}14`,
+            color,
+          }}
+        >
+          <Icon size={12} />
+        </span>
+      ))}
+
+      {model.contextWindow != null && model.contextWindow > 0 && (
+        <span
+          title={`${model.contextWindow.toLocaleString()} tokens`}
+          style={{
+            height: 20,
+            padding: '0 6px',
+            borderRadius: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--color-fill-tertiary, #f1f5f9)',
+            color: 'var(--color-text-secondary, #64748b)',
+            fontSize: 10,
+            fontFamily: 'monospace',
+            fontWeight: 500,
+          }}
+        >
+          {formatTokenCount(model.contextWindow)}
+        </span>
+      )}
+
+      {model.isNew && (
+        <span
+          style={{
+            height: 18,
+            padding: '0 6px',
+            borderRadius: 4,
+            background: 'var(--color-primary, #6366f1)',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+          }}
+        >
+          New
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+/**
+ * ModelSelect dropdown.
+ *
+ * Architecture:
+ * - Groups models by provider
+ * - Shows capability badges (vision, FC, files, context window)
+ * - Uses native DOM for dropdown (no dependency on headless UI library)
+ * - For production, consider wrapping shadcn/ui <Select> or Radix <Select>
+ *
+ * @source lobe-chat ModelSelect/index.tsx lines 230-360 (ModelItemRender + ProviderItemRender)
+ */
+export const ModelSelect = memo<ModelSelectProps>(
+  ({ models, value, onChange, className, compact = false, disabled = false }) => {
+    const [open, setOpen] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
+    const selectedModel = models.find((m) => m.id === value)
+
+    // Group models by provider
+    const grouped = models.reduce<Record<string, ModelOption[]>>((acc, model) => {
+      const key = model.provider
+      if (!acc[key]) acc[key] = []
+      acc[key].push(model)
+      return acc
+    }, {})
+
+    // Close on outside click
+    useEffect(() => {
+      if (!open) return
+      const handleClick = (e: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+          setOpen(false)
+        }
+      }
+      document.addEventListener('mousedown', handleClick)
+      return () => document.removeEventListener('mousedown', handleClick)
+    }, [open])
+
+    // Close on Escape
+    useEffect(() => {
+      if (!open) return
+      const handleKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setOpen(false)
+      }
+      document.addEventListener('keydown', handleKey)
+      return () => document.removeEventListener('keydown', handleKey)
+    }, [open])
+
+    return (
+      <div
+        ref={containerRef}
+        className={className}
+        style={{ position: 'relative', display: 'inline-flex' }}
+      >
+        {/* Trigger */}
+        <button
+          onClick={() => !disabled && setOpen(!open)}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: compact ? '4px 8px' : '6px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border, #e2e8f0)',
+            background: 'var(--color-bg, transparent)',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--color-text, #334155)',
+            transition: 'all 150ms',
+            opacity: disabled ? 0.5 : 1,
+            minWidth: compact ? undefined : 180,
+          }}
+        >
+          {!compact && selectedModel && (
+            <Zap size={14} style={{ color: 'var(--color-primary, #6366f1)' }} />
+          )}
+          <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selectedModel?.label || value || 'Select model'}
+          </span>
+          <ChevronDown
+            size={14}
+            style={{
+              transition: 'transform 200ms',
+              transform: open ? 'rotate(180deg)' : undefined,
+              color: 'var(--color-text-secondary, #94a3b8)',
+            }}
+          />
+        </button>
+
+        {/* Dropdown */}
+        {open && (
+          <div
+            role="listbox"
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              minWidth: 280,
+              marginTop: 4,
+              borderRadius: 12,
+              border: '1px solid var(--color-border, #e2e8f0)',
+              background: 'var(--color-bg-elevated, #fff)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              zIndex: 50,
+              maxHeight: 360,
+              overflowY: 'auto',
+              animation: 'fadeInScale 150ms ease-out',
+            }}
+          >
+            {Object.entries(grouped).map(([provider, providerModels]) => (
+              <div key={provider}>
+                {/* Provider header */}
+                <div
+                  style={{
+                    padding: '8px 12px 4px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                    color: 'var(--color-text-tertiary, #a0aec0)',
+                    position: 'sticky',
+                    top: 0,
+                    background: 'var(--color-bg-elevated, #fff)',
+                  }}
+                >
+                  {providerModels[0]?.providerLabel || provider}
+                </div>
+
+                {/* Model items */}
+                {providerModels.map((model) => {
+                  const selected = model.id === value
+                  return (
+                    <button
+                      key={model.id}
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => {
+                        onChange(model.id)
+                        setOpen(false)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: selected
+                          ? 'var(--color-primary-bg, #eef2ff)'
+                          : 'transparent',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: 'var(--color-text, #334155)',
+                        textAlign: 'left',
+                        transition: 'background 100ms',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!selected) {
+                          ;(e.currentTarget as HTMLElement).style.background =
+                            'var(--color-bg-hover, #f8fafc)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!selected) {
+                          ;(e.currentTarget as HTMLElement).style.background = 'transparent'
+                        }
+                      }}
+                    >
+                      {/* Check mark */}
+                      <span style={{ width: 16, flexShrink: 0, color: 'var(--color-primary, #6366f1)' }}>
+                        {selected && <Check size={14} />}
+                      </span>
+
+                      {/* Model name */}
+                      <span style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        {model.label}
+                      </span>
+
+                      {/* Badges */}
+                      <ModelBadges model={model} />
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+)
+
+ModelSelect.displayName = 'ModelSelect'
+
+// ============================================================
+// Utilities
+// ============================================================
+
+/**
+ * Format token count to abbreviated form.
+ *
+ * @source lobe-chat utils/format — formatTokenNumber
+ */
+function formatTokenCount(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(0)}M`
+  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(0)}K`
+  return String(tokens)
+}
+
+// ============================================================
+// CSS (inject or import separately)
+// ============================================================
+
+/**
+ * ```css
+ * @keyframes fadeInScale {
+ *   from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+ *   to { opacity: 1; transform: scale(1) translateY(0); }
+ * }
+ * ```
+ */

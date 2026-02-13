@@ -1,0 +1,340 @@
+"""
+Recursive Character Text Splitter - Hierarchical separator-based chunking
+
+@module backend/rag/recursive-chunker
+@source sqlite-rag/src/sqlite_rag/chunker.py Chunker class (237L)
+@reference https://github.com/plandex-ai/sqlite-rag
+@template S3-M3-F2
+
+LangChain-style recursive character text splitter with:
+- Hierarchical separator cascade (\\n\\n → \\n → space → period → char)
+- CJK punctuation support (fullwidth comma/period, ideographic marks)
+- Token-based size control with fast character estimation
+- Overlap text extraction from previous chunk
+- Zero-width space handling
+
+Key patterns from sqlite-rag:
+1. _split_text_with_separators: recursive descent through separators
+2. _split_by_characters: character-level fallback with 10% reduction
+3. _create_overlaps: sliding window overlap between chunks
+4. Effective chunk size calculation (minus prompt template + overlap)
+"""
+
+from __future__ import annotations
+
+import logging
+import math
+from dataclasses import dataclass, field
+from typing import Any, Callable, Optional
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Configuration ────────────────────────────────────────────────────────────
+
+@dataclass
+class ChunkerConfig:
+    """Configuration for the recursive text chunker."""
+    chunk_size: int = 512
+    """Maximum tokens per chunk."""
+
+    chunk_overlap: int = 50
+    """Tokens of overlap between consecutive chunks."""
+
+    separators: list[str] | None = None
+    """
+    Hierarchical separators for splitting. Falls through to next if chunks too large.
+    Default includes CJK punctuation for multilingual support.
+    """
+
+    chars_per_token: int = 4
+    """Estimated characters per token for fast size estimation."""
+
+    token_counter: Callable[[str], int] | None = None
+    """Custom token counting function. Falls back to char-based estimation if None."""
+
+
+# Default separators including CJK support
+# @source sqlite-rag/src/sqlite_rag/chunker.py lines 80-93
+DEFAULT_SEPARATORS = [
+    "\n\n",   # Double newlines (paragraphs)
+    "\n",     # Single newlines
+    " ",      # Spaces
+    ".",      # Period
+    ",",      # Comma
+    "\u200b",  # Zero-width space
+    "\uff0c",  # Fullwidth comma
+    "\u3001",  # Ideographic comma
+    "\uff0e",  # Fullwidth full stop
+    "\u3002",  # Ideographic full stop
+    "",        # Character level (fallback)
+]
+
+
+# ─── Data Models ──────────────────────────────────────────────────────────────
+
+@dataclass
+class TextChunk:
+    """A chunk of text with overlap and metadata."""
+    content: str
+    head_overlap: str = ""
+    index: int = 0
+    token_count: int = 0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def full_text(self) -> str:
+        """Content with overlap prefix for embedding."""
+        if self.head_overlap:
+            return f"{self.head_overlap}\n{self.content}"
+        return self.content
+
+
+# ─── Recursive Chunker ───────────────────────────────────────────────────────
+# @source sqlite-rag/src/sqlite_rag/chunker.py Chunker class (11-237L)
+
+class RecursiveChunker:
+    """
+    Recursive character text splitter with overlap.
+
+    @source sqlite-rag/src/sqlite_rag/chunker.py Chunker class (237 lines)
+
+    Splits text by trying the coarsest separator first (paragraph breaks),
+    then falling back to finer separators (sentences, words, characters)
+    until each piece fits within the token limit.
+
+    Usage:
+        chunker = RecursiveChunker(config=ChunkerConfig(chunk_size=512))
+        chunks = chunker.chunk("long document text...")
+        for chunk in chunks:
+            print(chunk.content, chunk.token_count)
+    """
+
+    def __init__(self, config: ChunkerConfig | None = None):
+        self.config = config or ChunkerConfig()
+        self._separators = self.config.separators or DEFAULT_SEPARATORS
+
+    def _get_token_count(self, text: str) -> int:
+        """
+        Count tokens in text.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py lines 60-71
+        Uses custom counter if provided, falls back to char estimation.
+        """
+        if not text:
+            return 0
+
+        if self.config.token_counter:
+            return self.config.token_counter(text)
+
+        # Fast estimation fallback
+        return self._estimate_tokens(text)
+
+    def _estimate_tokens(self, text: str) -> int:
+        """
+        Estimate token count from character count.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py lines 73-76
+        """
+        return (len(text) + self.config.chars_per_token - 1) // self.config.chars_per_token
+
+    def chunk(self, text: str, title: str = "") -> list[TextChunk]:
+        """
+        Chunk text using recursive character splitting.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py Chunker.chunk lines 18-28
+
+        If the text fits in one chunk, returns it directly.
+        Otherwise recursively splits by separator hierarchy.
+
+        Args:
+            text: Text to chunk
+            title: Optional document title (reduces effective chunk size)
+
+        Returns:
+            List of TextChunk objects
+        """
+        if self.config.chunk_size <= self.config.chunk_overlap:
+            raise ValueError("chunk_size must be greater than chunk_overlap")
+
+        # Calculate effective size accounting for title
+        effective_size = self.config.chunk_size - self.config.chunk_overlap
+        if title:
+            effective_size -= self._get_token_count(title)
+        effective_size = max(1, effective_size)
+
+        # Check if text fits in one chunk
+        if self._get_token_count(text) <= effective_size:
+            return [TextChunk(
+                content=text,
+                index=0,
+                token_count=self._get_token_count(text),
+            )]
+
+        # Recursive split
+        raw_chunks = self._split_text_with_separators(
+            text, self._separators, effective_size
+        )
+
+        # Create overlaps
+        overlaps = self._create_overlaps(raw_chunks)
+
+        # Build TextChunk objects
+        chunks = []
+        for i, (content, overlap) in enumerate(zip(raw_chunks, overlaps)):
+            chunks.append(TextChunk(
+                content=content,
+                head_overlap=overlap,
+                index=i,
+                token_count=self._get_token_count(content),
+            ))
+
+        return chunks
+
+    def _split_text_with_separators(
+        self,
+        text: str,
+        separators: list[str],
+        effective_chunk_size: int,
+    ) -> list[str]:
+        """
+        Split text using hierarchical separators.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py lines 113-164
+
+        Tries the first separator, merging pieces greedily until token limit.
+        If a single piece exceeds the limit, recurses with the next separator.
+        Falls back to character-level splitting when all separators exhausted.
+
+        Args:
+            text: Text to split
+            separators: List of separators to try in order
+            effective_chunk_size: Max tokens per chunk
+
+        Returns:
+            List of text chunks (strings)
+        """
+        if not separators:
+            return self._split_by_characters(text, effective_chunk_size)
+
+        separator = separators[0]
+        remaining = separators[1:]
+
+        if separator == "":
+            return self._split_by_characters(text, effective_chunk_size)
+
+        splits = text.split(separator)
+        chunks: list[str] = []
+        current_chunk = ""
+
+        for split in splits:
+            test_chunk = current_chunk + (separator if current_chunk else "") + split
+
+            if self._get_token_count(test_chunk) <= effective_chunk_size:
+                current_chunk = test_chunk
+            else:
+                # Save current chunk
+                if current_chunk:
+                    chunks.append(current_chunk)
+
+                # If single piece too large, recurse with finer separator
+                if self._get_token_count(split) > effective_chunk_size:
+                    sub_chunks = self._split_text_with_separators(
+                        split, remaining, effective_chunk_size
+                    )
+                    chunks.extend(sub_chunks)
+                    current_chunk = ""
+                else:
+                    current_chunk = split
+
+        # Don't forget the last chunk
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        return chunks
+
+    def _split_by_characters(
+        self,
+        text: str,
+        effective_chunk_size: int,
+    ) -> list[str]:
+        """
+        Character-level splitting — last resort when no separators work.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py lines 166-201
+
+        Uses char-to-token ratio to estimate chunk boundaries, then verifies
+        with actual token counting and shrinks by 10% if needed.
+        """
+        chunks: list[str] = []
+        total_tokens = self._get_token_count(text)
+        chars_per_token = (
+            math.ceil(len(text) / total_tokens)
+            if total_tokens > 0
+            else self.config.chars_per_token
+        )
+
+        estimated_chars = int(effective_chunk_size * chars_per_token)
+        start = 0
+
+        while start < len(text):
+            end = min(start + estimated_chars, len(text))
+            chunk_text = text[start:end]
+
+            # Verify token limit, shrink by 10% if needed
+            while (
+                self._get_token_count(chunk_text) > effective_chunk_size
+                and end > start + 1
+            ):
+                end = start + int((end - start) * 0.9)
+                chunk_text = text[start:end]
+
+            if chunk_text.strip():
+                chunks.append(chunk_text)
+
+            start = end
+
+        return chunks
+
+    def _create_overlaps(self, chunks: list[str]) -> list[str]:
+        """
+        Generate overlap text from previous chunk for each chunk.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py lines 203-221
+
+        First chunk has empty overlap. Subsequent chunks get trailing text
+        from the previous chunk up to chunk_overlap tokens.
+
+        Returns:
+            List of overlap strings, one per chunk
+        """
+        if len(chunks) <= 1 or self.config.chunk_overlap <= 0:
+            return [""] * len(chunks)
+
+        overlaps = [""]  # First chunk has no overlap
+        for i in range(1, len(chunks)):
+            overlap = self._get_overlap_text(
+                chunks[i - 1], self.config.chunk_overlap
+            )
+            overlaps.append(overlap)
+
+        return overlaps
+
+    def _get_overlap_text(self, text: str, max_overlap_tokens: int) -> str:
+        """
+        Extract trailing text from a chunk for overlap.
+
+        @source sqlite-rag/src/sqlite_rag/chunker.py lines 223-236
+
+        Finds the longest suffix (by words) that fits within the token limit.
+        """
+        words = text.split()
+        if not words:
+            return ""
+
+        for i in range(len(words)):
+            suffix = " ".join(words[i:])
+            if self._get_token_count(suffix) <= max_overlap_tokens:
+                return suffix
+
+        return ""

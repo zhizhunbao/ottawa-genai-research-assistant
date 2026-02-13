@@ -1,0 +1,434 @@
+/**
+ * ChatBubble - Message bubble component with avatar, timestamp, actions, and markdown
+ *
+ * Renders a single chat message with role-based layout (user right, assistant left),
+ * action toolbar (copy/edit/delete/retry), loading animation, and error rendering.
+ * Combines lobe-chat's visual design patterns with a dependency-free approach.
+ *
+ * @module features/chat/components
+ * @source lobe-chat/src/features/Conversation/ChatItem/ChatItem.tsx (127 lines)
+ * @source lobe-chat/src/features/Conversation/ChatItem/type.ts (69 lines — props interface)
+ * @source lobe-chat/src/features/Conversation/ChatItem/style.ts (56 lines — hover reveal)
+ * @source lobe-chat/src/features/Conversation/ChatItem/components/Actions.tsx (29 lines)
+ * @source lobe-chat/src/features/Conversation/ChatItem/components/Title.tsx (43 lines)
+ * @reference https://github.com/lobehub/lobe-chat
+ * @template S1-M5-1 frontend/features/chat/components/chat-bubble.tsx
+ */
+
+'use client'
+
+import { memo, type ReactNode } from 'react'
+import { Copy, RotateCcw, Pencil, Trash2, Bot, User } from 'lucide-react'
+
+// ============================================================
+// Types
+// ============================================================
+
+export interface ChatBubbleProps {
+  /** Unique message ID */
+  id: string
+  /** Message content (string or rendered ReactNode) */
+  message: ReactNode
+  /** Message placement: 'left' for assistant, 'right' for user */
+  placement?: 'left' | 'right'
+  /** Avatar metadata */
+  avatar?: { title?: string; src?: string }
+  /** Timestamp (ms) */
+  time?: number
+  /** Whether the message is loading / streaming */
+  loading?: boolean
+  /** Error to display */
+  error?: { message: string }
+  /** Whether in editing mode */
+  editing?: boolean
+  /** Show avatar */
+  showAvatar?: boolean
+  /** Show display name */
+  showTitle?: boolean
+  /** Additional content below the message */
+  messageExtra?: ReactNode
+  /** Action handlers */
+  onCopy?: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
+  onRetry?: (id: string) => void
+  /** Extra CSS class */
+  className?: string
+}
+
+// ============================================================
+// Subcomponents
+// ============================================================
+
+/**
+ * Avatar component for the chat bubble.
+ *
+ * @source lobe-chat ChatItem/components/Avatar.tsx (simplified)
+ */
+function BubbleAvatar({
+  placement,
+  avatar,
+  loading,
+}: {
+  placement: 'left' | 'right'
+  avatar: ChatBubbleProps['avatar']
+  loading?: boolean
+}) {
+  const isUser = placement === 'right'
+
+  return (
+    <div
+      className="chat-bubble-avatar"
+      style={{
+        position: 'relative',
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        background: isUser
+          ? 'var(--color-user-avatar-bg, #e0e7ff)'
+          : 'var(--color-assistant-avatar-bg, #f0fdf4)',
+        color: isUser
+          ? 'var(--color-user-avatar-fg, #4338ca)'
+          : 'var(--color-assistant-avatar-fg, #15803d)',
+      }}
+    >
+      {avatar?.src ? (
+        <img
+          src={avatar.src}
+          alt={avatar.title || 'avatar'}
+          style={{ width: '100%', height: '100%', borderRadius: 8, objectFit: 'cover' }}
+        />
+      ) : isUser ? (
+        <User size={18} />
+      ) : (
+        <Bot size={18} />
+      )}
+      {loading && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: -2,
+            right: -2,
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: 'var(--color-primary, #6366f1)',
+            animation: 'pulse 1.5s infinite',
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Title bar showing display name and relative time.
+ *
+ * @source lobe-chat ChatItem/components/Title.tsx lines 15-42
+ */
+function BubbleTitle({
+  avatar,
+  showTitle,
+  time,
+}: {
+  avatar?: ChatBubbleProps['avatar']
+  showTitle?: boolean
+  time?: number
+}) {
+  if (!showTitle && !time) return null
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      {showTitle && (
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text, #334155)' }}>
+          {avatar?.title || 'Assistant'}
+        </span>
+      )}
+      {time != null && (
+        <time
+          className="chat-bubble-time"
+          title={new Date(time).toLocaleString()}
+          style={{ fontSize: 11, color: 'var(--color-text-secondary, #94a3b8)' }}
+        >
+          {formatRelativeTime(time)}
+        </time>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Action toolbar — visible on hover.
+ *
+ * @source lobe-chat ChatItem/components/Actions.tsx lines 11-28
+ * @source lobe-chat ChatItem/style.ts lines 10-38 (hover reveal CSS)
+ */
+function BubbleActions({
+  id,
+  placement,
+  onCopy,
+  onEdit,
+  onDelete,
+  onRetry,
+}: {
+  id: string
+  placement: 'left' | 'right'
+  onCopy?: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
+  onRetry?: (id: string) => void
+}) {
+  const isUser = placement === 'right'
+  const actions = [
+    onCopy && { icon: Copy, label: 'Copy', handler: () => onCopy(id) },
+    onEdit && { icon: Pencil, label: 'Edit', handler: () => onEdit(id) },
+    onRetry && !isUser && { icon: RotateCcw, label: 'Retry', handler: () => onRetry(id) },
+    onDelete && { icon: Trash2, label: 'Delete', handler: () => onDelete(id) },
+  ].filter(Boolean) as Array<{ icon: typeof Copy; label: string; handler: () => void }>
+
+  if (actions.length === 0) return null
+
+  return (
+    <div
+      className="chat-bubble-actions"
+      role="menubar"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        alignSelf: isUser ? 'flex-end' : 'flex-start',
+        opacity: 0,
+        pointerEvents: 'none',
+        transition: 'opacity 200ms ease-out',
+      }}
+    >
+      {actions.map(({ icon: Icon, label, handler }) => (
+        <button
+          key={label}
+          onClick={handler}
+          title={label}
+          style={{
+            padding: 4,
+            borderRadius: 6,
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: 'var(--color-text-secondary, #94a3b8)',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Icon size={14} />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+/**
+ * ChatBubble — renders a single message with avatar, content, actions, and extras.
+ *
+ * Layout follows lobe-chat's ChatItem.tsx:
+ * - Header row: avatar + title
+ * - Body: message content (with error fallback)
+ * - Footer: action toolbar (hover-reveal)
+ *
+ * @source lobe-chat ChatItem/ChatItem.tsx lines 15-126
+ */
+export const ChatBubble = memo<ChatBubbleProps>(
+  ({
+    id,
+    message,
+    placement = 'left',
+    avatar,
+    time,
+    loading = false,
+    error,
+    showAvatar = true,
+    showTitle = false,
+    messageExtra,
+    onCopy,
+    onEdit,
+    onDelete,
+    onRetry,
+    className,
+  }) => {
+    const isUser = placement === 'right'
+    const isEmpty = !message || (typeof message === 'string' && message.trim() === '')
+
+    return (
+      <div
+        className={`chat-bubble-wrapper ${className || ''}`}
+        data-message-id={id}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: isUser ? 'flex-end' : 'flex-start',
+          gap: 6,
+          paddingBlock: 8,
+          paddingInlineStart: isUser ? 36 : 0,
+          position: 'relative',
+          maxWidth: '100%',
+        }}
+      >
+        {/* Header: Avatar + Title */}
+        <div
+          className="chat-bubble-header"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexDirection: isUser ? 'row-reverse' : 'row',
+            gap: 8,
+          }}
+        >
+          {showAvatar && <BubbleAvatar placement={placement} avatar={avatar} loading={loading} />}
+          <BubbleTitle avatar={avatar} showTitle={showTitle} time={time} />
+        </div>
+
+        {/* Body: Content */}
+        <div
+          className="chat-bubble-body"
+          style={{
+            maxWidth: '100%',
+            overflow: 'hidden',
+            position: 'relative',
+            width: isUser ? undefined : '100%',
+          }}
+        >
+          {error && isEmpty ? (
+            <div
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                background: 'var(--color-error-bg, #fef2f2)',
+                color: 'var(--color-error-fg, #dc2626)',
+                fontSize: 13,
+              }}
+            >
+              ⚠ {error.message}
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: '10px 16px',
+                borderRadius: 16,
+                ...(isUser
+                  ? {
+                      background: 'var(--color-user-bubble, #6366f1)',
+                      color: 'var(--color-user-bubble-fg, #fff)',
+                      borderTopRightRadius: 4,
+                    }
+                  : {
+                      background: 'var(--color-assistant-bubble, #f8fafc)',
+                      color: 'var(--color-assistant-bubble-fg, #1e293b)',
+                      borderTopLeftRadius: 4,
+                      border: '1px solid var(--color-border, #e2e8f0)',
+                    }),
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              {typeof message === 'string' ? (
+                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{message}</div>
+              ) : (
+                message
+              )}
+              {loading && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 6,
+                    height: 14,
+                    marginLeft: 2,
+                    background: 'currentColor',
+                    animation: 'blink 1s step-end infinite',
+                    opacity: 0.5,
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Error overlay + extras */}
+          {error && !isEmpty && (
+            <div
+              style={{
+                marginTop: 4,
+                padding: '6px 10px',
+                borderRadius: 6,
+                background: 'var(--color-error-bg, #fef2f2)',
+                color: 'var(--color-error-fg, #dc2626)',
+                fontSize: 12,
+              }}
+            >
+              ⚠ {error.message}
+            </div>
+          )}
+          {messageExtra}
+        </div>
+
+        {/* Footer: Actions (hover reveal) */}
+        <BubbleActions
+          id={id}
+          placement={placement}
+          onCopy={onCopy}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onRetry={onRetry}
+        />
+      </div>
+    )
+  }
+)
+
+ChatBubble.displayName = 'ChatBubble'
+
+// ============================================================
+// Utilities
+// ============================================================
+
+/** Format timestamp to relative time (e.g., "2m ago", "1h ago"). */
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp
+  const seconds = Math.floor(diff / 1000)
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+// ============================================================
+// CSS (inject or import separately)
+// ============================================================
+
+/**
+ * Add these styles to your global CSS or CSS module:
+ *
+ * ```css
+ * .chat-bubble-wrapper:hover .chat-bubble-actions,
+ * .chat-bubble-wrapper:hover .chat-bubble-time {
+ *   opacity: 1 !important;
+ *   pointer-events: auto !important;
+ * }
+ *
+ * @keyframes blink {
+ *   50% { opacity: 0; }
+ * }
+ *
+ * @keyframes pulse {
+ *   0%, 100% { transform: scale(1); opacity: 1; }
+ *   50% { transform: scale(1.3); opacity: 0.6; }
+ * }
+ * ```
+ */

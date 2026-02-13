@@ -1,0 +1,292 @@
+"""
+Embeddings Manager — Batch Processing with Rate Limiting and Retries.
+
+Handles OpenAI embedding generation with production-grade features:
+  - Token-aware batching (respects per-batch token limits)
+  - Exponential backoff retries on rate limit errors
+  - Support for multiple embedding models with dimension control
+  - Batch and single-text embedding modes
+  - Image embedding via Azure AI Vision (optional)
+
+Source: azure-search-openai-demo/app/backend/prepdocslib/embeddings.py (202 lines)
+Reference: https://github.com/Azure-Samples/azure-search-openai-demo
+Template: S3-M1-F4
+
+Usage:
+    from openai import AsyncOpenAI
+    client = AsyncOpenAI(api_key="...")
+
+    embedder = OpenAIEmbeddings(
+        open_ai_client=client,
+        open_ai_model_name="text-embedding-3-small",
+        open_ai_dimensions=1536,
+    )
+
+    # Batch embedding (handles token limits and retries)
+    vectors = await embedder.create_embeddings(["text1", "text2", "text3"])
+"""
+
+import logging
+from abc import ABC
+from typing import Optional
+
+import tiktoken
+from openai import AsyncOpenAI, RateLimitError
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
+from typing_extensions import TypedDict
+
+logger = logging.getLogger(__name__)
+
+
+# ==================== Data Classes ====================
+
+
+class EmbeddingBatch:
+    """Represents a batch of texts to be embedded together.
+
+    Source: embeddings.py L20-25
+    """
+
+    def __init__(self, texts: list[str], token_length: int):
+        self.texts = texts
+        self.token_length = token_length
+
+
+class ExtraArgs(TypedDict, total=False):
+    """Extra arguments for embeddings API (e.g., dimensions).
+
+    Source: embeddings.py L28-29
+    """
+
+    dimensions: int
+
+
+# ==================== OpenAI Embeddings ====================
+
+
+class OpenAIEmbeddings(ABC):
+    """Client wrapper for OpenAI embeddings with batching, retries, and
+    token accounting.
+
+    Source: embeddings.py L32-154
+
+    Key features:
+    - Splits large text lists into token-limited batches
+    - Retries on RateLimitError with exponential backoff
+    - Supports batch and single-text modes
+    - Dimension control for text-embedding-3-* models
+    """
+
+    # Model-specific batch constraints
+    # Source: embeddings.py L35-39
+    SUPPORTED_BATCH_MODEL = {
+        "text-embedding-ada-002": {"token_limit": 8100, "max_batch_size": 16},
+        "text-embedding-3-small": {"token_limit": 8100, "max_batch_size": 16},
+        "text-embedding-3-large": {"token_limit": 8100, "max_batch_size": 16},
+    }
+
+    # Whether the model supports custom dimensions
+    # Source: embeddings.py L40-44
+    SUPPORTED_DIMENSIONS_MODEL = {
+        "text-embedding-ada-002": False,
+        "text-embedding-3-small": True,
+        "text-embedding-3-large": True,
+    }
+
+    def __init__(
+        self,
+        open_ai_client: AsyncOpenAI,
+        open_ai_model_name: str,
+        open_ai_dimensions: int,
+        *,
+        disable_batch: bool = False,
+        azure_deployment_name: Optional[str] = None,
+    ):
+        """Initialize the embeddings client.
+
+        Source: embeddings.py L46-61
+
+        Args:
+            open_ai_client: Async OpenAI client instance.
+            open_ai_model_name: Model name (e.g., "text-embedding-3-small").
+            open_ai_dimensions: Desired embedding dimensions.
+            disable_batch: Force single-text mode for all calls.
+            azure_deployment_name: Azure deployment name (None for non-Azure).
+        """
+        self.open_ai_client = open_ai_client
+        self.open_ai_model_name = open_ai_model_name
+        self.open_ai_dimensions = open_ai_dimensions
+        self.disable_batch = disable_batch
+        self.azure_deployment_name = azure_deployment_name
+
+    @property
+    def _api_model(self) -> str:
+        """Model identifier for API calls (deployment name or model name).
+
+        Source: embeddings.py L63-65
+        """
+        return self.azure_deployment_name or self.open_ai_model_name
+
+    def before_retry_sleep(self, retry_state):
+        """Log retry attempt on rate limiting.
+
+        Source: embeddings.py L67-68
+        """
+        logger.info(
+            "Rate limited on the OpenAI embeddings API, sleeping before retrying..."
+        )
+
+    # ==================== Token Counting ====================
+
+    def calculate_token_length(self, text: str) -> int:
+        """Calculate token count for a text string.
+
+        Source: embeddings.py L70-72
+        """
+        encoding = tiktoken.encoding_for_model(self.open_ai_model_name)
+        return len(encoding.encode(text))
+
+    # ==================== Batch Splitting ====================
+
+    def split_text_into_batches(self, texts: list[str]) -> list[EmbeddingBatch]:
+        """Split texts into batches respecting token and size limits.
+
+        Source: embeddings.py L74-103
+
+        Each batch respects:
+        - Per-batch token limit (prevents API errors)
+        - Maximum batch size (number of texts)
+        """
+        batch_info = self.SUPPORTED_BATCH_MODEL.get(self.open_ai_model_name)
+        if not batch_info:
+            raise NotImplementedError(
+                f"Model {self.open_ai_model_name} is not supported "
+                "with batch embedding operations"
+            )
+
+        batch_token_limit = batch_info["token_limit"]
+        batch_max_size = batch_info["max_batch_size"]
+        batches: list[EmbeddingBatch] = []
+        batch: list[str] = []
+        batch_token_length = 0
+
+        for text in texts:
+            text_token_length = self.calculate_token_length(text)
+
+            # Flush current batch if adding this text would exceed limits
+            if batch_token_length + text_token_length >= batch_token_limit and len(batch) > 0:
+                batches.append(EmbeddingBatch(batch, batch_token_length))
+                batch = []
+                batch_token_length = 0
+
+            batch.append(text)
+            batch_token_length += text_token_length
+
+            # Flush if max batch size reached
+            if len(batch) == batch_max_size:
+                batches.append(EmbeddingBatch(batch, batch_token_length))
+                batch = []
+                batch_token_length = 0
+
+        # Don't forget the last batch
+        if len(batch) > 0:
+            batches.append(EmbeddingBatch(batch, batch_token_length))
+
+        return batches
+
+    # ==================== Embedding Creation ====================
+
+    async def create_embedding_batch(
+        self, texts: list[str], dimensions_args: ExtraArgs
+    ) -> list[list[float]]:
+        """Create embeddings for multiple texts in batches with retry.
+
+        Source: embeddings.py L105-126
+
+        Uses exponential backoff (15-60s) on RateLimitError,
+        up to 15 retry attempts per batch.
+        """
+        batches = self.split_text_into_batches(texts)
+        embeddings: list[list[float]] = []
+
+        for batch in batches:
+            async for attempt in AsyncRetrying(
+                retry=retry_if_exception_type(RateLimitError),
+                wait=wait_random_exponential(min=15, max=60),
+                stop=stop_after_attempt(15),
+                before_sleep=self.before_retry_sleep,
+            ):
+                with attempt:
+                    emb_response = await self.open_ai_client.embeddings.create(
+                        model=self._api_model,
+                        input=batch.texts,
+                        **dimensions_args,
+                    )
+                    embeddings.extend(
+                        [data.embedding for data in emb_response.data]
+                    )
+                    logger.info(
+                        "Computed embeddings in batch. Batch size: %d, Token count: %d",
+                        len(batch.texts),
+                        batch.token_length,
+                    )
+
+        return embeddings
+
+    async def create_embedding_single(
+        self, text: str, dimensions_args: ExtraArgs
+    ) -> list[float]:
+        """Create embedding for a single text with retry.
+
+        Source: embeddings.py L128-141
+        """
+        async for attempt in AsyncRetrying(
+            retry=retry_if_exception_type(RateLimitError),
+            wait=wait_random_exponential(min=15, max=60),
+            stop=stop_after_attempt(15),
+            before_sleep=self.before_retry_sleep,
+        ):
+            with attempt:
+                emb_response = await self.open_ai_client.embeddings.create(
+                    model=self._api_model,
+                    input=text,
+                    **dimensions_args,
+                )
+                logger.info(
+                    "Computed embedding for text section. Character count: %d",
+                    len(text),
+                )
+
+        return emb_response.data[0].embedding
+
+    async def create_embeddings(self, texts: list[str]) -> list[list[float]]:
+        """Create embeddings for a list of texts (auto-selects batch vs. single).
+
+        Source: embeddings.py L143-154
+
+        This is the primary entry point. It:
+        1. Determines if custom dimensions are supported for the model
+        2. Uses batch mode if enabled and model supports it
+        3. Falls back to single-text mode otherwise
+        """
+        dimensions_args: ExtraArgs = (
+            {"dimensions": self.open_ai_dimensions}
+            if self.SUPPORTED_DIMENSIONS_MODEL.get(self.open_ai_model_name)
+            else {}
+        )
+
+        if (
+            not self.disable_batch
+            and self.open_ai_model_name in self.SUPPORTED_BATCH_MODEL
+        ):
+            return await self.create_embedding_batch(texts, dimensions_args)
+
+        return [
+            await self.create_embedding_single(text, dimensions_args)
+            for text in texts
+        ]

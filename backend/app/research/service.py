@@ -9,6 +9,7 @@ Core logic for RAG-enhanced chat, semantic search, and chart data extraction.
 import json
 import logging
 import re
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any, Optional
 
 from app.core.enums import ChatRole
@@ -23,6 +24,7 @@ from app.research.schemas import (
     SearchQuery,
     SearchResponse,
     SearchResult,
+    StreamChatRequest,
 )
 
 if TYPE_CHECKING:
@@ -462,6 +464,97 @@ class ResearchService:
             )
         except Exception as e:
             raise ExternalServiceError("Azure OpenAI", str(e)) from e
+
+    async def chat_stream(
+        self, request: StreamChatRequest
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """Stream RAG chat response as NDJSON events.
+
+        Yields NDJSON events in order:
+        1. {"type": "sources", "payload": [...]}     — retrieved documents
+        2. {"type": "text", "text": "..."}           — text token chunks
+        3. {"type": "chart", "payload": {...}}       — chart data (optional)
+        4. {"type": "confidence", "payload": float}  — confidence score
+        5. {"type": "done"}                          — end of stream
+
+        Args:
+            request: StreamChatRequest with messages, use_rag, temperature
+        """
+        import asyncio
+
+        sources: list[SearchResult] = []
+        query_text = ""
+
+        # Step 1: RAG retrieval
+        if request.use_rag and request.messages:
+            last_user_message = next(
+                (m for m in reversed(request.messages) if m.role == ChatRole.USER),
+                None,
+            )
+            if last_user_message:
+                query_text = last_user_message.content
+                search_query = SearchQuery(query=query_text)
+                search_response = await self.search(search_query)
+                sources = search_response.results
+
+        # Emit sources
+        yield {
+            "type": "sources",
+            "payload": [s.model_dump() for s in sources],
+        }
+
+        # Step 2: Stream LLM response
+        full_content = ""
+        if self._openai_service:
+            structured_sources = [
+                {
+                    "title": s.title,
+                    "content": s.content,
+                    "page_number": (s.metadata or {}).get("page_number", "N/A"),
+                    "score": s.score,
+                    "source": s.source or "",
+                }
+                for s in sources[:5]
+            ]
+            chat_history = [
+                {"role": msg.role.value, "content": msg.content}
+                for msg in request.messages[:-1]
+            ] or None
+
+            async for token in self._openai_service.rag_chat_stream(
+                query=query_text or request.messages[-1].content,
+                sources=structured_sources,
+                chat_history=chat_history,
+                temperature=request.temperature,
+            ):
+                full_content += token
+                yield {"type": "text", "text": token}
+        else:
+            # Mock streaming for development
+            logger.warning("Azure OpenAI not configured, using mock stream")
+            mock_response = f"关于 '{query_text or '你好'}' 的问题，"
+            if sources:
+                mock_response += "根据检索到的文档信息，"
+                for s in sources[:2]:
+                    mock_response += f"\n- {s.title}: {s.content[:100]}"
+            mock_response += "\n\n以上是 AI 助手的模拟回复。"
+
+            for char in mock_response:
+                full_content += char
+                yield {"type": "text", "text": char}
+                await asyncio.sleep(0.02)  # Simulate typing
+
+        # Step 3: Emit confidence
+        confidence = self._compute_confidence(sources)
+        yield {"type": "confidence", "payload": confidence}
+
+        # Step 4: Emit chart data (optional)
+        chart_data = await self._extract_chart_data(sources, query_text)
+        if chart_data:
+            yield {"type": "chart", "payload": chart_data.model_dump()}
+
+        # Step 5: Done
+        yield {"type": "done"}
 
     async def _extract_chart_data(
         self,

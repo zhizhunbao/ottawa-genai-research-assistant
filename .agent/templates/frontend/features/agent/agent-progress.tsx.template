@@ -1,0 +1,732 @@
+/**
+ * Agent Progress UI - Step-by-step execution visualization
+ *
+ * @module frontend/features/agent
+ * @source joyagent-jdgenie/ui/src/components/ActionView/ (92L) + PlanView/ (143L)
+ * @reference https://github.com/jd-opensource/joyagent-jdgenie
+ * @template S4-M2-F1
+ *
+ * Visualizes agent execution: plan stages, tool calls, file outputs,
+ * and deep search reasoning. Converts JDGenie's Ant Design/Svelte patterns
+ * into headless React components with CSS-variable theming.
+ *
+ * Key patterns from JDGenie:
+ * 1. PlanView: Timeline showing stages with status icons (pending/running/done/error)
+ * 2. ActionView: Tabbed workspace (follow, browser, files)
+ * 3. DeepSearch: Multi-round query decomposition → search → reasoning → answer
+ * 4. useImperativeHandle for parent-controlled panel toggling
+ */
+
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+/** Status of an individual step/stage */
+export type StepStatus = "pending" | "running" | "completed" | "error" | "skipped";
+
+/** A single stage in the agent's execution plan */
+export interface PlanStage {
+  name: string;
+  description?: string;
+  status: StepStatus;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+/** A tool call made by the agent */
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  status: StepStatus;
+  result?: string;
+  error?: string;
+  durationMs?: number;
+}
+
+/** An output file produced by the agent */
+export interface AgentFile {
+  name: string;
+  url: string;
+  type: string;
+  size?: number;
+}
+
+/** Deep search round result */
+export interface SearchRound {
+  queries: string[];
+  docs: Array<{
+    title: string;
+    url: string;
+    snippet: string;
+  }>;
+  isFinal: boolean;
+}
+
+/** Complete agent execution state */
+export interface AgentExecution {
+  stages: PlanStage[];
+  toolCalls: ToolCall[];
+  files: AgentFile[];
+  searchRounds: SearchRound[];
+  answer?: string;
+  isComplete: boolean;
+}
+
+// ─── Status Icons ───────────────────────────────────────────────────────────
+// @source joyagent-jdgenie/ui/src/components/PlanView/config.ts getStatusIcon
+
+const StatusIcon: React.FC<{ status: StepStatus; size?: number }> = ({
+  status,
+  size = 16,
+}) => {
+  const iconStyle = { width: size, height: size, borderRadius: "50%" };
+
+  switch (status) {
+    case "completed":
+      return (
+        <span
+          style={{
+            ...iconStyle,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "var(--agent-success, #22c55e)",
+            color: "white",
+            fontSize: size * 0.6,
+          }}
+        >
+          ✓
+        </span>
+      );
+    case "running":
+      return (
+        <span
+          className="agent-spinner"
+          style={{
+            ...iconStyle,
+            display: "inline-block",
+            border: "2px solid var(--agent-primary, #3b82f6)",
+            borderTopColor: "transparent",
+            animation: "agent-spin 1s linear infinite",
+          }}
+        />
+      );
+    case "error":
+      return (
+        <span
+          style={{
+            ...iconStyle,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "var(--agent-error, #ef4444)",
+            color: "white",
+            fontSize: size * 0.6,
+          }}
+        >
+          ✕
+        </span>
+      );
+    default:
+      return (
+        <span
+          style={{
+            ...iconStyle,
+            display: "inline-block",
+            border: "2px solid var(--agent-border, #e5e7eb)",
+            backgroundColor: "var(--agent-bg-muted, #f9fafb)",
+          }}
+        />
+      );
+  }
+};
+
+// ─── Plan Timeline ──────────────────────────────────────────────────────────
+// @source joyagent-jdgenie/ui/src/components/PlanView/PlanView.tsx (143L)
+
+interface PlanTimelineProps {
+  stages: PlanStage[];
+  /** Show collapsed (current stage only) or expanded (all stages) */
+  expanded?: boolean;
+  onToggle?: () => void;
+}
+
+export const PlanTimeline: React.FC<PlanTimelineProps> = ({
+  stages,
+  expanded = false,
+  onToggle,
+}) => {
+  if (stages.length === 0) return null;
+
+  // Find current active stage
+  // @source PlanView.tsx lines 34-40
+  const activeIndex = stages.reduce((prev, stage, idx, arr) => {
+    if (stage.status === "completed") {
+      return Math.min(idx + 1, arr.length - 1);
+    }
+    return prev;
+  }, 0);
+
+  const activeStage = stages[activeIndex];
+
+  return (
+    <div
+      className="agent-plan-timeline"
+      style={{
+        border: "1px solid var(--agent-border, #e5e7eb)",
+        borderRadius: 12,
+        padding: 16,
+        backgroundColor: "var(--agent-bg, #ffffff)",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: expanded ? 12 : 0,
+        }}
+      >
+        <span style={{ fontWeight: 600, fontSize: 14 }}>Task Progress</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "var(--agent-text-muted, #6b7280)" }}>
+            {activeIndex + 1} / {stages.length}
+          </span>
+          {onToggle && (
+            <button
+              onClick={onToggle}
+              style={{
+                cursor: "pointer",
+                background: "none",
+                border: "none",
+                padding: 4,
+                transform: expanded ? "rotate(180deg)" : "none",
+                transition: "transform 0.2s",
+              }}
+              aria-label={expanded ? "Collapse" : "Expand"}
+            >
+              ▼
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Collapsed: show current stage only */}
+      {!expanded && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+          <StatusIcon status={activeStage.status} />
+          <span>{activeStage.name}</span>
+        </div>
+      )}
+
+      {/* Expanded: show all stages */}
+      {expanded && (
+        <div
+          style={{
+            padding: 12,
+            backgroundColor: "var(--agent-bg-muted, #f9fafb)",
+            borderRadius: 6,
+          }}
+        >
+          {stages.map((stage, index) => (
+            <div
+              key={stage.name}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                padding: "8px 0",
+                borderBottom:
+                  index < stages.length - 1
+                    ? "1px solid var(--agent-border, #e5e7eb)"
+                    : "none",
+              }}
+            >
+              <StatusIcon status={stage.status} />
+              <div>
+                <div style={{ fontWeight: 500, fontSize: 14 }}>{stage.name}</div>
+                {stage.description && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--agent-text-muted, #6b7280)",
+                      marginTop: 2,
+                    }}
+                  >
+                    {stage.description}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Tool Call Item ─────────────────────────────────────────────────────────
+
+interface ToolCallItemProps {
+  toolCall: ToolCall;
+  /** Whether to show the result/error details */
+  showDetails?: boolean;
+}
+
+export const ToolCallItem: React.FC<ToolCallItemProps> = ({
+  toolCall,
+  showDetails = false,
+}) => {
+  const [open, setOpen] = useState(showDetails);
+
+  return (
+    <div
+      style={{
+        border: "1px solid var(--agent-border, #e5e7eb)",
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 8,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          cursor: "pointer",
+        }}
+        onClick={() => setOpen(!open)}
+      >
+        <StatusIcon status={toolCall.status} size={14} />
+        <code style={{ fontWeight: 600, fontSize: 13 }}>{toolCall.name}</code>
+        {toolCall.durationMs !== undefined && (
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: 12,
+              color: "var(--agent-text-muted, #6b7280)",
+            }}
+          >
+            {toolCall.durationMs}ms
+          </span>
+        )}
+      </div>
+
+      {open && (
+        <div style={{ marginTop: 8, fontSize: 13 }}>
+          {/* Arguments */}
+          <pre
+            style={{
+              backgroundColor: "var(--agent-bg-muted, #f3f4f6)",
+              padding: 8,
+              borderRadius: 4,
+              overflow: "auto",
+              maxHeight: 200,
+              fontSize: 12,
+            }}
+          >
+            {JSON.stringify(toolCall.arguments, null, 2)}
+          </pre>
+
+          {/* Result */}
+          {toolCall.result && (
+            <pre
+              style={{
+                marginTop: 8,
+                backgroundColor: "var(--agent-bg-success, #f0fdf4)",
+                padding: 8,
+                borderRadius: 4,
+                overflow: "auto",
+                maxHeight: 200,
+                fontSize: 12,
+              }}
+            >
+              {toolCall.result}
+            </pre>
+          )}
+
+          {/* Error */}
+          {toolCall.error && (
+            <pre
+              style={{
+                marginTop: 8,
+                backgroundColor: "var(--agent-bg-error, #fef2f2)",
+                color: "var(--agent-error, #ef4444)",
+                padding: 8,
+                borderRadius: 4,
+                overflow: "auto",
+                maxHeight: 200,
+                fontSize: 12,
+              }}
+            >
+              {toolCall.error}
+            </pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Deep Search Panel ──────────────────────────────────────────────────────
+// @source joyagent-jdgenie/genie-tool/genie_tool/tool/deepsearch.py streaming pattern
+
+interface DeepSearchPanelProps {
+  rounds: SearchRound[];
+  answer?: string;
+  isSearching?: boolean;
+}
+
+export const DeepSearchPanel: React.FC<DeepSearchPanelProps> = ({
+  rounds,
+  answer,
+  isSearching = false,
+}) => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Search rounds */}
+      {rounds.map((round, ri) => (
+        <div
+          key={ri}
+          style={{
+            border: "1px solid var(--agent-border, #e5e7eb)",
+            borderRadius: 8,
+            padding: 12,
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 13,
+              marginBottom: 8,
+              color: "var(--agent-primary, #3b82f6)",
+            }}
+          >
+            Round {ri + 1}
+          </div>
+
+          {/* Queries */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+            {round.queries.map((q, qi) => (
+              <span
+                key={qi}
+                style={{
+                  backgroundColor: "var(--agent-bg-muted, #f3f4f6)",
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                  fontSize: 12,
+                }}
+              >
+                {q}
+              </span>
+            ))}
+          </div>
+
+          {/* Sources */}
+          {round.docs.length > 0 && (
+            <div style={{ fontSize: 12, color: "var(--agent-text-muted, #6b7280)" }}>
+              {round.docs.map((doc, di) => (
+                <div key={di} style={{ marginBottom: 4 }}>
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--agent-primary, #3b82f6)" }}
+                  >
+                    {doc.title || doc.url}
+                  </a>
+                  {doc.snippet && <span> — {doc.snippet.slice(0, 100)}...</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Loading indicator */}
+      {isSearching && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: 12,
+            color: "var(--agent-text-muted, #6b7280)",
+          }}
+        >
+          <StatusIcon status="running" size={14} />
+          <span>Searching...</span>
+        </div>
+      )}
+
+      {/* Answer */}
+      {answer && (
+        <div
+          style={{
+            backgroundColor: "var(--agent-bg-muted, #f9fafb)",
+            padding: 16,
+            borderRadius: 8,
+            lineHeight: 1.6,
+          }}
+        >
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Agent Progress (Main Composite) ────────────────────────────────────────
+// @source joyagent-jdgenie/ui/src/components/ActionView/ActionView.tsx (92L)
+
+export interface AgentProgressRef {
+  openPlan: () => void;
+  closePlan: () => void;
+  togglePlan: () => void;
+}
+
+interface AgentProgressProps {
+  execution: AgentExecution;
+  /** Title for the workspace panel */
+  title?: string;
+  /** Called when user closes the panel */
+  onClose?: () => void;
+}
+
+export const AgentProgress = forwardRef<AgentProgressRef, AgentProgressProps>(
+  ({ execution, title = "Workspace", onClose }, ref) => {
+    const [activeTab, setActiveTab] = useState<"progress" | "tools" | "files" | "search">(
+      "progress"
+    );
+    const [planExpanded, setPlanExpanded] = useState(false);
+
+    useImperativeHandle(ref, () => ({
+      openPlan: () => setPlanExpanded(true),
+      closePlan: () => setPlanExpanded(false),
+      togglePlan: () => setPlanExpanded((v) => !v),
+    }));
+
+    const tabs = [
+      { key: "progress" as const, label: "Progress", count: execution.stages.length },
+      { key: "tools" as const, label: "Tools", count: execution.toolCalls.length },
+      { key: "files" as const, label: "Files", count: execution.files.length },
+      {
+        key: "search" as const,
+        label: "Search",
+        count: execution.searchRounds.length,
+      },
+    ];
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          padding: 24,
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{title}</h3>
+          {onClose && (
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: 18,
+                cursor: "pointer",
+                color: "var(--agent-text-muted, #6b7280)",
+              }}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            marginBottom: 16,
+            borderBottom: "1px solid var(--agent-border, #e5e7eb)",
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: "8px 12px",
+                border: "none",
+                background: "none",
+                borderBottom:
+                  activeTab === tab.key
+                    ? "2px solid var(--agent-primary, #3b82f6)"
+                    : "2px solid transparent",
+                color:
+                  activeTab === tab.key
+                    ? "var(--agent-primary, #3b82f6)"
+                    : "var(--agent-text-muted, #6b7280)",
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span
+                  style={{
+                    marginLeft: 4,
+                    fontSize: 11,
+                    backgroundColor:
+                      activeTab === tab.key
+                        ? "var(--agent-primary, #3b82f6)"
+                        : "var(--agent-bg-muted, #e5e7eb)",
+                    color: activeTab === tab.key ? "white" : "inherit",
+                    padding: "1px 5px",
+                    borderRadius: 8,
+                  }}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div style={{ flex: 1, overflow: "auto" }}>
+          {activeTab === "progress" && (
+            <PlanTimeline
+              stages={execution.stages}
+              expanded={planExpanded}
+              onToggle={() => setPlanExpanded(!planExpanded)}
+            />
+          )}
+
+          {activeTab === "tools" && (
+            <div>
+              {execution.toolCalls.length === 0 ? (
+                <EmptyState message="No tool calls yet" />
+              ) : (
+                execution.toolCalls.map((tc) => (
+                  <ToolCallItem key={tc.id} toolCall={tc} />
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === "files" && (
+            <div>
+              {execution.files.length === 0 ? (
+                <EmptyState message="No files generated" />
+              ) : (
+                execution.files.map((file, i) => (
+                  <a
+                    key={i}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      border: "1px solid var(--agent-border, #e5e7eb)",
+                      borderRadius: 8,
+                      marginBottom: 8,
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                  >
+                    <span style={{ fontSize: 20 }}>📄</span>
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: 13 }}>{file.name}</div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--agent-text-muted, #6b7280)",
+                        }}
+                      >
+                        {file.type}
+                        {file.size !== undefined && ` · ${(file.size / 1024).toFixed(1)}KB`}
+                      </div>
+                    </div>
+                  </a>
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === "search" && (
+            <DeepSearchPanel
+              rounds={execution.searchRounds}
+              answer={execution.answer}
+              isSearching={!execution.isComplete && execution.searchRounds.length > 0}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+);
+
+AgentProgress.displayName = "AgentProgress";
+
+// ─── Empty State ────────────────────────────────────────────────────────────
+
+const EmptyState: React.FC<{ message: string }> = ({ message }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 32,
+      color: "var(--agent-text-muted, #6b7280)",
+      fontSize: 14,
+    }}
+  >
+    {message}
+  </div>
+);
+
+// ─── CSS (inject via style tag or import) ───────────────────────────────────
+
+export const agentProgressStyles = `
+@keyframes agent-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+:root {
+  --agent-primary: #3b82f6;
+  --agent-success: #22c55e;
+  --agent-error: #ef4444;
+  --agent-border: #e5e7eb;
+  --agent-bg: #ffffff;
+  --agent-bg-muted: #f9fafb;
+  --agent-bg-success: #f0fdf4;
+  --agent-bg-error: #fef2f2;
+  --agent-text-muted: #6b7280;
+}
+`;

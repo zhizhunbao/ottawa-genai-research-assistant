@@ -1,8 +1,8 @@
-/**
+﻿/**
  * AuthTypes - TypeScript interfaces for users, credentials, tokens, and Azure AD
  *
  * @module features/auth
- * @templateRef none
+ * @template none
  * @reference none
  */
 
@@ -35,7 +35,7 @@ export interface UserPreferences {
 // 认证相关类型
 // ============================================================================
 
-/** 认证状态 */
+/** 认证状�?*/
 export interface AuthState {
   user: User | null
   token: string | null

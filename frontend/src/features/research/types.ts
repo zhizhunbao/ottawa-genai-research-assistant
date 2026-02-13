@@ -1,16 +1,10 @@
-/**
- * Research Feature Type Definitions
+﻿/**
+ * ResearchTypes - Interfaces and enums for RAG, search, and document management
  *
- * Comprehensive TypeScript interfaces and enums for RAG, search, and document management.
- *
- * @template — Custom Implementation
+ * @module features/research
+ * @template none
+ * @reference none
  */
-
-// ============================================================================
-// 文档相关类型
-// ============================================================================
-
-/** 文档状态 */
 export enum DocumentStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',

@@ -1,0 +1,141 @@
+/**
+ * CitationLink - Inline citation reference rendered as a clickable badge with Popover
+ *
+ * Pattern: Markdown renders [1] as <a href="1"> → CitationLink intercepts → shows Popover
+ * When citation data is available, displays source file + text preview in a popover.
+ * When not available, renders as plain text [N].
+ *
+ * @module features/chat/citation
+ * @source rag-web-ui/frontend/src/components/chat/answer.tsx (CitationLink component, lines 97-176)
+ * @reference https://github.com/xyb/rag-web-ui
+ * @template S1-M1-2 frontend/features/chat/citation/citation-link.tsx
+ */
+
+import React, { useMemo, AnchorHTMLAttributes, ClassAttributes } from 'react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '{{ALIAS}}/shared/components/ui/popover'
+import { Badge } from '{{ALIAS}}/shared/components/ui/badge'
+import { FileText } from 'lucide-react'
+import type { Citation, CitationInfo } from './types'
+
+interface CitationLinkInternalProps {
+  /** Full citation array from the parent message */
+  citations: Citation[]
+
+  /** Pre-fetched citation info map (keyed by source ID) */
+  citationInfoMap: Record<string, CitationInfo>
+}
+
+/**
+ * Create a memoized CitationLink component for use as react-markdown's `a` override.
+ *
+ * Usage with react-markdown:
+ * ```tsx
+ * const CitationLink = createCitationLink(citations, citationInfoMap)
+ * <Markdown components={{ a: CitationLink }}>{content}</Markdown>
+ * ```
+ *
+ * @source rag-web-ui answer.tsx lines 97-176 — CitationLink useMemo pattern
+ */
+export function createCitationLink(
+  citations: Citation[],
+  citationInfoMap: Record<string, CitationInfo>
+) {
+  return function CitationLink(
+    props: ClassAttributes<HTMLAnchorElement> &
+      AnchorHTMLAttributes<HTMLAnchorElement>
+  ) {
+    // Extract citation ID from href — markdown [1](1) renders as <a href="1">
+    const citationId = props.href?.match(/^(\d+)$/)?.[1]
+    const citation = citationId
+      ? citations[parseInt(citationId) - 1]
+      : null
+
+    // Not a citation link — render as normal anchor
+    if (!citation) {
+      return (
+        <a
+          {...props}
+          className="text-primary underline hover:text-primary/80 transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+      )
+    }
+
+    // Build source key for info lookup
+    const sourceKey = citation.metadata.kb_id && citation.metadata.document_id
+      ? `${citation.metadata.kb_id}-${citation.metadata.document_id}`
+      : citation.metadata.source_file || `source-${citationId}`
+
+    const info = citationInfoMap[sourceKey]
+
+    // Determine confidence color
+    const confidence = citation.metadata.confidence ?? 1.0
+    const confidenceColor = confidence >= 0.8
+      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      : confidence >= 0.5
+        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors cursor-pointer align-baseline"
+            aria-label={`Citation ${citationId}`}
+          >
+            <span className="text-[10px]">[{citationId}]</span>
+          </button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          side="top"
+          align="start"
+          className="max-w-md w-[calc(100vw-2rem)] p-0 rounded-lg shadow-lg"
+        >
+          <div className="space-y-0">
+            {/* Source header */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-t-lg border-b">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-xs font-medium truncate">
+                {info
+                  ? `${info.knowledgeBaseName} / ${info.documentFileName}`
+                  : citation.metadata.source_file || `Source ${citationId}`}
+              </span>
+              {citation.metadata.page_num != null && (
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  p.{citation.metadata.page_num + 1}
+                </Badge>
+              )}
+            </div>
+
+            {/* Citation text */}
+            <div className="px-3 py-2">
+              <p className="text-sm text-foreground leading-relaxed line-clamp-6">
+                {citation.text}
+              </p>
+            </div>
+
+            {/* Confidence + metadata footer */}
+            <div className="flex items-center gap-2 px-3 py-2 border-t bg-muted/30 rounded-b-lg">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${confidenceColor}`}>
+                {Math.round(confidence * 100)}%
+              </span>
+              {citation.metadata.section_title && (
+                <span className="text-[10px] text-muted-foreground truncate">
+                  § {citation.metadata.section_title}
+                </span>
+              )}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    )
+  }
+}
+
+export default createCitationLink

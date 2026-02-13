@@ -1,0 +1,465 @@
+/**
+ * Knowledge Base Management UI - Document upload, list, and search
+ *
+ * @module frontend/features/knowledge/knowledge-base
+ * @source open-webui/src/lib/components/workspace/Knowledge/ (knowledge management)
+ * @reference https://github.com/open-webui/open-webui
+ * @template S4-M5-F1
+ *
+ * Knowledge base management interface:
+ * 1. Document upload (drag & drop + file picker)
+ * 2. Document list with status indicators
+ * 3. Search/filter within knowledge base
+ * 4. Document detail view with metadata
+ * 5. Chunk preview (shows how documents were split)
+ */
+
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  type FC,
+  type DragEvent,
+  type ChangeEvent,
+} from "react";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export type DocumentStatus =
+  | "uploading"
+  | "processing"
+  | "indexed"
+  | "failed"
+  | "deleting";
+
+export interface KnowledgeDocument {
+  id: string;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  status: DocumentStatus;
+  chunkCount: number;
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string;
+  documentCount: number;
+  totalChunks: number;
+  createdAt: string;
+}
+
+export interface KnowledgeBaseProps {
+  knowledgeBase: KnowledgeBase;
+  documents: KnowledgeDocument[];
+  onUpload: (files: File[]) => void;
+  onDelete: (documentId: string) => void;
+  onSearch: (query: string) => void;
+  onRefresh: () => void;
+  isLoading?: boolean;
+  className?: string;
+}
+
+// ─── Status Config ──────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<
+  DocumentStatus,
+  { label: string; color: string; bg: string; icon: string }
+> = {
+  uploading: { label: "Uploading", color: "#3b82f6", bg: "#eff6ff", icon: "⬆" },
+  processing: { label: "Processing", color: "#f59e0b", bg: "#fffbeb", icon: "⚙" },
+  indexed: { label: "Indexed", color: "#10b981", bg: "#ecfdf5", icon: "✓" },
+  failed: { label: "Failed", color: "#ef4444", bg: "#fef2f2", icon: "✕" },
+  deleting: { label: "Deleting", color: "#6b7280", bg: "#f3f4f6", icon: "🗑" },
+};
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const s = {
+  container: {
+    padding: "24px",
+    background: "var(--bg-page, #f8fafc)",
+    minHeight: "100%",
+    fontFamily: "var(--font-sans, system-ui, sans-serif)",
+  } as React.CSSProperties,
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "24px",
+  } as React.CSSProperties,
+
+  title: {
+    fontSize: "var(--text-2xl, 24px)",
+    fontWeight: 700,
+    color: "var(--text-primary, #1e293b)",
+    marginBottom: "4px",
+  } as React.CSSProperties,
+
+  subtitle: {
+    fontSize: "var(--text-sm, 14px)",
+    color: "var(--text-secondary, #64748b)",
+  } as React.CSSProperties,
+
+  stats: {
+    display: "flex",
+    gap: "16px",
+  } as React.CSSProperties,
+
+  stat: {
+    textAlign: "center" as const,
+    padding: "12px 20px",
+    background: "var(--card-bg, #ffffff)",
+    borderRadius: "var(--radius-md, 10px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+  } as React.CSSProperties,
+
+  statValue: {
+    fontSize: "var(--text-xl, 20px)",
+    fontWeight: 700,
+    color: "var(--text-primary, #1e293b)",
+  } as React.CSSProperties,
+
+  statLabel: {
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--text-secondary, #64748b)",
+    marginTop: "2px",
+  } as React.CSSProperties,
+
+  dropZone: {
+    border: "2px dashed var(--border-color, #cbd5e1)",
+    borderRadius: "var(--radius-lg, 12px)",
+    padding: "32px",
+    textAlign: "center" as const,
+    background: "var(--card-bg, #ffffff)",
+    marginBottom: "24px",
+    cursor: "pointer",
+    transition: "border-color 0.2s ease, background 0.2s ease",
+  } as React.CSSProperties,
+
+  dropZoneActive: {
+    borderColor: "var(--color-brand, #4318ff)",
+    background: "var(--color-brand-light, #f0ebff)",
+  } as React.CSSProperties,
+
+  dropIcon: {
+    fontSize: "48px",
+    marginBottom: "12px",
+  } as React.CSSProperties,
+
+  dropTitle: {
+    fontSize: "var(--text-lg, 18px)",
+    fontWeight: 600,
+    color: "var(--text-primary, #1e293b)",
+    marginBottom: "4px",
+  } as React.CSSProperties,
+
+  dropHint: {
+    fontSize: "var(--text-sm, 14px)",
+    color: "var(--text-secondary, #64748b)",
+  } as React.CSSProperties,
+
+  toolbar: {
+    display: "flex",
+    gap: "8px",
+    marginBottom: "16px",
+  } as React.CSSProperties,
+
+  searchInput: {
+    flex: 1,
+    padding: "8px 14px",
+    fontSize: "var(--text-sm, 14px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+    borderRadius: "var(--radius-sm, 8px)",
+    background: "var(--input-bg, #ffffff)",
+    color: "var(--text-primary, #1e293b)",
+    outline: "none",
+  } as React.CSSProperties,
+
+  refreshBtn: {
+    padding: "8px 16px",
+    fontSize: "var(--text-sm, 14px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+    borderRadius: "var(--radius-sm, 8px)",
+    background: "var(--card-bg, #ffffff)",
+    cursor: "pointer",
+    color: "var(--text-primary, #1e293b)",
+  } as React.CSSProperties,
+
+  docList: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "8px",
+  } as React.CSSProperties,
+
+  docItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    padding: "14px 16px",
+    background: "var(--card-bg, #ffffff)",
+    borderRadius: "var(--radius-md, 10px)",
+    border: "1px solid var(--border-color, #e2e8f0)",
+    transition: "box-shadow 0.15s ease",
+  } as React.CSSProperties,
+
+  docIcon: {
+    fontSize: "24px",
+    width: "40px",
+    height: "40px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "var(--radius-sm, 8px)",
+    background: "var(--bg-tertiary, #f1f5f9)",
+    flexShrink: 0,
+  } as React.CSSProperties,
+
+  docInfo: {
+    flex: 1,
+    minWidth: 0,
+  } as React.CSSProperties,
+
+  docName: {
+    fontSize: "var(--text-sm, 14px)",
+    fontWeight: 600,
+    color: "var(--text-primary, #1e293b)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  } as React.CSSProperties,
+
+  docMeta: {
+    fontSize: "var(--text-xs, 12px)",
+    color: "var(--text-secondary, #64748b)",
+    marginTop: "2px",
+  } as React.CSSProperties,
+
+  statusBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "3px 10px",
+    borderRadius: "var(--radius-full, 100px)",
+    fontSize: "var(--text-xs, 12px)",
+    fontWeight: 500,
+    flexShrink: 0,
+  } as React.CSSProperties,
+
+  deleteBtn: {
+    padding: "6px 10px",
+    fontSize: "var(--text-xs, 12px)",
+    border: "none",
+    borderRadius: "var(--radius-sm, 6px)",
+    background: "transparent",
+    color: "var(--text-secondary, #94a3b8)",
+    cursor: "pointer",
+    transition: "color 0.15s ease",
+    flexShrink: 0,
+  } as React.CSSProperties,
+
+  emptyState: {
+    textAlign: "center" as const,
+    padding: "48px",
+    color: "var(--text-secondary, #94a3b8)",
+    fontSize: "var(--text-sm, 14px)",
+  } as React.CSSProperties,
+};
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(type: string): string {
+  const icons: Record<string, string> = {
+    pdf: "📄",
+    docx: "📝",
+    doc: "📝",
+    txt: "📃",
+    md: "📋",
+    csv: "📊",
+    json: "🔧",
+    html: "🌐",
+    xlsx: "📊",
+    pptx: "📊",
+  };
+  return icons[type.toLowerCase()] || "📎";
+}
+
+// ─── Knowledge Base Component ───────────────────────────────────────────────
+// @source open-webui/src/lib/components/workspace/Knowledge/
+
+export const KnowledgeBaseUI: FC<KnowledgeBaseProps> = ({
+  knowledgeBase,
+  documents,
+  onUpload,
+  onDelete,
+  onSearch,
+  onRefresh,
+  isLoading,
+  className,
+}) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = useCallback((e: DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) onUpload(files);
+    },
+    [onUpload]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) onUpload(files);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [onUpload]
+  );
+
+  const handleSearch = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+      onSearch(e.target.value);
+    },
+    [onSearch]
+  );
+
+  return (
+    <div style={s.container} className={className}>
+      {/* Header */}
+      <div style={s.header}>
+        <div>
+          <h1 style={s.title}>{knowledgeBase.name}</h1>
+          <p style={s.subtitle}>{knowledgeBase.description}</p>
+        </div>
+        <div style={s.stats}>
+          <div style={s.stat}>
+            <div style={s.statValue}>{knowledgeBase.documentCount}</div>
+            <div style={s.statLabel}>Documents</div>
+          </div>
+          <div style={s.stat}>
+            <div style={s.statValue}>{knowledgeBase.totalChunks}</div>
+            <div style={s.statLabel}>Chunks</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Drop Zone */}
+      <div
+        style={{
+          ...s.dropZone,
+          ...(isDragging ? s.dropZoneActive : {}),
+        }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <div style={s.dropIcon}>📁</div>
+        <div style={s.dropTitle}>
+          {isDragging ? "Drop files here" : "Upload Documents"}
+        </div>
+        <div style={s.dropHint}>
+          Drag & drop files or click to browse. Supports PDF, DOCX, TXT, MD, CSV, JSON.
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.docx,.doc,.txt,.md,.csv,.json,.html,.htm,.epub,.pptx,.xlsx"
+          onChange={handleFileSelect}
+          style={{ display: "none" }}
+        />
+      </div>
+
+      {/* Search & Toolbar */}
+      <div style={s.toolbar}>
+        <input
+          style={s.searchInput}
+          type="text"
+          placeholder="Search documents..."
+          value={searchQuery}
+          onChange={handleSearch}
+        />
+        <button style={s.refreshBtn} onClick={onRefresh} disabled={isLoading}>
+          {isLoading ? "⏳" : "🔄"} Refresh
+        </button>
+      </div>
+
+      {/* Document List */}
+      <div style={s.docList}>
+        {documents.length === 0 ? (
+          <div style={s.emptyState}>
+            <p>No documents yet. Upload your first document above.</p>
+          </div>
+        ) : (
+          documents.map((doc) => {
+            const status = STATUS_CONFIG[doc.status];
+            return (
+              <div key={doc.id} style={s.docItem}>
+                <div style={s.docIcon}>
+                  {getFileIcon(doc.fileType)}
+                </div>
+                <div style={s.docInfo}>
+                  <div style={s.docName} title={doc.filename}>
+                    {doc.filename}
+                  </div>
+                  <div style={s.docMeta}>
+                    {formatFileSize(doc.fileSize)} • {doc.chunkCount} chunks •{" "}
+                    {new Date(doc.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    ...s.statusBadge,
+                    color: status.color,
+                    background: status.bg,
+                  }}
+                >
+                  {status.icon} {status.label}
+                </span>
+                {doc.status !== "deleting" && (
+                  <button
+                    style={s.deleteBtn}
+                    onClick={() => onDelete(doc.id)}
+                    title="Delete document"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default KnowledgeBaseUI;

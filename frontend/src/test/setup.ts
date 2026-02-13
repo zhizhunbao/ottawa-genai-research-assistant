@@ -1,11 +1,10 @@
-/**
- * Vitest Test Setup
+﻿/**
+ * TestSetup - Vitest global configuration with DOM matchers and i18n mocks
  *
- * Configures the global test environment, including DOM matchers and i18n mocks.
- *
- * @template T4 frontend/test/setup.ts — Vitest Global Configuration
+ * @module test
+ * @template T4 frontend/test/setup.ts
+ * @reference none
  */
-
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 

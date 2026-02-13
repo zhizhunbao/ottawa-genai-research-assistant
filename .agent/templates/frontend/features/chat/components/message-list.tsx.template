@@ -1,0 +1,352 @@
+/**
+ * MessageList - Virtualized message list with auto-scroll and skeleton loading
+ *
+ * Renders a scrollable list of chat messages with:
+ * - Auto-scroll to bottom during streaming
+ * - User scroll detection (pauses auto-scroll when user scrolls up)
+ * - Skeleton loading state
+ * - Welcome screen for empty conversations
+ * - Back-to-bottom button
+ *
+ * @module features/chat/components
+ * @source lobe-chat/src/features/Conversation/ChatList/index.tsx (104 lines)
+ * @source lobe-chat/src/features/Conversation/ChatList/components/VirtualizedList.tsx (190 lines)
+ * @source chatbot-ui/components/chat/chat-messages.tsx (39 lines)
+ * @source chatbot-ui/components/chat/chat-hooks/use-scroll.tsx (88 lines)
+ * @reference https://github.com/lobehub/lobe-chat
+ * @reference https://github.com/mckaywrigley/chatbot-ui
+ * @template S1-M5-2 frontend/features/chat/components/message-list.tsx
+ */
+
+'use client'
+
+import {
+  memo,
+  useRef,
+  useCallback,
+  useEffect,
+  type UIEventHandler,
+  type ReactNode,
+} from 'react'
+
+// ============================================================
+// Types
+// ============================================================
+
+export interface MessageListProps {
+  /** Array of message IDs or message objects to render */
+  messageIds: string[]
+  /** Render function for each message */
+  renderMessage: (id: string, index: number, isLast: boolean) => ReactNode
+  /** Welcome component shown when there are no messages */
+  welcome?: ReactNode
+  /** Whether the initial messages have loaded */
+  messagesInit?: boolean
+  /** Whether new content is streaming (enables auto-scroll) */
+  isStreaming?: boolean
+  /** Additional class name */
+  className?: string
+}
+
+// ============================================================
+// Scroll Hook
+// ============================================================
+
+/**
+ * Custom scroll management hook.
+ *
+ * @source chatbot-ui/components/chat/chat-hooks/use-scroll.tsx (88 lines)
+ *
+ * Key behaviors:
+ * - Auto-scrolls to bottom during streaming
+ * - Pauses auto-scroll when user scrolls up manually
+ * - Resumes auto-scroll when user scrolls back to bottom
+ */
+function useScrollManager(isStreaming: boolean) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isAutoScrolling = useRef(false)
+  const userScrolledRef = useRef(false)
+  const isAtBottomRef = useRef(true)
+
+  /** Detect if the container is scrolled to the bottom */
+  const checkAtBottom = useCallback((): boolean => {
+    const el = containerRef.current
+    if (!el) return true
+    // Allow 24px threshold (matches lobe-chat AT_BOTTOM_THRESHOLD)
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= 24
+  }, [])
+
+  /** Smooth-scroll to the bottom */
+  const scrollToBottom = useCallback((instant = false) => {
+    isAutoScrolling.current = true
+    messagesEndRef.current?.scrollIntoView({
+      behavior: instant ? 'instant' : 'smooth',
+    })
+    // Reset flag after scroll completes
+    setTimeout(() => {
+      isAutoScrolling.current = false
+      isAtBottomRef.current = true
+    }, 100)
+  }, [])
+
+  /**
+   * onScroll handler — tracks user scroll position.
+   *
+   * @source chatbot-ui use-scroll.tsx lines 37-55
+   */
+  const handleScroll: UIEventHandler<HTMLDivElement> = useCallback(
+    (e) => {
+      const atBottom = checkAtBottom()
+      isAtBottomRef.current = atBottom
+
+      if (!atBottom && !isAutoScrolling.current) {
+        userScrolledRef.current = true
+      } else if (atBottom) {
+        userScrolledRef.current = false
+      }
+    },
+    [checkAtBottom]
+  )
+
+  /**
+   * Auto-scroll effect — scrolls to bottom when streaming and user hasn't scrolled up.
+   *
+   * @source chatbot-ui use-scroll.tsx lines 31-35
+   */
+  useEffect(() => {
+    if (isStreaming && !userScrolledRef.current) {
+      scrollToBottom()
+    }
+  })
+
+  /** Reset user scroll flag when streaming ends */
+  useEffect(() => {
+    if (!isStreaming) {
+      userScrolledRef.current = false
+    }
+  }, [isStreaming])
+
+  return {
+    containerRef,
+    messagesEndRef,
+    handleScroll,
+    scrollToBottom,
+    isAtBottom: () => isAtBottomRef.current,
+    userScrolled: () => userScrolledRef.current,
+  }
+}
+
+// ============================================================
+// Skeleton Loading
+// ============================================================
+
+/**
+ * Skeleton placeholder for loading state.
+ *
+ * @source lobe-chat Conversation/components/SkeletonList
+ */
+function SkeletonList() {
+  return (
+    <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {[1, 2, 3].map((i) => (
+        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          {/* Avatar skeleton */}
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: 'var(--color-skeleton, #e2e8f0)',
+              animation: 'shimmer 1.5s infinite ease-in-out',
+              flexShrink: 0,
+            }}
+          />
+          {/* Content skeleton */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div
+              style={{
+                width: i === 2 ? '60%' : '80%',
+                height: 14,
+                borderRadius: 6,
+                background: 'var(--color-skeleton, #e2e8f0)',
+                animation: 'shimmer 1.5s infinite ease-in-out',
+                animationDelay: `${i * 0.15}s`,
+              }}
+            />
+            <div
+              style={{
+                width: i === 1 ? '90%' : '70%',
+                height: 14,
+                borderRadius: 6,
+                background: 'var(--color-skeleton, #e2e8f0)',
+                animation: 'shimmer 1.5s infinite ease-in-out',
+                animationDelay: `${i * 0.15 + 0.1}s`,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ============================================================
+// BackBottom Button
+// ============================================================
+
+/**
+ * Floating "scroll to bottom" button.
+ *
+ * @source lobe-chat ChatList/components/BackBottom
+ * @source chatbot-ui chat-scroll-buttons.tsx (42 lines)
+ */
+function BackBottomButton({
+  visible,
+  onClick,
+}: {
+  visible: boolean
+  onClick: () => void
+}) {
+  if (!visible) return null
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Scroll to bottom"
+      style={{
+        position: 'absolute',
+        bottom: 16,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10,
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        border: '1px solid var(--color-border, #e2e8f0)',
+        background: 'var(--color-bg, #fff)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'opacity 200ms, transform 200ms',
+        color: 'var(--color-text-secondary, #64748b)',
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 12L3 7h10L8 12z" />
+      </svg>
+    </button>
+  )
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+/**
+ * MessageList — scrollable message container with auto-scroll.
+ *
+ * Architecture:
+ * - Uses native scroll (no virtual library dependency)
+ * - For 100+ messages, consider adding `@tanstack/react-virtual` or `virtua`
+ * - lobe-chat uses `virtua`'s VList for virtualisation (VirtualizedList.tsx)
+ *
+ * @source lobe-chat ChatList/index.tsx lines 37-103
+ * @source chatbot-ui chat-ui.tsx lines 188-228
+ */
+export const MessageList = memo<MessageListProps>(
+  ({
+    messageIds,
+    renderMessage,
+    welcome,
+    messagesInit = true,
+    isStreaming = false,
+    className,
+  }) => {
+    const {
+      containerRef,
+      messagesEndRef,
+      handleScroll,
+      scrollToBottom,
+      isAtBottom,
+    } = useScrollManager(isStreaming)
+
+    // Scroll to bottom on initial mount
+    useEffect(() => {
+      if (messagesInit && messageIds.length > 0) {
+        scrollToBottom(true)
+      }
+    }, [messagesInit]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Loading skeleton
+    if (!messagesInit) {
+      return <SkeletonList />
+    }
+
+    // Empty state
+    if (messageIds.length === 0 && welcome) {
+      return (
+        <div
+          style={{
+            height: '100%',
+            overflowY: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {welcome}
+        </div>
+      )
+    }
+
+    return (
+      <div
+        className={className}
+        style={{ position: 'relative', height: '100%' }}
+      >
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          style={{
+            height: '100%',
+            overflowY: 'auto',
+            overflowAnchor: 'none',
+            paddingBottom: 24,
+          }}
+        >
+          {messageIds.map((id, index) =>
+            renderMessage(id, index, index === messageIds.length - 1)
+          )}
+
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Back-to-bottom button */}
+        <BackBottomButton
+          visible={!isAtBottom()}
+          onClick={() => scrollToBottom()}
+        />
+      </div>
+    )
+  }
+)
+
+MessageList.displayName = 'MessageList'
+
+// ============================================================
+// CSS (inject or import separately)
+// ============================================================
+
+/**
+ * ```css
+ * @keyframes shimmer {
+ *   0% { opacity: 0.5; }
+ *   50% { opacity: 1; }
+ *   100% { opacity: 0.5; }
+ * }
+ * ```
+ */

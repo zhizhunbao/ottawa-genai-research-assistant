@@ -1,16 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿/**
+ * ChatInterface - Main chat view composing message list and input area
+ *
+ * Uses the useChat hook which internally handles streaming via useChatStream.
+ *
+ * @module features/chat
+ * @template none
+ * @reference none
+ */
+import React, { useRef, useEffect } from 'react';
 import { MessageItem } from './message-item';
 import { ChatInput } from './chat-input';
-import { useChatStream } from '../hooks/use-chat-stream';
-import { Message } from '../types';
+import useChat from '../hooks/use-chat';
 import { ScrollArea } from '@/shared/components/ui';
-import { nanoid } from 'nanoid';
 
 export const ChatInterface: React.FC = () => {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const { sendMessage, isLoading } = useChatStream('/api/v1');
+    const {
+        messages,
+        isLoading,
+        isStreaming,
+        sendMessage,
+        abortStream,
+    } = useChat();
 
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to bottom on new messages
     useEffect(() => {
         if (scrollRef.current) {
             const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
@@ -20,52 +34,8 @@ export const ChatInterface: React.FC = () => {
         }
     }, [messages]);
 
-    const handleSendMessage = async (content: string, options: { deepSearch: boolean; files: File[] }) => {
-        const userMessage: Message = {
-            id: nanoid(),
-            role: 'user',
-            content,
-            timestamp: Date.now()
-        };
-
-        setMessages(prev => [...prev, userMessage]);
-
-        const assistantMsgId = nanoid();
-        const assistantMessage: Message = {
-            id: assistantMsgId,
-            role: 'assistant',
-            content: '',
-            thought: '',
-            status: 'loading',
-            timestamp: Date.now()
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-
-        await sendMessage(content, {
-            onMessage: (chunk) => {
-                setMessages(prev => prev.map(m =>
-                    m.id === assistantMsgId ? { ...m, content: m.content + chunk } : m
-                ));
-            },
-            onThought: (thoughtChunk) => {
-                setMessages(prev => prev.map(m =>
-                    m.id === assistantMsgId ? { ...m, thought: (m.thought || '') + thoughtChunk } : m
-                ));
-            },
-            onDone: () => {
-                setMessages(prev => prev.map(m =>
-                    m.id === assistantMsgId ? { ...m, status: 'done' } : m
-                ));
-            },
-            onError: (err) => {
-                setMessages(prev => prev.map(m =>
-                    m.id === assistantMsgId ? { ...m, content: m.content + '\n\n发生错误: ' + err.message, status: 'error' } : m
-                ));
-            }
-        }, {
-            deep_search: options.deepSearch
-        });
+    const handleSendMessage = async (content: string, _options: { deepSearch: boolean; files: File[] }) => {
+        await sendMessage(content);
     };
 
     return (
@@ -85,9 +55,9 @@ export const ChatInterface: React.FC = () => {
                                 <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center mb-6">
                                     <span className="text-3xl">🤖</span>
                                 </div>
-                                <h2 className="text-2xl font-bold mb-2">欢迎使用研究助手</h2>
+                                <h2 className="text-2xl font-bold mb-2">Welcome to the Research Assistant</h2>
                                 <p className="text-muted-foreground max-w-sm">
-                                    上传论文、报告或直接提问，我将通过多智能体协作和深度搜索为你提供详尽的分析。
+                                    Upload papers, reports, or ask questions directly. I will provide in-depth analysis through multi-agent collaboration and deep search.
                                 </p>
                             </div>
                         ) : (
@@ -100,7 +70,17 @@ export const ChatInterface: React.FC = () => {
             </div>
 
             <footer className="border-t border-border bg-card/20 backdrop-blur-lg pb-4">
-                <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+                <div className="max-w-4xl mx-auto flex flex-col gap-2">
+                    {isStreaming && (
+                        <button
+                            onClick={abortStream}
+                            className="self-center px-4 py-1.5 text-xs rounded-full border border-destructive text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                            ■ Stop generating
+                        </button>
+                    )}
+                    <ChatInput onSend={handleSendMessage} isLoading={isLoading || isStreaming} />
+                </div>
             </footer>
         </div>
     );

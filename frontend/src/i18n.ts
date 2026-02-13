@@ -1,11 +1,10 @@
-/**
- * i18n Configuration
+﻿/**
+ * i18n - Internationalization setup for English and French using react-i18next
  *
- * Internationalization setup for English and French support using react-i18next.
- *
- * @template — Custom Implementation
+ * @module root
+ * @template none
+ * @reference none
  */
-
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 

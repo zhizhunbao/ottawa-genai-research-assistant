@@ -1,0 +1,354 @@
+"""
+Vector Store Adapter - Multi-backend vector storage abstraction
+
+@module backend/rag/vector-store-adapter
+@source ragflow/rag/utils/ (es_conn.py, minio_conn.py, infinity_conn.py, etc.)
+@reference https://github.com/infiniflow/ragflow
+@template S3-M2-F3
+
+Abstraction layer for vector storage backends (Elasticsearch, FAISS, Milvus,
+ChromaDB, etc.). Provides a unified interface for document indexing and
+similarity search, inspired by RAGFlow's doc_store_conn pattern.
+
+Key patterns:
+1. Protocol-based interface (DocStoreConnection)
+2. Factory pattern for backend selection
+3. Batch upsert with configurable chunk size
+4. Hybrid search support (vector + text)
+5. Index lifecycle management
+"""
+
+from __future__ import annotations
+
+import logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Optional, Sequence
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Types ────────────────────────────────────────────────────────────────────
+
+class DistanceMetric(str, Enum):
+    COSINE = "cosine"
+    EUCLIDEAN = "euclidean"
+    DOT_PRODUCT = "dot_product"
+
+
+@dataclass
+class VectorDocument:
+    """A document with embedding ready for vector storage."""
+    id: str
+    embedding: list[float]
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SearchResult:
+    """A single search result with score."""
+    id: str
+    score: float
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SearchResults:
+    """Collection of search results."""
+    results: list[SearchResult]
+    total: int = 0
+    query_vector: list[float] | None = None
+
+
+# ─── Abstract Base ────────────────────────────────────────────────────────────
+
+class VectorStoreAdapter(ABC):
+    """
+    Abstract vector store interface.
+
+    Implementations should handle:
+    - Index creation and deletion
+    - Document upsert (with embeddings)
+    - Similarity search (vector, text, hybrid)
+    - Document retrieval by ID
+
+    @source ragflow/rag/utils/es_conn.py, infinity_conn.py patterns
+    """
+
+    @abstractmethod
+    def create_index(
+        self,
+        index_name: str,
+        dimension: int,
+        metric: DistanceMetric = DistanceMetric.COSINE,
+        **kwargs: Any,
+    ) -> None:
+        """Create a new vector index."""
+        ...
+
+    @abstractmethod
+    def drop_index(self, index_name: str) -> None:
+        """Drop an existing index."""
+        ...
+
+    @abstractmethod
+    def index_exists(self, index_name: str) -> bool:
+        """Check if an index exists."""
+        ...
+
+    @abstractmethod
+    def upsert(
+        self,
+        index_name: str,
+        documents: Sequence[VectorDocument],
+    ) -> int:
+        """
+        Upsert documents with embeddings.
+
+        Args:
+            index_name: Target index
+            documents: Documents with embeddings
+
+        Returns:
+            Number of documents upserted
+        """
+        ...
+
+    @abstractmethod
+    def search(
+        self,
+        index_name: str,
+        query_vector: list[float],
+        top_k: int = 10,
+        filters: dict[str, Any] | None = None,
+        min_score: float = 0.0,
+    ) -> SearchResults:
+        """
+        Perform vector similarity search.
+
+        Args:
+            index_name: Index to search
+            query_vector: Query embedding
+            top_k: Number of results
+            filters: Metadata filters
+            min_score: Minimum similarity score threshold
+
+        Returns:
+            SearchResults
+        """
+        ...
+
+    @abstractmethod
+    def delete(
+        self,
+        index_name: str,
+        ids: list[str],
+    ) -> int:
+        """Delete documents by IDs. Returns count deleted."""
+        ...
+
+    @abstractmethod
+    def get(
+        self,
+        index_name: str,
+        doc_id: str,
+    ) -> VectorDocument | None:
+        """Get a single document by ID."""
+        ...
+
+    def batch_upsert(
+        self,
+        index_name: str,
+        documents: Sequence[VectorDocument],
+        batch_size: int = 100,
+    ) -> int:
+        """
+        Upsert documents in batches to avoid memory/timeout issues.
+
+        Args:
+            index_name: Target index
+            documents: All documents to upsert
+            batch_size: Documents per batch
+
+        Returns:
+            Total documents upserted
+        """
+        total = 0
+        for i in range(0, len(documents), batch_size):
+            batch = documents[i : i + batch_size]
+            count = self.upsert(index_name, batch)
+            total += count
+            logger.info(
+                f"Batch upsert {i + len(batch)}/{len(documents)} "
+                f"({total} successful)"
+            )
+        return total
+
+
+# ─── In-Memory Implementation (for testing/dev) ──────────────────────────────
+
+class InMemoryVectorStore(VectorStoreAdapter):
+    """
+    Simple in-memory vector store for development and testing.
+    Uses numpy for cosine similarity calculation.
+    """
+
+    def __init__(self) -> None:
+        self._indices: dict[str, dict[str, VectorDocument]] = {}
+        self._config: dict[str, dict[str, Any]] = {}
+
+    def create_index(
+        self,
+        index_name: str,
+        dimension: int,
+        metric: DistanceMetric = DistanceMetric.COSINE,
+        **kwargs: Any,
+    ) -> None:
+        if index_name not in self._indices:
+            self._indices[index_name] = {}
+            self._config[index_name] = {
+                "dimension": dimension,
+                "metric": metric,
+            }
+            logger.info(f"Created index '{index_name}' (dim={dimension})")
+
+    def drop_index(self, index_name: str) -> None:
+        self._indices.pop(index_name, None)
+        self._config.pop(index_name, None)
+        logger.info(f"Dropped index '{index_name}'")
+
+    def index_exists(self, index_name: str) -> bool:
+        return index_name in self._indices
+
+    def upsert(
+        self,
+        index_name: str,
+        documents: Sequence[VectorDocument],
+    ) -> int:
+        if index_name not in self._indices:
+            raise ValueError(f"Index '{index_name}' does not exist")
+
+        for doc in documents:
+            self._indices[index_name][doc.id] = doc
+        return len(documents)
+
+    def search(
+        self,
+        index_name: str,
+        query_vector: list[float],
+        top_k: int = 10,
+        filters: dict[str, Any] | None = None,
+        min_score: float = 0.0,
+    ) -> SearchResults:
+        if index_name not in self._indices:
+            return SearchResults(results=[], total=0)
+
+        import numpy as np
+
+        docs = list(self._indices[index_name].values())
+
+        # Apply metadata filters
+        if filters:
+            docs = [
+                d for d in docs
+                if all(d.metadata.get(k) == v for k, v in filters.items())
+            ]
+
+        if not docs:
+            return SearchResults(results=[], total=0)
+
+        # Compute cosine similarities
+        q_vec = np.array(query_vector)
+        q_norm = np.linalg.norm(q_vec)
+        if q_norm == 0:
+            return SearchResults(results=[], total=0)
+
+        scores = []
+        for doc in docs:
+            d_vec = np.array(doc.embedding)
+            d_norm = np.linalg.norm(d_vec)
+            if d_norm == 0:
+                scores.append(0.0)
+            else:
+                scores.append(float(np.dot(q_vec, d_vec) / (q_norm * d_norm)))
+
+        # Sort by score descending
+        scored_docs = sorted(
+            zip(docs, scores), key=lambda x: x[1], reverse=True
+        )
+
+        # Filter by min_score and limit
+        results = [
+            SearchResult(
+                id=doc.id,
+                score=score,
+                content=doc.content,
+                metadata=doc.metadata,
+            )
+            for doc, score in scored_docs
+            if score >= min_score
+        ][:top_k]
+
+        return SearchResults(
+            results=results,
+            total=len(results),
+            query_vector=query_vector,
+        )
+
+    def delete(self, index_name: str, ids: list[str]) -> int:
+        if index_name not in self._indices:
+            return 0
+        count = 0
+        for doc_id in ids:
+            if doc_id in self._indices[index_name]:
+                del self._indices[index_name][doc_id]
+                count += 1
+        return count
+
+    def get(self, index_name: str, doc_id: str) -> VectorDocument | None:
+        if index_name not in self._indices:
+            return None
+        return self._indices[index_name].get(doc_id)
+
+
+# ─── Factory ──────────────────────────────────────────────────────────────────
+
+_BACKENDS: dict[str, type[VectorStoreAdapter]] = {
+    "memory": InMemoryVectorStore,
+}
+
+
+def register_backend(name: str, cls: type[VectorStoreAdapter]) -> None:
+    """Register a vector store backend."""
+    _BACKENDS[name] = cls
+
+
+def create_vector_store(
+    backend: str = "memory",
+    **kwargs: Any,
+) -> VectorStoreAdapter:
+    """
+    Factory function to create a vector store adapter.
+
+    Supported backends (register more with register_backend()):
+    - "memory": In-memory store (dev/testing)
+    - "chromadb": ChromaDB (add your implementation)
+    - "elasticsearch": Elasticsearch (add your implementation)
+    - "faiss": FAISS (add your implementation)
+    - "milvus": Milvus (add your implementation)
+
+    Usage:
+        store = create_vector_store("memory")
+        store.create_index("my_index", dimension=1536)
+        store.upsert("my_index", [VectorDocument(...)])
+        results = store.search("my_index", query_vector=[...])
+    """
+    if backend not in _BACKENDS:
+        available = ", ".join(_BACKENDS.keys())
+        raise ValueError(
+            f"Unknown backend '{backend}'. Available: {available}"
+        )
+    return _BACKENDS[backend](**kwargs)

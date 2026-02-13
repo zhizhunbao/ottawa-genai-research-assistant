@@ -1,0 +1,342 @@
+"""
+SQLite Repository - Dual-index document persistence layer
+
+@module backend/rag/sqlite-repository
+@source sqlite-rag/src/sqlite_rag/repository.py Repository class (147L)
+@reference https://github.com/plandex-ai/sqlite-rag
+@template S3-M3-F3
+
+SQLite storage layer for documents, chunks, and sentences.
+Provides dual-index persistence:
+1. chunks table + embedding column for vector search
+2. chunks_fts (FTS5 virtual table) for full-text search
+3. sentences table for sub-chunk highlighting
+
+Key patterns:
+- Cascading delete (documents → chunks → FTS → sentences)
+- UUID-based document IDs
+- Content hash deduplication
+- JSON metadata storage
+- Transaction-safe operations
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import sqlite3
+from dataclasses import dataclass, field
+from typing import Any, Optional
+from uuid import uuid4
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Data Models ──────────────────────────────────────────────────────────────
+
+@dataclass
+class StoredDocument:
+    """A document stored in the repository."""
+    id: str
+    content: str
+    uri: str = ""
+    content_hash: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: str = ""
+    updated_at: str = ""
+
+    @staticmethod
+    def compute_hash(content: str) -> str:
+        """Compute SHA-256 hash of document content."""
+        return hashlib.sha256(content.encode()).hexdigest()
+
+
+@dataclass
+class StoredChunk:
+    """A chunk stored in the repository."""
+    id: int = 0
+    document_id: str = ""
+    content: str = ""
+    embedding: bytes = b""
+
+
+@dataclass
+class StoredSentence:
+    """A sentence stored for sub-chunk highlighting."""
+    id: str = ""
+    chunk_id: int = 0
+    content: str = ""
+    embedding: bytes = b""
+    start_offset: int = 0
+    end_offset: int = 0
+
+
+# ─── Schema ───────────────────────────────────────────────────────────────────
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS documents (
+    id TEXT PRIMARY KEY,
+    hash TEXT NOT NULL,
+    content TEXT NOT NULL,
+    uri TEXT DEFAULT '',
+    metadata TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_documents_hash ON documents(hash);
+CREATE INDEX IF NOT EXISTS idx_documents_uri ON documents(uri);
+
+CREATE TABLE IF NOT EXISTS chunks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    embedding BLOB,
+    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
+    content,
+    content='chunks',
+    content_rowid='id'
+);
+
+CREATE TABLE IF NOT EXISTS sentences (
+    id TEXT PRIMARY KEY,
+    chunk_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    embedding BLOB,
+    start_offset INTEGER DEFAULT 0,
+    end_offset INTEGER DEFAULT 0,
+    FOREIGN KEY (chunk_id) REFERENCES chunks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sentences_chunk ON sentences(chunk_id);
+"""
+
+
+# ─── Repository ───────────────────────────────────────────────────────────────
+# @source sqlite-rag/src/sqlite_rag/repository.py Repository class (9-147L)
+
+class SQLiteRepository:
+    """
+    SQLite persistence layer for documents, chunks, and sentences.
+
+    @source sqlite-rag/src/sqlite_rag/repository.py Repository class (147 lines)
+
+    Manages the lifecycle of documents in a dual-indexed SQLite database:
+    - Regular table for vector search (embedding BLOB column)
+    - FTS5 virtual table for full-text search
+
+    Usage:
+        repo = SQLiteRepository("research.db")
+        repo.initialize()
+        doc_id = repo.add_document(content="...", uri="paper.pdf")
+        docs = repo.list_documents()
+        repo.remove_document(doc_id)
+    """
+
+    def __init__(self, db_path: str = ":memory:"):
+        self.db_path = db_path
+        self._conn: sqlite3.Connection | None = None
+
+    def initialize(self) -> None:
+        """Open connection and create schema."""
+        self._conn = sqlite3.connect(self.db_path)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA foreign_keys = ON")
+        self._conn.execute("PRAGMA journal_mode = WAL")
+        self._conn.executescript(SCHEMA_SQL)
+        self._conn.commit()
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        if self._conn is None:
+            raise RuntimeError("Repository not initialized. Call initialize() first.")
+        return self._conn
+
+    # ── Document CRUD ────────────────────────────────────────────────────────
+
+    def add_document(
+        self,
+        content: str,
+        uri: str = "",
+        metadata: dict[str, Any] | None = None,
+        chunks: list[tuple[str, bytes]] | None = None,
+        sentences: list[tuple[int, str, bytes, int, int]] | None = None,
+    ) -> str:
+        """
+        Add a document with optional pre-processed chunks and sentences.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.add_document (14-58)
+
+        Args:
+            content: Full document text
+            uri: Document URI/path
+            metadata: Document metadata
+            chunks: List of (content, embedding_bytes) tuples
+            sentences: List of (chunk_idx, content, embedding_bytes, start, end) tuples
+
+        Returns:
+            Document ID
+        """
+        cursor = self.conn.cursor()
+        doc_id = str(uuid4())
+        content_hash = StoredDocument.compute_hash(content)
+
+        cursor.execute(
+            """INSERT INTO documents (id, hash, content, uri, metadata, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)""",
+            (doc_id, content_hash, content, uri, json.dumps(metadata or {})),
+        )
+
+        # Insert chunks
+        chunk_id_map: dict[int, int] = {}  # chunk_idx → rowid
+        if chunks:
+            for idx, (chunk_content, embedding) in enumerate(chunks):
+                cursor.execute(
+                    "INSERT INTO chunks (document_id, content, embedding) VALUES (?, ?, ?)",
+                    (doc_id, chunk_content, embedding),
+                )
+                chunk_id_map[idx] = cursor.lastrowid
+
+                # FTS index
+                cursor.execute(
+                    "INSERT INTO chunks_fts (rowid, content) VALUES (?, ?)",
+                    (cursor.lastrowid, chunk_content),
+                )
+
+        # Insert sentences
+        if sentences:
+            for chunk_idx, sent_content, sent_embedding, start, end in sentences:
+                db_chunk_id = chunk_id_map.get(chunk_idx, 0)
+                cursor.execute(
+                    """INSERT INTO sentences (id, chunk_id, content, embedding, start_offset, end_offset)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (str(uuid4()), db_chunk_id, sent_content, sent_embedding, start, end),
+                )
+
+        self.conn.commit()
+        logger.info(f"Added document '{uri}' (id={doc_id}, {len(chunks or [])} chunks)")
+        return doc_id
+
+    def list_documents(self) -> list[StoredDocument]:
+        """
+        List all documents.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.list_documents (60-78)
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, content, uri, metadata, created_at FROM documents")
+        return [
+            StoredDocument(
+                id=row["id"],
+                content=row["content"],
+                uri=row["uri"],
+                metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+                created_at=row["created_at"] or "",
+            )
+            for row in cursor.fetchall()
+        ]
+
+    def find_document(self, identifier: str) -> StoredDocument | None:
+        """
+        Find document by ID or URI.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.find_document_by_id_or_uri (80-98)
+        """
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT id, content, uri, metadata, created_at FROM documents WHERE id = ? OR uri = ?",
+            (identifier, identifier),
+        )
+        row = cursor.fetchone()
+        if row:
+            return StoredDocument(
+                id=row["id"],
+                content=row["content"],
+                uri=row["uri"],
+                metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+                created_at=row["created_at"] or "",
+            )
+        return None
+
+    def document_exists_by_hash(self, content: str) -> bool:
+        """
+        Check if a document with the same content hash already exists.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.document_exists_by_hash (100-104)
+        """
+        content_hash = StoredDocument.compute_hash(content)
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT 1 FROM documents WHERE hash = ?", (content_hash,))
+        return cursor.fetchone() is not None
+
+    def remove_document(self, document_id: str) -> bool:
+        """
+        Remove document and all related chunks/FTS/sentences.
+
+        @source sqlite-rag/src/sqlite_rag/repository.py Repository.remove_document (106-146)
+        """
+        cursor = self.conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM documents WHERE id = ?", (document_id,))
+        if cursor.fetchone()[0] == 0:
+            return False
+
+        # Delete sentences (via chunk foreign key)
+        cursor.execute(
+            """DELETE FROM sentences
+               WHERE chunk_id IN (SELECT id FROM chunks WHERE document_id = ?)""",
+            (document_id,),
+        )
+
+        # Delete FTS entries
+        cursor.execute(
+            """DELETE FROM chunks_fts
+               WHERE rowid IN (SELECT id FROM chunks WHERE document_id = ?)""",
+            (document_id,),
+        )
+
+        # Delete chunks
+        cursor.execute("DELETE FROM chunks WHERE document_id = ?", (document_id,))
+
+        # Delete document
+        cursor.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+
+        self.conn.commit()
+        logger.info(f"Removed document {document_id}")
+        return True
+
+    def get_document_count(self) -> int:
+        """Get total document count."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM documents")
+        return cursor.fetchone()[0]
+
+    def get_chunk_count(self) -> int:
+        """Get total chunk count across all documents."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM chunks")
+        return cursor.fetchone()[0]
+
+    # ── Lifecycle ────────────────────────────────────────────────────────────
+
+    def close(self) -> None:
+        """Close the database connection."""
+        if self._conn:
+            self._conn.close()
+            self._conn = None
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        self.initialize()
+        return self
+
+    def __exit__(self, *args):
+        self.close()
