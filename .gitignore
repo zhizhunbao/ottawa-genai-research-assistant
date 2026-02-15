@@ -112,6 +112,9 @@ backend/uploads/*
 secrets.json
 
 
-.github/references/
+# Reference projects are large, only keep the documentation
+.github/references/*
+!.github/references/README.md
+!.github/references/ARCHITECTURE_ANALYSIS.md
 .cursorignore
 create_migration_package.py
