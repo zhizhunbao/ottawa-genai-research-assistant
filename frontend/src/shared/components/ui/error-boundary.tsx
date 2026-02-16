@@ -2,7 +2,7 @@
  * ErrorBoundary - Catches JavaScript errors in child components to prevent global crash
  *
  * @module shared/components/ui
- * @template C2 frontend/shared/components/ErrorBoundary.tsx
+ * @template none
  * @reference none
  */
 import { Component, ErrorInfo, ReactNode } from 'react'

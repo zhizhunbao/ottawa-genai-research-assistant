@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Separator - Visual divider between content sections
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/separator
+ */
+import * as React from "react"
 import * as SeparatorPrimitive from "@radix-ui/react-separator"
 
 import { cn } from "@/lib/utils"

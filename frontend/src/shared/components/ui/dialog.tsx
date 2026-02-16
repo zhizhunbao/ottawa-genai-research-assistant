@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Dialog - Modal overlay for focused user interactions
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/dialog
+ */
+import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 

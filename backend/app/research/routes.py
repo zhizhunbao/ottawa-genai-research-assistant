@@ -100,3 +100,45 @@ async def chat_stream(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.get("/models")
+async def list_models() -> ApiResponse:
+    """List available LLM models (cloud + local).
+
+    Returns the configured Azure OpenAI deployment
+    and local models from the Ollama server (if running).
+    """
+    from app.core.config import settings
+    from app.ollama.service import OllamaService
+
+    models = []
+
+    # Cloud model — only the configured deployment
+    if settings.azure_openai_endpoint and settings.azure_openai_api_key:
+        deployment = settings.azure_openai_chat_deployment
+        models.append({
+            "id": deployment,
+            "name": deployment,
+            "provider": "azure",
+            "available": True,
+        })
+
+    # Local models (Ollama) — dynamically queried
+    try:
+        ollama = OllamaService(base_url=settings.ollama_base_url)
+        if await ollama.is_available():
+            ollama_models = await ollama.list_models()
+            for m in ollama_models:
+                models.append({
+                    "id": m.get("name", m.get("model", "")),
+                    "name": m.get("name", m.get("model", "")),
+                    "provider": "ollama",
+                    "available": True,
+                    "size": m.get("size"),
+                })
+    except Exception:
+        pass  # Ollama not running — skip silently
+
+    return ApiResponse.ok(models)
+

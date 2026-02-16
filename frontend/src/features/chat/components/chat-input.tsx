@@ -2,7 +2,7 @@
  * ChatInput - Rich chat input with file upload, deep search toggle, and stop generation
  *
  * @module features/chat
- * @template none
+ * @template .agent/templates/frontend/features/chat/chat-input.tsx.template
  * @reference none
  */
 import React, { useState, useRef, useEffect } from 'react';
@@ -57,14 +57,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, onStop 
                 </div>
             )}
 
-            <div className="relative bg-background border border-border rounded-2xl shadow-lg transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50">
+            <div className="relative bg-background border border-border rounded-2xl shadow-lg transition-all focus-within:ring-0 focus-within:outline-none">
                 <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask the AI research assistant anything..."
-                    className="w-full bg-transparent border-0 focus:ring-0 resize-none py-4 px-12 text-sm leading-relaxed min-h-[56px] max-h-[200px]"
+                    className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none resize-none py-4 px-12 text-sm leading-relaxed min-h-[56px] max-h-[200px]"
                     rows={1}
                 />
 

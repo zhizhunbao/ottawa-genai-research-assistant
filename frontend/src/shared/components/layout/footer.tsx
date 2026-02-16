@@ -1,98 +1,133 @@
-﻿/**
- * Footer - Global footer with copyright, branding, and resource links
+/**
+ * Footer - Multi-column footer with logo, link groups, and copyright
  *
  * @module shared/components/layout
- * @template C1 frontend/shared/components/layout/Footer.tsx
- * @reference none
+ * @source shadcn-landing-page/src/components/Footer.tsx
+ * @reference https://github.com/leoMirandaa/shadcn-landing-page
  */
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Mail, Globe, ExternalLink, Shield, Accessibility, Info } from 'lucide-react'
+import { Mail, Globe, ExternalLink, Shield, Accessibility, FileText } from 'lucide-react'
+
+interface FooterLinkGroup {
+  title: string
+  links: { label: string; href: string; external?: boolean; icon?: React.ReactNode }[]
+}
 
 export function Footer() {
   const { t } = useTranslation('common')
   const currentYear = new Date().getFullYear()
 
+  const footerGroups: FooterLinkGroup[] = [
+    {
+      title: t('footer.resources', 'Resources'),
+      links: [
+        { label: 'Ottawa.ca', href: 'https://ottawa.ca', external: true },
+        { label: t('footer.openData', 'Open Data Portal'), href: 'https://open.ottawa.ca', external: true },
+        { label: t('footer.economicDev', 'Economic Development'), href: 'https://ottawa.ca/economic-development', external: true },
+      ],
+    },
+    {
+      title: t('footer.product', 'Product'),
+      links: [
+        { label: t('nav.features', 'Features'), href: '#features' },
+        { label: t('nav.howItWorks', 'How It Works'), href: '#how-it-works' },
+        { label: t('nav.chat', 'Chat'), href: '/chat' },
+      ],
+    },
+    {
+      title: t('footer.compliance', 'Compliance'),
+      links: [
+        { label: t('footer.privacy', 'Privacy Policy'), href: '#', icon: <Shield size={14} /> },
+        { label: t('footer.accessibility', 'Accessibility'), href: '#', icon: <Accessibility size={14} /> },
+        { label: t('footer.terms', 'Terms of Use'), href: '#', icon: <FileText size={14} /> },
+      ],
+    },
+  ]
+
   return (
-    <footer className="bg-[#f8fafc] border-t border-[#e2e8f0] pt-16 pb-8 px-6 font-sans">
-      <div className="max-w-[1400px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          {/* Brand & Mission - 与 Header 保持一致 */}
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-linear-to-br from-[#004890] to-[#0066cc] rounded-lg flex items-center justify-center text-xl shadow-[0_4px_12px_rgba(0,72,144,0.2)]">
+    <footer id="footer" className="bg-muted/30 border-t border-border">
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-x-12 gap-y-8">
+          {/* Brand & Mission */}
+          <div className="col-span-2 xl:col-span-2">
+            <Link to="/" className="flex items-center gap-2.5 mb-4">
+              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-base shadow-sm">
                 🍁
               </div>
-              <span className="font-bold text-[1.25rem] text-[#004890] tracking-tight">
+              <span className="font-bold text-lg text-foreground tracking-tight">
                 {t('app.name')}
               </span>
-            </div>
-            <p className="text-[#64748b] max-w-md leading-relaxed text-[1rem] font-medium mb-8">
-              {t('footer.mission', "An AI-powered research assistant helping the Economic Development team quickly gain insights and generate reports.")}
+            </Link>
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mb-6">
+              {t('footer.mission', 'An AI-powered research assistant helping the Economic Development team quickly gain insights and generate reports.')}
             </p>
-            <div className="flex gap-4">
-              <a href="mailto:info@ottawa.ca" className="w-10 h-10 rounded-full bg-white border border-[#e2e8f0] flex items-center justify-center text-[#64748b] hover:text-[#004890] hover:border-[#004890] transition-all shadow-sm">
-                <Mail size={18} />
+            <div className="flex gap-3">
+              <a
+                href="mailto:info@ottawa.ca"
+                className="w-9 h-9 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                aria-label="Email"
+              >
+                <Mail size={16} />
               </a>
-              <a href="https://ottawa.ca" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white border border-[#e2e8f0] flex items-center justify-center text-[#64748b] hover:text-[#004890] hover:border-[#004890] transition-all shadow-sm">
-                <Globe size={18} />
+              <a
+                href="https://ottawa.ca"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                aria-label="Website"
+              >
+                <Globe size={16} />
               </a>
             </div>
           </div>
 
-          {/* Resources - 复刻常用链接 */}
-          <div>
-            <h4 className="font-bold text-[#1e293b] mb-6 tracking-wider text-xs">
-              {t('footer.resources')}
-            </h4>
-            <ul className="space-y-4 text-[#64748b] text-[0.875rem] font-semibold">
-              <li>
-                <a href="https://ottawa.ca" target="_blank" rel="noopener noreferrer" className="hover:text-[#004890] transition-colors flex items-center gap-2 group">
-                  Ottawa.ca <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-[#004890] transition-colors flex items-center gap-2 group">
-                  {t('footer.openData', 'Open Data Portal')} <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-[#004890] transition-colors flex items-center gap-2 group">
-                  {t('footer.economicDev', 'Economic Development')} <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Compliance & Contact */}
-          <div>
-            <h4 className="font-bold text-[#1e293b] mb-6 tracking-wider text-xs">
-              {t('footer.support')}
-            </h4>
-            <ul className="space-y-4 text-[#64748b] text-[0.875rem] font-semibold">
-              <li className="flex items-center gap-2">
-                <Shield size={16} className="text-[#0066cc]" />
-                <a href="#" className="hover:text-[#004890] transition-colors">{t('footer.privacy', 'Privacy Policy')}</a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Accessibility size={16} className="text-[#0066cc]" />
-                <a href="#" className="hover:text-[#004890] transition-colors">{t('footer.accessibility', 'Accessibility')}</a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Info size={16} className="text-[#0066cc]" />
-                <a href="#" className="hover:text-[#004890] transition-colors">{t('footer.terms', 'Terms of Use')}</a>
-              </li>
-            </ul>
-          </div>
+          {/* Link Groups */}
+          {footerGroups.map((group) => (
+            <div key={group.title} className="flex flex-col gap-2">
+              <h3 className="font-semibold text-sm text-foreground mb-2">{group.title}</h3>
+              {group.links.map((link) => (
+                <div key={link.label}>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 group"
+                    >
+                      {link.icon}
+                      {link.label}
+                      <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  ) : link.href.startsWith('#') ? (
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+                    >
+                      {link.icon}
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.href}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+                    >
+                      {link.icon}
+                      {link.label}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Bottom Bar - 纯净法律声明 */}
-        <div className="pt-8 border-t border-[#e2e8f0] flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-[#94a3b8] text-[0.8125rem] font-bold tracking-widest">
-            © {currentYear} {t('footer.organization')}
-          </p>
-          <div className="flex gap-8 text-[0.8125rem] font-black text-[#94a3b8]">
-            <span className="tracking-widest">{t('footer.allRights')}</span>
-          </div>
+      {/* Bottom Bar */}
+      <div className="border-t border-border">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+          <p>&copy; {currentYear} {t('footer.organization', 'City of Ottawa')}</p>
+          <p className="text-xs">{t('footer.allRights', 'All rights reserved.')}</p>
         </div>
       </div>
     </footer>

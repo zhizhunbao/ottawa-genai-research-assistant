@@ -294,6 +294,9 @@ chart_extractor = ChartDataExtractor()
 class ResearchService:
     """研究服务类"""
 
+    # Known local model prefixes (Ollama format uses 'name:tag')
+    LOCAL_MODEL_PREFIXES = ('llama', 'mistral', 'deepseek', 'qwen', 'phi', 'gemma', 'codellama', 'vicuna', 'neural')
+
     def __init__(
         self,
         search_service: Optional["AzureSearchService"] = None,
@@ -308,11 +311,31 @@ class ResearchService:
         """
         self._search_service = search_service
         self._openai_service = openai_service
+        self._ollama_service = None  # Lazy-initialized
         self._validate_config()
 
     def _validate_config(self) -> None:
         """验证必要的配置"""
         pass
+
+    def _is_local_model(self, model: str | None) -> bool:
+        """Check if the model ID refers to a local Ollama model."""
+        if not model:
+            return False
+        model_lower = model.lower()
+        # Ollama models use 'name:tag' format (e.g. llama3.1:8b)
+        if ':' in model_lower:
+            return True
+        # Also match known prefixes without tag
+        return any(model_lower.startswith(prefix) for prefix in self.LOCAL_MODEL_PREFIXES)
+
+    def _get_ollama_service(self):
+        """Lazy-initialize Ollama service."""
+        if self._ollama_service is None:
+            from app.core.config import settings
+            from app.ollama.service import OllamaService
+            self._ollama_service = OllamaService(base_url=settings.ollama_base_url)
+        return self._ollama_service
 
     def preprocess_query(self, query: str) -> str:
         """查询预处理: 清理空白、截断过长查询"""
@@ -505,30 +528,96 @@ class ResearchService:
 
         # Step 2: Stream LLM response
         full_content = ""
-        if self._openai_service:
-            structured_sources = [
-                {
-                    "title": s.title,
-                    "content": s.content,
-                    "page_number": (s.metadata or {}).get("page_number", "N/A"),
-                    "score": s.score,
-                    "source": s.source or "",
-                }
-                for s in sources[:5]
-            ]
-            chat_history = [
-                {"role": msg.role.value, "content": msg.content}
-                for msg in request.messages[:-1]
-            ] or None
+        model_id = request.model  # May be None (use server default)
+        usage_info = None  # Will be populated from LLM response
 
-            async for token in self._openai_service.rag_chat_stream(
-                query=query_text or request.messages[-1].content,
-                sources=structured_sources,
-                chat_history=chat_history,
+        if self._is_local_model(model_id):
+            # ── Ollama (local model) ──
+            ollama = self._get_ollama_service()
+            system_prompt = None
+            if sources:
+                from app.azure.prompts import build_system_messages
+                structured_sources = [
+                    {
+                        "title": s.title,
+                        "content": s.content,
+                        "page_number": (s.metadata or {}).get("page_number", "N/A"),
+                        "score": s.score,
+                        "source": s.source or "",
+                    }
+                    for s in sources[:5]
+                ]
+                msgs = build_system_messages(
+                    query=query_text or request.messages[-1].content,
+                    sources=structured_sources,
+                    chat_history=[
+                        {"role": msg.role.value, "content": msg.content}
+                        for msg in request.messages[:-1]
+                    ] or None,
+                )
+                system_prompt = msgs[0]["content"] if msgs else None
+                chat_messages = msgs[1:]  # Without system
+            else:
+                chat_messages = [
+                    {"role": msg.role.value, "content": msg.content}
+                    for msg in request.messages
+                ]
+
+            async for token in ollama.chat_completion_stream(
+                messages=chat_messages,
+                model=model_id,
                 temperature=request.temperature,
+                system_prompt=system_prompt,
             ):
                 full_content += token
                 yield {"type": "text", "text": token}
+
+            # Ollama doesn't return usage — estimate from content
+            est_prompt = sum(len(m.content) // 4 for m in request.messages)
+            est_completion = len(full_content) // 4
+            usage_info = {
+                "prompt_tokens": est_prompt,
+                "completion_tokens": est_completion,
+                "total_tokens": est_prompt + est_completion,
+            }
+
+        elif self._openai_service:
+            # ── Azure OpenAI ──
+            # Optionally override the deployment if a specific model was requested
+            original_deployment = self._openai_service.chat_deployment
+            if model_id and not self._is_local_model(model_id):
+                self._openai_service.chat_deployment = model_id
+
+            try:
+                structured_sources = [
+                    {
+                        "title": s.title,
+                        "content": s.content,
+                        "page_number": (s.metadata or {}).get("page_number", "N/A"),
+                        "score": s.score,
+                        "source": s.source or "",
+                    }
+                    for s in sources[:5]
+                ]
+                chat_history = [
+                    {"role": msg.role.value, "content": msg.content}
+                    for msg in request.messages[:-1]
+                ] or None
+
+                async for item in self._openai_service.rag_chat_stream(
+                    query=query_text or request.messages[-1].content,
+                    sources=structured_sources,
+                    chat_history=chat_history,
+                    temperature=request.temperature,
+                ):
+                    if isinstance(item, dict) and "usage" in item:
+                        usage_info = item["usage"]
+                    elif isinstance(item, str):
+                        full_content += item
+                        yield {"type": "text", "text": item}
+            finally:
+                # Restore original deployment
+                self._openai_service.chat_deployment = original_deployment
         else:
             # Mock streaming for development
             logger.warning("Azure OpenAI not configured, using mock stream")
@@ -544,16 +633,34 @@ class ResearchService:
                 yield {"type": "text", "text": char}
                 await asyncio.sleep(0.02)  # Simulate typing
 
-        # Step 3: Emit confidence
+            # Mock usage estimate
+            est_prompt = sum(len(m.content) // 4 for m in request.messages)
+            est_completion = len(full_content) // 4
+            usage_info = {
+                "prompt_tokens": est_prompt,
+                "completion_tokens": est_completion,
+                "total_tokens": est_prompt + est_completion,
+            }
+
+        # Step 3: Emit usage with estimated cost
+        if usage_info:
+            effective_model = model_id or self._openai_service.chat_deployment if self._openai_service else "unknown"
+            usage_info["estimated_cost"] = self._estimate_cost(
+                effective_model, usage_info.get("prompt_tokens", 0), usage_info.get("completion_tokens", 0)
+            )
+            usage_info["model"] = effective_model
+            yield {"type": "usage", "payload": usage_info}
+
+        # Step 4: Emit confidence
         confidence = self._compute_confidence(sources)
         yield {"type": "confidence", "payload": confidence}
 
-        # Step 4: Emit chart data (optional)
+        # Step 5: Emit chart data (optional)
         chart_data = await self._extract_chart_data(sources, query_text)
         if chart_data:
             yield {"type": "chart", "payload": chart_data.model_dump()}
 
-        # Step 5: Done
+        # Step 6: Done
         yield {"type": "done"}
 
     async def _extract_chart_data(
@@ -582,6 +689,47 @@ class ResearchService:
         except Exception as e:
             logger.warning(f"Failed to extract chart data: {e}")
             return None
+
+    # ── Per-1K-token pricing (USD) ────────────────────────────────────
+    MODEL_PRICING: dict[str, tuple[float, float]] = {
+        # (input_per_1k, output_per_1k)
+        "gpt-4o": (0.0025, 0.01),
+        "gpt-4o-mini": (0.00015, 0.0006),
+        "gpt-4-turbo": (0.01, 0.03),
+        "gpt-4": (0.03, 0.06),
+        "gpt-35-turbo": (0.0005, 0.0015),
+        "gpt-3.5-turbo": (0.0005, 0.0015),
+    }
+
+    def _estimate_cost(
+        self, model: str, prompt_tokens: int, completion_tokens: int
+    ) -> float:
+        """Estimate USD cost based on model and token counts.
+
+        Returns cost in USD (e.g. 0.0012 = $0.0012).
+        Returns 0.0 for local/unknown models.
+        """
+        model_lower = model.lower() if model else ""
+
+        # Local models are free
+        if self._is_local_model(model):
+            return 0.0
+
+        # Find matching pricing
+        for key, (input_price, output_price) in self.MODEL_PRICING.items():
+            if key in model_lower:
+                cost = (prompt_tokens / 1000 * input_price) + (
+                    completion_tokens / 1000 * output_price
+                )
+                return round(cost, 6)
+
+        # Unknown model — use gpt-4o-mini as default
+        default_in, default_out = self.MODEL_PRICING["gpt-4o-mini"]
+        return round(
+            (prompt_tokens / 1000 * default_in)
+            + (completion_tokens / 1000 * default_out),
+            6,
+        )
 
     def _compute_confidence(self, sources: list[SearchResult]) -> float:
         """根据检索到的 sources 的平均分计算置信度

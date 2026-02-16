@@ -84,7 +84,7 @@ NO_RESULTS_PROMPT = PromptTemplate(
 # 图表提取 prompt (US-301)
 CHART_EXTRACTION_PROMPT = PromptTemplate(
     name="chart_extraction",
-    version="1.0",
+    version="1.1",
     template="""You are a data analyst specialized in economic reports. 
 Extract numeric data from the provided text to create a structured chart JSON that helps answer the user's query.
 
@@ -103,7 +103,7 @@ Instructions:
    - "title": Concise chart title
    - "x_key": Name of the primary category key (e.g., "period", "category")
    - "y_keys": List of numeric data keys (e.g., ["value", "growth"])
-   - "data": List of objects (e.g. [{"period": "2023 Q1", "value": 12.5}, ...])
+   - "data": List of objects (e.g. [{{"period": "2023 Q1", "value": 12.5}}, ...])
 
 Output ONLY the JSON or 'null'. Do not include markdown formatting or extra text.""",
 )

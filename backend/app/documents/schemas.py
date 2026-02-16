@@ -63,3 +63,55 @@ class DocumentListResponse(BaseModel):
     """文档列表响应"""
     items: list[DocumentResponse]
     total: int
+
+
+# ============================================================
+# Folder Schemas (Phase 2: File Explorer)
+# ============================================================
+
+class FolderCreate(BaseModel):
+    """创建文件夹请求"""
+    name: str = Field(..., min_length=1, max_length=255, description="Folder name")
+    parent_id: str | None = Field(None, description="Parent folder ID (null = root)")
+
+
+class FolderResponse(BaseModel):
+    """文件夹响应"""
+    id: str
+    name: str
+    parent_id: str | None = None
+    children_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FileNodeResponse(BaseModel):
+    """统一的文件树节点响应 (可以是文件夹或文件)"""
+    id: str
+    name: str
+    type: str  # "folder" or "uploaded_file"
+    parent_id: str | None = None
+    status: str | None = None  # only for files
+    file_name: str | None = None  # only for files
+    children_count: int = 0  # only for folders
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FolderContentsResponse(BaseModel):
+    """文件夹内容响应"""
+    folder: FolderResponse | None = None  # null = root
+    items: list[FileNodeResponse]
+    total: int
+
+
+class MoveNodeRequest(BaseModel):
+    """移动节点请求"""
+    target_parent_id: str | None = Field(None, description="Target folder ID (null = root)")
+

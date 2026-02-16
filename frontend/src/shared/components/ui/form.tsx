@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Form - Form field wrapper integrating react-hook-form with validation
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/form
+ */
+import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
 import {

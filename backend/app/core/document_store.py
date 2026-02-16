@@ -41,6 +41,7 @@ class DocumentStore:
         )
         self.db.add(new_doc)
         await self.db.flush()  # 获取生成的 ID
+        await self.db.commit()
         return new_doc.to_dict()
 
     async def get_by_id(self, doc_id: str) -> dict[str, Any] | None:
@@ -74,6 +75,7 @@ class DocumentStore:
         if doc:
             doc.data = data
             await self.db.flush()
+            await self.db.commit()
             return doc.to_dict()
         return None
 
@@ -81,6 +83,7 @@ class DocumentStore:
         """物理删除文档"""
         stmt = delete(UniversalDocument).where(UniversalDocument.id == doc_id)
         result = await self.db.execute(stmt)
+        await self.db.commit()
         return result.rowcount > 0
 
     async def update_status(self, doc_id: str, new_status: str) -> bool:
@@ -92,5 +95,6 @@ class DocumentStore:
         if doc:
             doc.status = new_status
             await self.db.flush()
+            await self.db.commit()
             return True
         return False

@@ -20,7 +20,9 @@ from app.chat.routes import router as chat_router
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.exceptions import AppError
+from app.documents.folder_routes import router as folders_router
 from app.documents.routes import router as documents_router
+from app.documents.sync_routes import router as sync_router
 from app.evaluation.routes import router as evaluation_router
 from app.health.routes import router as health_router
 from app.research.routes import router as research_router
@@ -61,9 +63,11 @@ app.include_router(users_router)
 app.include_router(research_router)
 app.include_router(analysis_router)
 app.include_router(documents_router)
+app.include_router(folders_router)
 app.include_router(health_router)
 app.include_router(chat_router)
 app.include_router(evaluation_router)
+app.include_router(sync_router)
 
 
 # 全局异常处理器

@@ -1,98 +1,64 @@
 /**
- * Hero Section
+ * Hero - Landing page hero section with dual-column layout (text + cards)
  *
- * Landing page hero with headline, description, and CTA buttons.
- *
- * @source taxonomy (shadcn official)
- * @router Adapt Link component for your router
- * @i18n Replace all text content with t() calls
+ * @source shadcn-landing-page/src/components/Hero.tsx
+ * @reference https://github.com/leoMirandaa/shadcn-landing-page
+ * @requires shadcn/ui button
+ * @requires ./hero-cards (optional side content)
+ * @i18n Replace text with t() calls
  *
  * @example
- * <HeroSection
- *   badge="New Release"
- *   headline="Build your next great idea"
- *   description="A modern platform for building amazing products."
- *   primaryCta={{ label: 'Get Started', href: '/register' }}
- *   secondaryCta={{ label: 'Learn More', href: '/docs' }}
- * />
+ * <Hero />
  */
-import { Link } from 'react-router-dom' // Change to your router
-import { cn } from '{{alias}}/lib/utils'
-import { buttonVariants } from '{{alias}}/shared/components/ui/button'
+import { Button, buttonVariants } from "{{ALIAS}}/components/ui/button";
+import { HeroCards } from "./hero-cards";
 
-interface HeroSectionProps {
-  badge?: string
-  badgeHref?: string
-  headline: string
-  description: string
-  primaryCta: {
-    label: string
-    href: string
-  }
-  secondaryCta?: {
-    label: string
-    href: string
-    external?: boolean
-  }
-  className?: string
-}
-
-export function HeroSection({
-  badge,
-  badgeHref = '#',
-  headline,
-  description,
-  primaryCta,
-  secondaryCta,
-  className,
-}: HeroSectionProps) {
+export const Hero = () => {
   return (
-    <section className={cn('space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32', className)}>
-      <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
-        {badge && (
-          <Link
-            to={badgeHref}
-            className="rounded-2xl bg-muted px-4 py-1.5 text-sm font-medium"
-          >
-            {badge}
-          </Link>
-        )}
+    <section className="container grid lg:grid-cols-2 place-items-center py-20 md:py-32 gap-10">
+      <div className="text-center lg:text-start space-y-6">
+        <main className="text-5xl md:text-6xl font-bold">
+          <h1 className="inline">
+            <span className="inline bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
+              {{HERO_HIGHLIGHT_1}}
+            </span>{" "}
+            {{HERO_TITLE_1}}
+          </h1>{" "}
+          {{HERO_CONNECTOR}}{" "}
+          <h2 className="inline">
+            <span className="inline bg-gradient-to-r from-[#61DAFB] via-[#1fc0f1] to-[#03a3d7] text-transparent bg-clip-text">
+              {{HERO_HIGHLIGHT_2}}
+            </span>{" "}
+            {{HERO_TITLE_2}}
+          </h2>
+        </main>
 
-        <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl lg:text-7xl">
-          {headline}
-        </h1>
-
-        <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
-          {description}
+        <p className="text-xl text-muted-foreground md:w-10/12 mx-auto lg:mx-0">
+          {{HERO_DESCRIPTION}}
         </p>
 
-        <div className="space-x-4">
-          <Link to={primaryCta.href} className={cn(buttonVariants({ size: 'lg' }))}>
-            {primaryCta.label}
-          </Link>
+        <div className="space-y-4 md:space-y-0 md:space-x-4">
+          <Button className="w-full md:w-1/3">Get Started</Button>
 
-          {secondaryCta && (
-            secondaryCta.external ? (
-              <a
-                href={secondaryCta.href}
-                target="_blank"
-                rel="noreferrer"
-                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
-              >
-                {secondaryCta.label}
-              </a>
-            ) : (
-              <Link
-                to={secondaryCta.href}
-                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
-              >
-                {secondaryCta.label}
-              </Link>
-            )
-          )}
+          <a
+            rel="noreferrer noopener"
+            href="#features"
+            className={`w-full md:w-1/3 ${buttonVariants({
+              variant: "outline",
+            })}`}
+          >
+            Learn More
+          </a>
         </div>
       </div>
-    </section>
-  )
-}
 
+      {/* Hero cards sections */}
+      <div className="z-10">
+        <HeroCards />
+      </div>
+
+      {/* Shadow effect */}
+      <div className="shadow"></div>
+    </section>
+  );
+};

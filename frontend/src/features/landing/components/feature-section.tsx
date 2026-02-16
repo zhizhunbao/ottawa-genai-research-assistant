@@ -2,8 +2,8 @@
  * FeatureSection - Core feature showcase grid with icon cards and hover effects
  *
  * @module features/landing
- * @template .agent/templates/frontend/features/landing/feature-section.tsx.template
- * @reference none
+ * @source shadcn-landing-page/src/components/Features.tsx (adapted)
+ * @reference https://github.com/leoMirandaa/shadcn-landing-page
  */
 
 import { useTranslation } from 'react-i18next'
@@ -18,7 +18,7 @@ export function FeatureSection({ features }: FeatureSectionProps) {
   const { t } = useTranslation('home')
 
   return (
-    <section className="py-24 px-6 bg-background border-y border-border">
+    <section id="features" className="py-24 px-6 bg-background border-y border-border">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">

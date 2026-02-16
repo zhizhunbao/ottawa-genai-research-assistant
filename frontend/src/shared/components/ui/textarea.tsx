@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Textarea - Multi-line text input field
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/textarea
+ */
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 

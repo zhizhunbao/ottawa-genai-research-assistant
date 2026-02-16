@@ -98,6 +98,15 @@ export interface ChartData {
   stacked?: boolean
 }
 
+/** Token usage and cost info from LLM */
+export interface UsageInfo {
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  estimated_cost: number
+  model?: string
+}
+
 /** 聊天消息 */
 export interface ChatMessage {
   id: string
@@ -108,6 +117,7 @@ export interface ChatMessage {
   confidence?: number
   isLoading?: boolean
   chart?: ChartData
+  usage?: UsageInfo
 }
 
 /** 聊天会话 */

@@ -1,9 +1,9 @@
 ﻿/**
- * Chat Feature Types
+ * ChatTypes - Type definitions for chat messages, sessions, and agent steps
  *
- * TypeScript definitions for chat messages, sessions, and agent interaction steps.
- *
- * @template — Custom Implementation
+ * @module features/chat/types
+ * @template none
+ * @reference none
  */
 export type Role = 'user' | 'assistant' | 'system';
 

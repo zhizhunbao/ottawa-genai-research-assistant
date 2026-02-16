@@ -1,8 +1,9 @@
 ﻿/**
- * UI 组件导出
- * shadcn/ui 组件 + 业务组件
+ * UIComponents - Barrel export for all shared UI components
  *
- * 精简版：已移除 Sidebar 相关组件。
+ * @module shared/components/ui
+ * @template none
+ * @reference none
  */
 
 // shadcn/ui 基础组件
@@ -52,6 +53,7 @@ export { Skeleton } from './skeleton'
 export { Toaster } from './sonner'
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 export { ScrollArea, ScrollBar } from './scroll-area'
+export { Progress } from './progress'
 export { Switch } from './switch'
 export {
   Tooltip,

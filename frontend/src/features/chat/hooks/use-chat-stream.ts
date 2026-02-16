@@ -1,19 +1,12 @@
 ﻿/**
  * useChatStream - NDJSON streaming hook for RAG chat with abort, retry, and typed events
  *
- * Connects to POST /api/v1/research/chat/stream and parses NDJSON events:
- * - { type: "sources", payload: [...] }
- * - { type: "text", text: "..." }
- * - { type: "confidence", payload: number }
- * - { type: "chart", payload: {...} }
- * - { type: "done" }
- *
  * @module features/chat/hooks
- * @template use-stream-chat.ts.template (adapted)
- * @reference azure/streaming.py.template
+ * @template .agent/templates/frontend/features/chat/use-chat-stream.ts.template
+ * @reference none
  */
 import { useState, useCallback, useRef } from 'react'
-import type { Source, ChartData } from '@/features/research/types'
+import type { Source, ChartData, UsageInfo } from '@/features/research/types'
 
 // ==================== Types ====================
 
@@ -37,6 +30,7 @@ export interface StreamResult {
     sources: Source[]
     confidence: number
     chart?: ChartData
+    usage?: UsageInfo
 }
 
 /** Stream event callbacks */
@@ -47,6 +41,8 @@ export interface StreamCallbacks {
     onSources?: (sources: Source[]) => void
     /** Called when confidence is received */
     onConfidence?: (confidence: number) => void
+    /** Called when usage info is received */
+    onUsage?: (usage: UsageInfo) => void
     /** Called when chart data is received */
     onChart?: (chart: ChartData) => void
     /** Called when streaming completes */
@@ -107,7 +103,7 @@ export function useChatStream(config: StreamConfig = {}) {
         async (
             messages: Array<{ role: string; content: string }>,
             callbacks: StreamCallbacks = {},
-            options: { use_rag?: boolean; temperature?: number } = {}
+            options: { use_rag?: boolean; temperature?: number; model?: string } = {}
         ): Promise<StreamResult | null> => {
             // Abort any existing stream
             abort()
@@ -148,6 +144,7 @@ export function useChatStream(config: StreamConfig = {}) {
                             use_rag: options.use_rag ?? true,
                             temperature: options.temperature ?? 0.7,
                             stream: true,
+                            model: options.model ?? null,
                         }),
                         signal: controller.signal,
                     })
@@ -175,6 +172,7 @@ export function useChatStream(config: StreamConfig = {}) {
                     let sources: Source[] = []
                     let confidence = 0
                     let chart: ChartData | undefined
+                    let usage: UsageInfo | undefined
 
                     while (true) {
                         const { done, value } = await reader.read()
@@ -211,6 +209,11 @@ export function useChatStream(config: StreamConfig = {}) {
                                         callbacks.onChart?.(chart)
                                         break
 
+                                    case 'usage':
+                                        usage = data.payload as UsageInfo
+                                        callbacks.onUsage?.(usage)
+                                        break
+
                                     case 'done':
                                         // noop — will finish after loop
                                         break
@@ -230,7 +233,7 @@ export function useChatStream(config: StreamConfig = {}) {
                     }
 
                     // Build result
-                    const result: StreamResult = { content, sources, confidence, chart }
+                    const result: StreamResult = { content, sources, confidence, chart, usage }
                     setIsStreaming(false)
                     callbacks.onDone?.(result)
                     return result

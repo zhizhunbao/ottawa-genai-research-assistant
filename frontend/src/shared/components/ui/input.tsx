@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Input - Text input field with consistent styling
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/input
+ */
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 

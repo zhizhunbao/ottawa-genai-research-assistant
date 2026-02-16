@@ -2,7 +2,7 @@
  * TestSetup - Vitest global configuration with DOM matchers and i18n mocks
  *
  * @module test
- * @template T4 frontend/test/setup.ts
+ * @template none
  * @reference none
  */
 import '@testing-library/jest-dom'

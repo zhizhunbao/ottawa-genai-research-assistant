@@ -9,18 +9,11 @@
 import { useTranslation } from 'react-i18next'
 import { ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  Badge,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/shared/components/ui'
+import { Badge } from '@/shared/components/ui'
 
 interface ConfidenceIndicatorProps {
   /** Confidence value 0-1. */
   confidence: number
-  /** Compact mode (icon only). */
-  compact?: boolean
 }
 
 type ConfidenceLevel = 'high' | 'medium' | 'low'
@@ -62,7 +55,6 @@ const levelConfig: Record<
 
 export function ConfidenceIndicator({
   confidence,
-  compact = false,
 }: ConfidenceIndicatorProps) {
   const { t } = useTranslation('chat')
   const level = getLevel(confidence)
@@ -70,7 +62,7 @@ export function ConfidenceIndicator({
   const Icon = config.icon
   const pct = Math.round(confidence * 100)
 
-  const badge = (
+  return (
     <Badge
       variant="outline"
       className={cn(
@@ -79,28 +71,9 @@ export function ConfidenceIndicator({
       )}
     >
       <Icon className="w-3 h-3" />
-      {!compact && (
-        <>
-          <span>{t(config.labelKey)}</span>
-          <span className="opacity-50">·</span>
-          <span>{pct}%</span>
-        </>
-      )}
+      <span>{t(config.labelKey)}</span>
+      <span className="opacity-50">·</span>
+      <span>{pct}%</span>
     </Badge>
   )
-
-  if (compact) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>{badge}</TooltipTrigger>
-        <TooltipContent>
-          <p>
-            {t(config.labelKey)} — {pct}%
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-
-  return badge
 }

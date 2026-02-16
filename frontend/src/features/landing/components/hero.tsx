@@ -2,8 +2,8 @@
  * Hero - Landing page hero section with gradient background, CTA, and stats cards
  *
  * @module features/landing
- * @template .agent/templates/frontend/features/landing/hero-section.tsx.template
- * @reference none
+ * @source shadcn-landing-page/src/components/Hero.tsx (adapted)
+ * @reference https://github.com/leoMirandaa/shadcn-landing-page
  */
 
 import { useTranslation } from 'react-i18next'

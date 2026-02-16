@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Tooltip - Small informational popup on hover
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/tooltip
+ */
+import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"

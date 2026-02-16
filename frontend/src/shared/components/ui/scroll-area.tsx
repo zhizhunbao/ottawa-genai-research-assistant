@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * ScrollArea - Custom scrollable container with styled scrollbars
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/scroll-area
+ */
+import * as React from "react"
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
 import { cn } from "@/lib/utils"

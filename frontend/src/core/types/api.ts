@@ -2,7 +2,7 @@
  * ApiTypes - Shared API response and pagination type definitions
  *
  * @module core/types
- * @template T6 backend/core/types/api.ts — API Response & Pagination Patterns
+ * @template none
  * @reference none
  */
 

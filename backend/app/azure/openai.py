@@ -153,7 +153,7 @@ class AzureOpenAIService:
         temperature: float = 0.7,
         max_tokens: int | None = None,
         system_prompt: str | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str | dict]:
         """
         流式生成 chat completion
 
@@ -164,7 +164,8 @@ class AzureOpenAIService:
             system_prompt: 系统提示词
 
         Yields:
-            生成的文本片段
+            str — text token chunks
+            dict — final item with {"usage": {prompt_tokens, completion_tokens, total_tokens}}
         """
         try:
             chat_messages = []
@@ -177,15 +178,28 @@ class AzureOpenAIService:
                 "messages": chat_messages,
                 "temperature": temperature,
                 "stream": True,
+                "stream_options": {"include_usage": True},
             }
             if max_tokens:
                 kwargs["max_tokens"] = max_tokens
 
             stream = await self._async_client.chat.completions.create(**kwargs)
 
+            usage_info = None
             async for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
+                # The last chunk contains usage when stream_options.include_usage is True
+                if hasattr(chunk, "usage") and chunk.usage is not None:
+                    usage_info = {
+                        "prompt_tokens": chunk.usage.prompt_tokens,
+                        "completion_tokens": chunk.usage.completion_tokens,
+                        "total_tokens": chunk.usage.total_tokens,
+                    }
+
+            # Yield usage as a final dict so callers can distinguish from text
+            if usage_info:
+                yield {"usage": usage_info}
         except Exception as e:
             raise AzureOpenAIError(f"Stream chat completion failed: {str(e)}") from e
 
@@ -254,21 +268,15 @@ class AzureOpenAIService:
         sources: list[dict] | None = None,
         chat_history: list[dict] | None = None,
         temperature: float = 0.7,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str | dict]:
         """
-        RAG-enhanced streaming chat — yields text tokens.
+        RAG-enhanced streaming chat — yields text tokens and usage info.
 
         Same prompt engineering as rag_chat but uses streaming output.
 
-        Args:
-            query: User question
-            context: Retrieved document content (plain text list)
-            sources: Structured search results (with title, content, page_number)
-            chat_history: Chat history
-            temperature: Temperature parameter
-
         Yields:
-            Generated text tokens
+            str — text token chunks
+            dict — final item with {"usage": {...}} from the LLM
         """
         from app.azure.prompts import build_system_messages
 
@@ -295,9 +303,9 @@ class AzureOpenAIService:
                 chat_history=chat_history,
             )
 
-        async for token in self.chat_completion_stream(
+        async for item in self.chat_completion_stream(
             messages=messages[1:],
             temperature=temperature,
             system_prompt=messages[0]["content"] if messages else None,
         ):
-            yield token
+            yield item

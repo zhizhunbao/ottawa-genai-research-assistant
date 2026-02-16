@@ -2,7 +2,7 @@
  * ChatTypes - Message, session, and source type definitions for chat feature
  *
  * @module features/chat
- * @template T6 backend/features/chat/types.ts — RAG & Chat History Entities
+ * @template none
  * @reference none
  */
 

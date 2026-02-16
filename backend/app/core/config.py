@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     azure_ad_tenant_id: str = ""
     azure_ad_client_id: str = ""
 
+    # Ollama (Local LLM)
+    ollama_base_url: str = "http://localhost:11434"
+
     # CORS 配置
     cors_origins: list[str] = ["http://localhost:3000"]
 

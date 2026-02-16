@@ -9,6 +9,7 @@ Provides asynchronous database session management.
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -21,12 +22,34 @@ class Base(DeclarativeBase):
     pass
 
 
-# 创建异步引擎
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    future=True,
-)
+# ── Engine Configuration ──────────────────────────────────────────
+# SQLite needs special handling for concurrent access
+_is_sqlite = settings.database_url.startswith("sqlite")
+
+_engine_kwargs: dict = {
+    "echo": settings.debug,
+    "future": True,
+}
+
+if _is_sqlite:
+    # connect_args: timeout = seconds to wait when DB is locked
+    _engine_kwargs["connect_args"] = {"timeout": 30}
+
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
+
+
+# Enable WAL mode for SQLite — allows concurrent reads + writes
+if _is_sqlite:
+    from sqlalchemy.pool import events as pool_events  # noqa: F401
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
+
 
 # 创建异步会话工厂
 async_session_maker = async_sessionmaker(

@@ -1,10 +1,20 @@
 ﻿/**
- * Store Entry Point
+ * StoreExports - Barrel export for all Zustand stores and selectors
  *
- * Re-exports all Zustand stores and relevant selectors for centralized access.
- *
- * @template — Custom Implementation
+ * @module stores
+ * @template none
+ * @reference none
  */
 
 export { useAuthStore, selectUser, selectIsAuthenticated, selectIsLoading, selectAuthError } from './auth-store'
 export { useChatStore, selectSessions, selectCurrentSessionId, selectChatLoading, selectChatError } from './chat-store'
+export { usePreviewStore, selectPreviewOpen, selectPreviewSource } from './preview-store'
+export {
+  useDocumentStore,
+  selectSelectedNode,
+  selectViewMode,
+  selectSorting,
+  selectSyncDrawerOpen,
+  selectExplorerOpen,
+} from './document-store'
+

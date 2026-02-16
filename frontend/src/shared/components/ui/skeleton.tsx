@@ -1,4 +1,11 @@
-﻿import { cn } from "@/lib/utils"
+/**
+ * Skeleton - Loading placeholder with pulse animation
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/skeleton
+ */
+import { cn } from "@/lib/utils"
 
 function Skeleton({
   className,

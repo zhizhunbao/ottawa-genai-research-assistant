@@ -2,7 +2,7 @@
  * AnalysisTypes - Chart and visualization type definitions
  *
  * @module features/analysis
- * @template T6 backend/features/analysis/types.ts — Chart & Analysis Entities
+ * @template none
  * @reference none
  */
 

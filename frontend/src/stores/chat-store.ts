@@ -26,6 +26,7 @@ interface ChatStore extends ChatState {
   // Message actions
   addMessage: (sessionId: string, role: MessageRole, content: string) => string
   updateMessage: (sessionId: string, messageId: string, updates: Partial<ChatMessage>) => void
+  deleteMessage: (sessionId: string, messageId: string) => void
   setMessageLoading: (sessionId: string, messageId: string, isLoading: boolean) => void
 
   // State actions
@@ -130,6 +131,19 @@ export const useChatStore = create<ChatStore>()(
                 messages: s.messages.map((m) =>
                   m.id === messageId ? { ...m, ...updates } : m
                 ),
+                updatedAt: new Date().toISOString(),
+              }
+              : s
+          ),
+        })),
+
+      deleteMessage: (sessionId, messageId) =>
+        set((state) => ({
+          sessions: state.sessions.map((s) =>
+            s.id === sessionId
+              ? {
+                ...s,
+                messages: s.messages.filter((m) => m.id !== messageId),
                 updatedAt: new Date().toISOString(),
               }
               : s

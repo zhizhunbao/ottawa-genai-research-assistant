@@ -1,4 +1,11 @@
-﻿"use client"
+/**
+ * Tabs - Tabbed navigation for switching between content panels
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/tabs
+ */
+"use client"
 
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"

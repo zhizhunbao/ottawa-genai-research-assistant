@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Alert - Status notification component with default and destructive variants
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/alert
+ */
+import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"

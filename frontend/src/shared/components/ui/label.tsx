@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Label - Accessible form label component
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/label
+ */
+import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { cva, type VariantProps } from "class-variance-authority"
 

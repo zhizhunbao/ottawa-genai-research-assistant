@@ -8,9 +8,12 @@ API endpoints for document uploads, list queries, deletion, and ingestion manage
 
 import logging
 from io import BytesIO
+from urllib.parse import unquote, urlparse
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.azure.storage import AzureBlobStorageService
@@ -205,6 +208,141 @@ async def upload_pdf_file(
         )
     )
 
+
+# ── URL Download ──────────────────────────────────────────────
+
+class UrlDownloadRequest(BaseModel):
+    """Request to download a PDF from a URL"""
+    url: str = Field(..., description="URL of the PDF file to download")
+    title: str | None = Field(None, description="Custom title (defaults to filename)")
+    description: str | None = Field(None, description="Document description")
+    folder_id: str | None = Field(None, description="Target folder ID")
+
+
+@router.post("/download-url", response_model=ApiResponse[DocumentUploadResponse])
+async def download_from_url(
+    req: UrlDownloadRequest,
+    background_tasks: BackgroundTasks,
+    service: DocumentService = Depends(get_document_service),
+    blob_storage: AzureBlobStorageService = Depends(get_blob_storage),
+    pipeline=Depends(get_document_pipeline_optional),
+) -> ApiResponse[DocumentUploadResponse]:
+    """
+    Download a PDF from a URL and store it.
+
+    - Fetches the PDF from the given URL
+    - Stores it to Azure Blob Storage
+    - Creates a document record
+    - Triggers RAG pipeline processing
+    """
+    # Validate URL
+    parsed = urlparse(req.url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="URL must use http or https",
+        )
+
+    # Download the file
+    try:
+        async with httpx.AsyncClient(
+            timeout=60.0,
+            follow_redirects=True,
+            headers={"User-Agent": "Ottawa-GenAI-Research-Assistant/1.0"},
+        ) as client:
+            resp = await client.get(req.url)
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=status.HTTP_BAD_GATEWAY,
+            detail=f"Failed to download: HTTP {e.response.status_code}",
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=status.HTTP_BAD_GATEWAY,
+            detail=f"Failed to download: {str(e)}",
+        )
+
+    content = resp.content
+
+    # Validate size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds {MAX_FILE_SIZE // (1024*1024)}MB limit",
+        )
+
+    # Determine filename from URL
+    url_path = unquote(parsed.path)
+    filename = url_path.split("/")[-1] if "/" in url_path else "document.pdf"
+    if not filename.lower().endswith(".pdf"):
+        # Check content-type header
+        ct = resp.headers.get("content-type", "")
+        if "pdf" not in ct.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"URL does not point to a PDF file (content-type: {ct})",
+            )
+        filename += ".pdf"
+
+    # Validate it starts with PDF magic bytes
+    if not content[:5].startswith(b"%PDF-"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Downloaded content is not a valid PDF file",
+        )
+
+    # Upload to Blob Storage
+    try:
+        upload_result = await blob_storage.upload_file(
+            file=BytesIO(content),
+            filename=filename,
+            content_type="application/pdf",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to store file: {str(e)}",
+        )
+
+    # Create document record
+    doc_data = DocumentCreate(
+        title=req.title or filename.replace(".pdf", "").replace("-", " ").replace("_", " "),
+        description=req.description or f"Downloaded from {parsed.netloc}",
+        file_name=filename,
+        mime_type="application/pdf",
+        file_size=len(content),
+        tags=["url-import", parsed.netloc],
+    )
+
+    result = await service.upload(doc_data, blob_info=upload_result)
+    document_id = result["id"]
+
+    # Trigger RAG pipeline
+    if pipeline:
+        background_tasks.add_task(
+            _run_document_pipeline,
+            pipeline=pipeline,
+            service=service,
+            document_id=document_id,
+            pdf_bytes=content,
+            metadata={
+                "title": doc_data.title,
+                "source": req.url,
+                "blob_name": upload_result.get("blob_name", ""),
+            },
+        )
+        logger.info(f"Pipeline task queued for URL-imported document {document_id}")
+
+    return ApiResponse.ok(
+        DocumentUploadResponse(
+            id=document_id,
+            file_name=filename,
+            blob_name=upload_result["blob_name"],
+            blob_url=upload_result["blob_url"],
+            status=result["status"],
+        )
+    )
 
 async def _run_document_pipeline(
     pipeline,

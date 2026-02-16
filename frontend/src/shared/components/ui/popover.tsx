@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Popover - Floating content panel anchored to a trigger element
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/popover
+ */
+import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"

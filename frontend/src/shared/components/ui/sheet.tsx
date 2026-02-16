@@ -1,4 +1,11 @@
-﻿"use client"
+/**
+ * Sheet - Slide-out panel overlay from screen edge
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/sheet
+ */
+"use client"
 
 import * as React from "react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"

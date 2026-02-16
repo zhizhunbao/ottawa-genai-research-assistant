@@ -1,36 +1,23 @@
 ﻿/**
- * MainLayout - Top-level layout composing Header, PageContainer, and Footer
+ * MainLayout - Top-level layout composing Header, PageContainer, Footer, and ScrollToTop
  *
  * @module shared/components/layout
- * @template none
- * @reference none
+ * @source shadcn-landing-page (adapted)
+ * @reference https://github.com/leoMirandaa/shadcn-landing-page
  */
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { Header } from './header'
-import { Footer } from './footer'
-import { PageContainer } from './page-container'
-
-/** 不需要 PageContainer 的路由（全宽或特殊布局） */
-const FULL_WIDTH_ROUTES = ['/', '/chat']
+import { ScrollToTop } from './scroll-to-top'
 
 export function MainLayout() {
-  const location = useLocation()
-  const isChatPage = location.pathname === '/chat'
-  const usePageContainer = !FULL_WIDTH_ROUTES.includes(location.pathname)
-
   return (
-    <div className={`flex flex-col bg-background ${isChatPage ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div className="flex flex-col bg-background h-screen overflow-hidden">
       <Header />
-      <main className={`flex-1 ${isChatPage ? 'overflow-hidden' : ''}`}>
-        {usePageContainer ? (
-          <PageContainer>
-            <Outlet />
-          </PageContainer>
-        ) : (
-          <Outlet />
-        )}
+      <main className="flex-1 overflow-hidden">
+        <Outlet />
       </main>
-      {!isChatPage && <Footer />}
+      <ScrollToTop />
     </div>
   )
 }
+

@@ -28,6 +28,19 @@ description: English code comment standards for Python and TypeScript. Use when 
 | Inline comments     | English, placed ABOVE code, not beside it                                  |
 | Code spacing        | Blank line between code blocks                                             |
 
+### ⚠️ Critical: `@template` and `@reference` Relationship
+
+1. **If `@template` is set → `@reference` MUST also be set.**
+   Every template was extracted from an external project. Open the template file, find its `@source` or `@reference`, and carry it forward.
+
+2. **`@reference` path format**: Use `project-name/path/to/file` (file-level), NOT a URL.
+   - ✅ `@reference rag-web-ui/frontend/src/lib/api.ts`
+   - ✅ `@reference shadcn-admin/src/components/confirm-dialog.tsx`
+   - ❌ `@reference https://github.com/xyb/rag-web-ui` (URL, not file path)
+   - ❌ `@reference rag-web-ui` (project-level only, not specific enough)
+
+3. **Only when `@template none` AND no external inspiration** → `@reference none`.
+
 ---
 
 ## Part A: Python

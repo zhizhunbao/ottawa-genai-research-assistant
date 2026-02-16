@@ -1,9 +1,9 @@
-﻿/**
+/**
  * HomePage - Landing page root component composing Hero, Features, HowItWorks, and CTA sections
  *
  * @module features/landing
- * @template .agent/templates/frontend/features/landing/marketing-layout.tsx.template
- * @reference none
+ * @source shadcn-landing-page (adapted layout)
+ * @reference https://github.com/leoMirandaa/shadcn-landing-page
  */
 
 import { LucideIcon } from 'lucide-react'
@@ -22,17 +22,16 @@ interface HomePageProps {
 export function HomePage({ isAuthenticated, features, stats }: HomePageProps) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* ����չʾ�� */}
+      {/* Hero Section */}
       <Hero isAuthenticated={isAuthenticated} stats={stats} />
-      
-      
-      {/* ���������� */}
+
+      {/* Features Section */}
       <FeatureSection features={features} />
-      
-      {/* ���������� */}
+
+      {/* How It Works Section */}
       <HowItWorksSection steps={HOME_STEPS_CONFIG} />
-      
-      {/* �ж������� */}
+
+      {/* CTA Section */}
       <CTASection isAuthenticated={isAuthenticated} />
     </div>
   )

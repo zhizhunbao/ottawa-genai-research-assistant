@@ -1,4 +1,11 @@
-﻿"use client"
+/**
+ * DropdownMenu - Contextual action menu triggered by a button
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/dropdown-menu
+ */
+"use client"
 
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"

@@ -1,7 +1,9 @@
 ﻿/**
- * 图表组件导出
+ * ChartComponents - Barrel export for chart visualization components
  *
- * 对应 US-301: Chart Visualization
+ * @module shared/components/charts
+ * @template none
+ * @reference none
  */
 
 // 基础图表组件

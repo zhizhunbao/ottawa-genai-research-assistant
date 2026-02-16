@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Switch - Toggle switch for boolean settings
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/switch
+ */
+import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"

@@ -19,7 +19,44 @@
     "uploading": "Téléversement...",
     "submit": "Téléverser le document",
     "reset": "Réinitialiser",
-    "success": "Document téléversé avec succès ! Il sera traité et indexé sous peu."
+    "success": "Document téléversé avec succès ! Il sera traité et indexé sous peu.",
+    "status": {
+      "completed": "Terminé",
+      "ready": "Prêt",
+      "processing": {
+        "title": "Traitement du document",
+        "description": "Extraction de texte PDF et indexation"
+      },
+      "analysis": {
+        "title": "Analyse du contenu",
+        "description": "Compréhension sémantique et catégorisation par IA"
+      },
+      "knowledge": {
+        "title": "Base de connaissances",
+        "description": "Intégration avec le système de recherche et Q&R"
+      }
+    },
+    "guidance": {
+      "title": "Directives de téléversement",
+      "formats": {
+        "title": "Formats supportés",
+        "pdfOnly": "Documents PDF uniquement",
+        "textBased": "PDFs basés sur du texte (pas d'images numérisées)",
+        "maxSize": "Taille maximale du fichier : 50 Mo"
+      },
+      "bestPractices": {
+        "title": "Meilleures pratiques",
+        "descriptiveNames": "Utilisez des noms de fichiers descriptifs",
+        "noPassword": "Assurez-vous que les documents ne sont pas protégés par mot de passe",
+        "latestVersion": "Téléversez les versions les plus récentes"
+      },
+      "privacy": {
+        "title": "Confidentialité et sécurité",
+        "publicOnly": "Ne téléversez que des informations publiques",
+        "noPersonalData": "Aucune donnée personnelle ou confidentielle",
+        "localProcessing": "Les documents sont traités de manière sécurisée"
+      }
+    }
   },
   "filters": {
     "searchPlaceholder": "Rechercher des documents...",

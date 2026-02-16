@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Card - Container component with header, content, and footer sections
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/card
+ */
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 

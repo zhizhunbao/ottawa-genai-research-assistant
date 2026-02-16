@@ -1,4 +1,11 @@
-﻿import * as React from "react"
+/**
+ * Avatar - User profile image with fallback initials display
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/avatar
+ */
+import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
 import { cn } from "@/lib/utils"

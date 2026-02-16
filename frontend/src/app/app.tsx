@@ -6,15 +6,14 @@
  * @reference none
  */
 
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { ErrorBoundary } from '@/shared/components/ui'
 import { MainLayout } from '@/shared/components/layout'
 import { Suspense, lazy } from 'react'
 
 // Views (lazy loaded)
-const HomeView = lazy(() => import('@/features/landing/views/home-view'))
 const ChatView = lazy(() => import('@/features/chat/views/chat-view'))
-const EvaluationView = lazy(() => import('@/features/evaluation/views/evaluation-view'))
+const LibraryView = lazy(() => import('@/features/documents/views/library-view'))
 
 // Loading component
 function Loading() {
@@ -34,12 +33,13 @@ export default function App() {
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route element={<MainLayout />}>
-            <Route path="/" element={<HomeView />} />
+            <Route path="/" element={<Navigate to="/chat" replace />} />
             <Route path="/chat" element={<ChatView />} />
-            <Route path="/evaluation" element={<EvaluationView />} />
+            <Route path="/documents" element={<LibraryView />} />
           </Route>
         </Routes>
       </Suspense>
     </ErrorBoundary>
   )
 }
+

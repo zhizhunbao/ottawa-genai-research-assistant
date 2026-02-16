@@ -2,7 +2,7 @@
  * PageContainer - Standardized page content wrapper with max-width and padding
  *
  * @module shared/components/layout
- * @template C1 frontend/shared/components/layout/PageContainer.tsx
+ * @template none
  * @reference none
  */
 import { ReactNode } from 'react'

@@ -1,12 +1,13 @@
 """
 Analysis Service Tests
 
-Unit tests for calculation logic, report generation, and data formatting.
+Unit tests for chart generation, speaking notes, and fallback behavior.
 
 @template T2 backend/tests/test_service.py — Service Logic Pattern
 """
 
-from unittest.mock import AsyncMock
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -16,37 +17,49 @@ from app.core.enums import AnalysisType, ChartType, DocumentType
 
 
 class TestAnalysisService:
-    """分析服务测试类"""
+    """Analysis service unit tests"""
 
     @pytest.fixture
     def mock_doc_store(self) -> AsyncMock:
-        """创建模拟文档存储"""
+        """Create mock document store"""
         store = AsyncMock()
         store.create = AsyncMock(return_value={"id": "doc-123"})
+        store.get_by_id = AsyncMock(return_value=None)
         return store
 
     @pytest.fixture
+    def mock_openai_service(self) -> AsyncMock:
+        """Create mock OpenAI service"""
+        service = AsyncMock()
+        service.chat_completion = AsyncMock(return_value="null")
+        return service
+
+    @pytest.fixture
     def analysis_service(self, mock_doc_store: AsyncMock) -> AnalysisService:
-        """创建分析服务实例"""
+        """Create analysis service without OpenAI (fallback mode)"""
         return AnalysisService(mock_doc_store)
 
-    # ==================== generate_chart 测试 ====================
+    @pytest.fixture
+    def analysis_service_with_llm(
+        self, mock_doc_store: AsyncMock, mock_openai_service: AsyncMock
+    ) -> AnalysisService:
+        """Create analysis service with OpenAI"""
+        return AnalysisService(mock_doc_store, openai_service=mock_openai_service)
+
+    # ==================== generate_chart tests ====================
 
     @pytest.mark.asyncio
     async def test_generate_chart_returns_chart_data(
         self, analysis_service: AnalysisService
     ) -> None:
-        """测试生成图表返回 ChartData"""
-        # Arrange
+        """Test that generate_chart returns ChartData"""
         request = AnalysisRequest(
             query="Ottawa employment trends",
             analysis_type=AnalysisType.CHART,
         )
 
-        # Act
         result = await analysis_service.generate_chart(request)
 
-        # Assert
         assert isinstance(result, ChartData)
         assert len(result.labels) > 0
         assert len(result.datasets) > 0
@@ -55,34 +68,28 @@ class TestAnalysisService:
     async def test_generate_chart_includes_query_in_title(
         self, analysis_service: AnalysisService
     ) -> None:
-        """测试图表标题包含查询内容"""
-        # Arrange
+        """Test that chart title includes the query"""
         request = AnalysisRequest(
             query="GDP growth",
             analysis_type=AnalysisType.CHART,
         )
 
-        # Act
         result = await analysis_service.generate_chart(request)
 
-        # Assert
         assert "GDP growth" in result.title
 
     @pytest.mark.asyncio
     async def test_generate_chart_saves_to_document_store(
         self, analysis_service: AnalysisService, mock_doc_store: AsyncMock
     ) -> None:
-        """测试图表结果保存到文档存储"""
-        # Arrange
+        """Test that chart result is saved to document store"""
         request = AnalysisRequest(
             query="test query",
             analysis_type=AnalysisType.CHART,
         )
 
-        # Act
         await analysis_service.generate_chart(request, user_id="user-123")
 
-        # Assert
         mock_doc_store.create.assert_called_once()
         call_args = mock_doc_store.create.call_args
         assert call_args.kwargs["doc_type"] == DocumentType.CHART_RESULT
@@ -90,39 +97,100 @@ class TestAnalysisService:
         assert "chart" in call_args.kwargs["tags"]
 
     @pytest.mark.asyncio
-    async def test_generate_chart_default_type_is_bar(
+    async def test_generate_chart_fallback_placeholder(
         self, analysis_service: AnalysisService
     ) -> None:
-        """测试默认图表类型是柱状图"""
-        # Arrange
+        """Test fallback to placeholder when no content available"""
         request = AnalysisRequest(
             query="test",
             analysis_type=AnalysisType.CHART,
         )
 
-        # Act
         result = await analysis_service.generate_chart(request)
 
-        # Assert
-        assert result.chart_type == ChartType.BAR
+        # Should return placeholder data
+        assert isinstance(result, ChartData)
+        assert len(result.labels) == 4  # Q1-Q4
 
-    # ==================== generate_speaking_notes 测试 ====================
+    @pytest.mark.asyncio
+    async def test_generate_chart_with_llm_extraction(
+        self,
+        analysis_service_with_llm: AnalysisService,
+        mock_doc_store: AsyncMock,
+        mock_openai_service: AsyncMock,
+    ) -> None:
+        """Test chart generation with LLM extraction when documents exist"""
+        # Mock document store to return content
+        mock_doc_store.get_by_id = AsyncMock(
+            return_value={"data": {"content": "Q1: 100, Q2: 120, Q3: 115, Q4: 130 employment"}}
+        )
+
+        # Mock LLM response with valid chart data
+        chart_json = json.dumps({
+            "type": "line",
+            "title": "Employment Trend",
+            "x_key": "period",
+            "y_keys": ["value"],
+            "data": [
+                {"period": "Q1", "value": 100},
+                {"period": "Q2", "value": 120},
+                {"period": "Q3", "value": 115},
+                {"period": "Q4", "value": 130},
+            ],
+        })
+        mock_openai_service.chat_completion.return_value = chart_json
+
+        request = AnalysisRequest(
+            query="employment trend",
+            document_ids=["doc-1"],
+            analysis_type=AnalysisType.CHART,
+        )
+
+        result = await analysis_service_with_llm.generate_chart(request)
+
+        assert isinstance(result, ChartData)
+        assert result.title == "Employment Trend"
+        assert len(result.labels) == 4
+        assert len(result.datasets) == 1
+
+    @pytest.mark.asyncio
+    async def test_generate_chart_llm_returns_null_falls_back(
+        self,
+        analysis_service_with_llm: AnalysisService,
+        mock_doc_store: AsyncMock,
+        mock_openai_service: AsyncMock,
+    ) -> None:
+        """Test LLM returning 'null' triggers fallback"""
+        mock_doc_store.get_by_id = AsyncMock(
+            return_value={"data": {"content": "Some text without numeric data"}}
+        )
+        mock_openai_service.chat_completion.return_value = "null"
+
+        request = AnalysisRequest(
+            query="analyze",
+            document_ids=["doc-1"],
+            analysis_type=AnalysisType.CHART,
+        )
+
+        result = await analysis_service_with_llm.generate_chart(request)
+
+        # Should still return a ChartData, either from regex or placeholder
+        assert isinstance(result, ChartData)
+
+    # ==================== generate_speaking_notes tests ====================
 
     @pytest.mark.asyncio
     async def test_generate_speaking_notes_returns_notes(
         self, analysis_service: AnalysisService
     ) -> None:
-        """测试生成发言稿返回 SpeakingNotes"""
-        # Arrange
+        """Test that generate_speaking_notes returns SpeakingNotes"""
         request = AnalysisRequest(
             query="Ottawa economic update",
             analysis_type=AnalysisType.SPEAKING_NOTES,
         )
 
-        # Act
         result = await analysis_service.generate_speaking_notes(request)
 
-        # Assert
         assert isinstance(result, SpeakingNotes)
         assert result.title is not None
         assert len(result.key_points) > 0
@@ -133,17 +201,14 @@ class TestAnalysisService:
     async def test_generate_speaking_notes_saves_to_document_store(
         self, analysis_service: AnalysisService, mock_doc_store: AsyncMock
     ) -> None:
-        """测试发言稿保存到文档存储"""
-        # Arrange
+        """Test that speaking notes are saved to document store"""
         request = AnalysisRequest(
             query="test query",
             analysis_type=AnalysisType.SPEAKING_NOTES,
         )
 
-        # Act
         await analysis_service.generate_speaking_notes(request, user_id="user-456")
 
-        # Assert
         mock_doc_store.create.assert_called_once()
         call_args = mock_doc_store.create.call_args
         assert call_args.kwargs["doc_type"] == DocumentType.SPEAKING_NOTE
@@ -151,30 +216,58 @@ class TestAnalysisService:
         assert "notes" in call_args.kwargs["tags"]
 
     @pytest.mark.asyncio
+    async def test_generate_speaking_notes_with_llm(
+        self,
+        analysis_service_with_llm: AnalysisService,
+        mock_doc_store: AsyncMock,
+        mock_openai_service: AsyncMock,
+    ) -> None:
+        """Test speaking notes generation with LLM"""
+        mock_doc_store.get_by_id = AsyncMock(
+            return_value={"data": {"content": "Ottawa GDP grew by 3% in Q3 2024."}}
+        )
+
+        notes_json = json.dumps({
+            "title": "Ottawa Economic Update",
+            "key_points": ["GDP grew by 3%", "Strong Q3 performance"],
+            "statistics": ["3% GDP growth in Q3 2024"],
+            "conclusion": "Ottawa shows positive economic momentum.",
+        })
+        mock_openai_service.chat_completion.return_value = notes_json
+
+        request = AnalysisRequest(
+            query="summarize",
+            document_ids=["doc-1"],
+            analysis_type=AnalysisType.SPEAKING_NOTES,
+        )
+
+        result = await analysis_service_with_llm.generate_speaking_notes(request)
+
+        assert isinstance(result, SpeakingNotes)
+        assert result.title == "Ottawa Economic Update"
+        assert len(result.key_points) == 2
+
+    @pytest.mark.asyncio
     async def test_generate_speaking_notes_with_document_ids(
         self, analysis_service: AnalysisService
     ) -> None:
-        """测试使用文档 ID 生成发言稿"""
-        # Arrange
+        """Test speaking notes with document IDs (no LLM, fallback)"""
         request = AnalysisRequest(
             query="summarize documents",
             document_ids=["doc-1", "doc-2"],
             analysis_type=AnalysisType.SPEAKING_NOTES,
         )
 
-        # Act
         result = await analysis_service.generate_speaking_notes(request)
 
-        # Assert
         assert isinstance(result, SpeakingNotes)
-        # 未来实现应该使用这些文档 ID
 
 
 class TestChartData:
-    """图表数据 Schema 测试"""
+    """ChartData schema tests"""
 
     def test_chart_data_with_all_fields(self) -> None:
-        """测试创建完整图表数据"""
+        """Test creating ChartData with all fields"""
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
             datasets=[{"label": "Sales", "data": [10, 20, 30]}],
@@ -185,7 +278,7 @@ class TestChartData:
         assert chart.chart_type == ChartType.LINE
 
     def test_chart_data_default_type(self) -> None:
-        """测试图表默认类型"""
+        """Test default chart type is BAR"""
         chart = ChartData(
             labels=["A", "B"],
             datasets=[{"label": "Data", "data": [1, 2]}],
@@ -194,10 +287,10 @@ class TestChartData:
 
 
 class TestSpeakingNotes:
-    """发言稿 Schema 测试"""
+    """SpeakingNotes schema tests"""
 
     def test_speaking_notes_creation(self) -> None:
-        """测试创建发言稿"""
+        """Test creating speaking notes"""
         notes = SpeakingNotes(
             title="Quarterly Report",
             key_points=["Point 1", "Point 2"],
@@ -209,10 +302,10 @@ class TestSpeakingNotes:
 
 
 class TestAnalysisRequest:
-    """分析请求 Schema 测试"""
+    """AnalysisRequest schema tests"""
 
     def test_analysis_request_chart_type(self) -> None:
-        """测试图表分析请求"""
+        """Test chart analysis request"""
         request = AnalysisRequest(
             query="test",
             analysis_type=AnalysisType.CHART,
@@ -221,7 +314,7 @@ class TestAnalysisRequest:
         assert request.document_ids is None
 
     def test_analysis_request_with_documents(self) -> None:
-        """测试带文档 ID 的分析请求"""
+        """Test analysis request with document IDs"""
         request = AnalysisRequest(
             query="summary",
             document_ids=["doc-1"],

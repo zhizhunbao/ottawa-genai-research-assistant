@@ -1,4 +1,11 @@
-﻿"use client"
+/**
+ * Command - Searchable command palette built on cmdk
+ *
+ * @module shared/components/ui
+ * @template none
+ * @reference shadcn-ui/ui/command
+ */
+"use client"
 
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"

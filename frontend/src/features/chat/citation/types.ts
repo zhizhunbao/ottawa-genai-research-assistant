@@ -1,0 +1,117 @@
+/**
+ * ChatTypes - Shared type definitions for citation sources, metadata, and display
+ *
+ * @module features/chat/citation
+ * @template .agent/templates/frontend/features/chat/citation/types.ts.template
+ * @reference rag-web-ui/frontend/src/components/chat/answer.tsx
+ */
+
+// ============================================================
+// Core Citation Types — aligned with backend CitationTracker
+// ============================================================
+
+/** Single citation reference extracted from RAG retrieval results */
+export interface Citation {
+  /** Citation index, 1-based (maps to [1], [2] in markdown) */
+  id: number
+
+  /** Original text content from the source document */
+  text: string
+
+  /** Source metadata (page, section, confidence, file info) */
+  metadata: CitationMetadata
+}
+
+/** Metadata attached to each citation source */
+export interface CitationMetadata {
+  /** Source document file name */
+  source_file: string
+
+  /** Page number in original document (0-based from backend, display as 1-based) */
+  page_num?: number
+
+  /** Section or chapter title in the source document */
+  section_title?: string
+
+  /** Retrieval confidence / relevance score (0.0 to 1.0) */
+  confidence?: number
+
+  /** Knowledge base or collection ID */
+  kb_id?: string
+
+  /** Document ID within the knowledge base */
+  document_id?: string
+
+  /** Additional metadata fields from retrieval */
+  [key: string]: unknown
+}
+
+/** Grouped citation source (multiple chunks from same document) */
+export interface CitationSource {
+  /** Unique source identifier (kb_id-document_id or file path) */
+  id: string
+
+  /** Display name for the source */
+  name: string
+
+  /** Source file name */
+  fileName: string
+
+  /** All citation chunks from this source */
+  citations: Citation[]
+
+  /** Average confidence across all chunks */
+  avgConfidence?: number
+}
+
+/** Citation info fetched from backend API */
+export interface CitationInfo {
+  /** Knowledge base name */
+  knowledgeBaseName: string
+
+  /** Document file name */
+  documentFileName: string
+
+  /** File extension (pdf, docx, etc.) */
+  fileExtension: string
+}
+
+// ============================================================
+// Component Props
+// ============================================================
+
+/** Props for the CitationLink inline component */
+export interface CitationLinkProps {
+  /** Citation index (1-based) */
+  citationId: number
+
+  /** Full citation data */
+  citation: Citation | null
+
+  /** Optional: pre-fetched citation info */
+  citationInfo?: CitationInfo
+}
+
+/** Props for the CitationPopover detail panel */
+export interface CitationPopoverProps {
+  /** The citation to display */
+  citation: Citation
+
+  /** Optional: source display info */
+  citationInfo?: CitationInfo
+
+  /** Whether to show metadata debug info */
+  showDebugInfo?: boolean
+}
+
+/** Props for the MessageMarkdown renderer */
+export interface MessageMarkdownProps {
+  /** Raw markdown content from AI response */
+  content: string
+
+  /** Citation list associated with this message */
+  citations?: Citation[]
+
+  /** CSS class for the markdown container */
+  className?: string
+}

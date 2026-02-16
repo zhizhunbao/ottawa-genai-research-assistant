@@ -24,6 +24,7 @@ export function useChat() {
     updateSessionTitle,
     addMessage,
     updateMessage,
+    deleteMessage,
     setLoading,
     setError,
     clearError,
@@ -96,7 +97,7 @@ export function useChat() {
   // ============================================================
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, model?: string) => {
       let sessionId = currentSessionId
 
       // If no current session, create one first
@@ -160,12 +161,16 @@ export function useChat() {
           onChart: (chart) => {
             updateMessage(sessionId!, assistantMessageId, { chart })
           },
+          onUsage: (usage) => {
+            updateMessage(sessionId!, assistantMessageId, { usage })
+          },
           onDone: (streamResult) => {
             updateMessage(sessionId!, assistantMessageId, {
               content: streamResult.content,
               sources: streamResult.sources,
               confidence: streamResult.confidence,
               chart: streamResult.chart,
+              usage: streamResult.usage,
               isLoading: false,
             })
 
@@ -192,7 +197,8 @@ export function useChat() {
               isLoading: false,
             })
           },
-        }
+        },
+        { model }
       )
 
       // Auto-set session title on first message
@@ -317,6 +323,89 @@ export function useChat() {
   )
 
   // ============================================================
+  // Message actions (for hover action toolbar)
+  // ============================================================
+
+  /** Copy message content to clipboard */
+  const copyMessage = useCallback(async (messageId: string) => {
+    const msg = messages.find((m) => m.id === messageId)
+    if (msg) {
+      try {
+        await navigator.clipboard.writeText(msg.content)
+      } catch {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea')
+        textarea.value = msg.content
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+    }
+  }, [messages])
+
+  /** Edit a user message and re-send (removes all messages after the edited one) */
+  const editMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      if (!currentSessionId) return
+
+      // Find the index of the message being edited
+      const msgIndex = messages.findIndex((m) => m.id === messageId)
+      if (msgIndex === -1) return
+
+      // Remove all messages from the edited message onwards
+      const messagesToDelete = messages.slice(msgIndex)
+      messagesToDelete.forEach((m) => {
+        deleteMessage(currentSessionId, m.id)
+      })
+
+      // Re-send with the new content
+      await sendMessage(newContent)
+    },
+    [currentSessionId, messages, deleteMessage, sendMessage]
+  )
+
+  /** Retry: re-generate the AI response for a specific assistant message */
+  const retryMessage = useCallback(
+    async (messageId: string) => {
+      if (!currentSessionId) return
+
+      // Find the assistant message and the user message before it
+      const msgIndex = messages.findIndex((m) => m.id === messageId)
+      if (msgIndex === -1) return
+
+      // Find the nearest user message before this assistant message
+      let userContent = ''
+      for (let i = msgIndex - 1; i >= 0; i--) {
+        if (messages[i].role === 'user') {
+          userContent = messages[i].content
+          break
+        }
+      }
+      if (!userContent) return
+
+      // Remove the assistant message and all messages after
+      const messagesToDelete = messages.slice(msgIndex)
+      messagesToDelete.forEach((m) => {
+        deleteMessage(currentSessionId, m.id)
+      })
+
+      // Re-send the user's message
+      await sendMessage(userContent)
+    },
+    [currentSessionId, messages, deleteMessage, sendMessage]
+  )
+
+  /** Delete a single message */
+  const removeMessage = useCallback(
+    (messageId: string) => {
+      if (!currentSessionId) return
+      deleteMessage(currentSessionId, messageId)
+    },
+    [currentSessionId, deleteMessage]
+  )
+
+  // ============================================================
   // Input handling
   // ============================================================
 
@@ -354,6 +443,12 @@ export function useChat() {
 
     // Message operations
     sendMessage,
+
+    // Message actions (hover toolbar)
+    copyMessage,
+    editMessage,
+    retryMessage,
+    removeMessage,
 
     // Streaming control
     abortStream,
