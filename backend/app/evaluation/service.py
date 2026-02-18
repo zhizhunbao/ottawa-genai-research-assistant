@@ -79,6 +79,12 @@ class LLMEvaluationService:
             scores=scores,
             overall_score=round(overall_score, 2),
             alerts=alerts,
+            # Carry strategy metadata from request (if present)
+            strategy_id=request.strategy_id,
+            llm_model=request.llm_model,
+            search_engine=request.search_engine,
+            embedding_model=request.embedding_model,
+            latency_ms=request.latency_ms,
             evaluated_at=datetime.now(UTC),
         )
 

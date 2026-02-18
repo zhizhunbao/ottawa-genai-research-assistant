@@ -12,6 +12,7 @@ from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.core.rbac import Role
 from app.core.utils import generate_uuid
 
 
@@ -42,6 +43,11 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(
+        String(20),
+        default=Role.VIEWER,
         nullable=False,
     )
     is_superuser: Mapped[bool] = mapped_column(

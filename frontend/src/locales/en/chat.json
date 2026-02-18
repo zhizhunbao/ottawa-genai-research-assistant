@@ -52,5 +52,46 @@
     "copy": "Copy",
     "copied": "Copied!",
     "close": "Close"
+  },
+  "confidenceDetails": {
+    "label": "Confidence",
+    "grounding": "Grounding",
+    "relevance": "Relevance",
+    "completeness": "Completeness"
+  },
+  "queryMetadata": {
+    "label": "Details",
+    "llm": "LLM",
+    "search": "Search",
+    "embedding": "Embedding",
+    "reranker": "Reranker",
+    "latency": "Latency"
+  },
+  "evaluation": {
+    "label": "Quality",
+    "dimensions": {
+      "coherence": "Coherence",
+      "relevancy": "Relevancy",
+      "completeness": "Completeness",
+      "grounding": "Grounding",
+      "helpfulness": "Helpfulness",
+      "faithfulness": "Faithfulness"
+    }
+  },
+  "feedback": {
+    "thumbsUp": "Helpful",
+    "thumbsDown": "Not helpful",
+    "thanks": "Thanks for your feedback",
+    "whatsWrong": "What went wrong?",
+    "submit": "Submit",
+    "commentPlaceholder": "Additional details (optional)...",
+    "categories": {
+      "inaccurate": "Inaccurate",
+      "incomplete": "Incomplete",
+      "irrelevant": "Irrelevant",
+      "outdated": "Outdated",
+      "hardToUnderstand": "Hard to understand",
+      "missingCitations": "Missing citations"
+    }
   }
 }

@@ -93,6 +93,8 @@ class StreamChatRequest(BaseModel):
     temperature: float = Field(default=0.7, ge=0, le=2, description="LLM temperature")
     stream: bool = Field(default=True, description="Enable streaming (always true for this endpoint)")
     model: str | None = Field(default=None, description="Model ID (e.g. 'gpt-4o-mini', 'llama3.1:8b'). None uses server default.")
+    auto_strategy: bool = Field(default=False, description="Auto-select the best strategy from the latest benchmark")
+    strategy_id: str | None = Field(default=None, description="Explicit strategy ID from benchmark leaderboard")
 
 
 class ChatResponse(BaseModel):

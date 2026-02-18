@@ -142,3 +142,76 @@ async def list_models() -> ApiResponse:
 
     return ApiResponse.ok(models)
 
+
+@router.get("/embedding-models")
+async def list_embedding_models() -> ApiResponse:
+    """List available embedding models (cloud + local).
+
+    Returns registered embedding providers (Azure, Ollama)
+    and dynamically discovers additional Ollama embedding models.
+    """
+    from app.search.embedding import OllamaEmbeddingProvider, embedding_router
+
+    models = []
+    registered_ids: set[str] = set()
+
+    # From registered providers
+    for info in embedding_router.available_providers:
+        model_id = info["model"]
+        registered_ids.add(model_id)
+        models.append({
+            "id": model_id,
+            "provider": info["provider"],
+            "dimension": info["dimension"],
+            "available": True,
+            "registered": True,
+        })
+
+    # Check Ollama for additional embedding models not yet registered
+    try:
+        from app.core.config import settings
+        from app.ollama.service import OllamaService
+
+        ollama = OllamaService(base_url=settings.ollama_base_url)
+        if await ollama.is_available():
+            embed_models = await ollama.list_embedding_models()
+            for m in embed_models:
+                mid = m.get("name", m.get("model", ""))
+                if mid and mid not in registered_ids:
+                    base_name = mid.split(":")[0]
+                    models.append({
+                        "id": mid,
+                        "provider": "ollama",
+                        "dimension": OllamaEmbeddingProvider.DIMENSIONS.get(
+                            base_name, 768
+                        ),
+                        "available": True,
+                        "registered": False,
+                        "size": m.get("size"),
+                    })
+    except Exception:
+        pass  # Ollama not running — skip silently
+
+    return ApiResponse.ok(models)
+
+
+@router.get("/active-strategy")
+async def get_active_strategy(
+    db=None,
+) -> ApiResponse:
+    """Get the current best strategy from the latest benchmark.
+
+    Returns the #1 ranked leaderboard entry, including the strategy
+    configuration and its evaluation scores.  If no benchmark has been
+    run yet, returns null data.
+    """
+    from app.core.database import get_async_session
+
+    # Use an ad-hoc session when no DI session is provided
+    if db is None:
+        async for session in get_async_session():
+            strategy = await ResearchService.get_active_strategy(session)
+            return ApiResponse.ok(strategy)
+    strategy = await ResearchService.get_active_strategy(db)
+    return ApiResponse.ok(strategy)
+

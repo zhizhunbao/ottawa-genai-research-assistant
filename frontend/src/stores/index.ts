@@ -7,14 +7,25 @@
  */
 
 export { useAuthStore, selectUser, selectIsAuthenticated, selectIsLoading, selectAuthError } from './auth-store'
-export { useChatStore, selectSessions, selectCurrentSessionId, selectChatLoading, selectChatError } from './chat-store'
-export { usePreviewStore, selectPreviewOpen, selectPreviewSource } from './preview-store'
+
+// Unified Research store (replaces chat-store, document-store, preview-store)
 export {
+  useResearchStore,
+  useChatStore,
   useDocumentStore,
+  usePreviewStore,
+  selectSessions,
+  selectCurrentSessionId,
+  selectChatLoading,
+  selectChatError,
   selectSelectedNode,
   selectViewMode,
   selectSorting,
   selectSyncDrawerOpen,
   selectExplorerOpen,
-} from './document-store'
+  selectPreviewOpen,
+  selectPreviewSource,
+  selectContentMode,
+} from './research-store'
 
+export type { ResearchStore, ContentMode } from './research-store'

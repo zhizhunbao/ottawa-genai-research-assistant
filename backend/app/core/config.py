@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # 数据库配置
-    database_url: str = "sqlite+aiosqlite:///./app.db"
+    database_url: str = "sqlite+aiosqlite:///./data/app.db"
 
     # 安全配置
     secret_key: str = "your-secret-key-change-in-production"

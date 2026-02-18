@@ -44,3 +44,61 @@ async def get_evaluation_summary(
     """获取评估汇总统计"""
     summary = await service.get_summary()
     return ApiResponse.ok(summary)
+
+
+@router.get("/compare-strategies", response_model=ApiResponse)
+async def compare_strategy_evaluations(
+    query: str = "",
+    limit: int = 20,
+    service: LLMEvaluationService = Depends(get_evaluation_service),
+    current_user: OptionalCurrentUser = None,
+) -> ApiResponse:
+    """Compare evaluation results across different strategies.
+
+    If query is provided, filters evaluations matching that query text.
+    Returns evaluations grouped by strategy for side-by-side comparison.
+    """
+    from sqlalchemy import desc, select
+
+    from app.core.enums import DocumentType
+    from app.core.models import UniversalDocument
+
+    stmt = (
+        select(UniversalDocument)
+        .where(UniversalDocument.type == DocumentType.EVALUATION_RESULT)
+        .order_by(desc(UniversalDocument.created_at))
+        .limit(200)
+    )
+    result = await service.db.execute(stmt)
+    docs = result.scalars().all()
+
+    # Filter evaluations that have strategy metadata
+    comparisons: list[dict] = []
+    for doc in docs:
+        data = doc.data or {}
+        # Skip benchmark-level docs (they have "leaderboard" key)
+        if "leaderboard" in data:
+            continue
+        # Skip docs without strategy info
+        if not data.get("strategy_id"):
+            continue
+        # Filter by query if provided
+        if query and query.lower() not in data.get("query", "").lower():
+            continue
+
+        comparisons.append({
+            "evaluation_id": data.get("id"),
+            "strategy_id": data.get("strategy_id"),
+            "llm_model": data.get("llm_model"),
+            "search_engine": data.get("search_engine"),
+            "embedding_model": data.get("embedding_model"),
+            "query": data.get("query"),
+            "overall_score": data.get("overall_score"),
+            "scores": data.get("scores"),
+            "latency_ms": data.get("latency_ms"),
+            "evaluated_at": data.get("evaluated_at"),
+        })
+        if len(comparisons) >= limit:
+            break
+
+    return ApiResponse.ok(comparisons)

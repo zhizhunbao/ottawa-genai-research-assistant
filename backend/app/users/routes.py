@@ -45,7 +45,7 @@ async def login(
 ) -> ApiResponse[TokenResponse]:
     """用户登录"""
     user = await service.authenticate(data.email, data.password)
-    access_token = create_access_token(data={"sub": user.id})
+    access_token = create_access_token(data={"sub": user.id, "role": user.role})
     return ApiResponse.ok(TokenResponse(access_token=access_token))
 
 

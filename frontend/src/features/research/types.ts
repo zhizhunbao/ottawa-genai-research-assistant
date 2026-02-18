@@ -118,6 +118,12 @@ export interface ChatMessage {
   isLoading?: boolean
   chart?: ChartData
   usage?: UsageInfo
+  // M11: Response Assembly fields
+  thinking?: string
+  citations?: Citation[]
+  confidenceScore?: ConfidenceScore
+  queryMetadata?: QueryMetadata
+  evaluation?: EvaluationScores
 }
 
 /** 聊天会话 */
@@ -219,4 +225,199 @@ export interface VisualizationRequest {
 export interface SpeakingNotesRequest {
   documentIds: string[]
   topics?: string[]
+}
+
+// ============================================================================
+// Chat Component Types (merged from features/chat/types.ts)
+// ============================================================================
+
+/** Agent reasoning step (for deep-search / multi-agent flows) */
+export interface AgentStep {
+  id: string
+  type: string
+  title: string
+  content?: string
+  status: 'pending' | 'running' | 'done' | 'error'
+}
+
+/** Local message type used by ChatInterface component */
+export interface Message {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  timestamp: number
+  thought?: string
+  status?: 'loading' | 'done' | 'error'
+  steps?: AgentStep[]
+  sources?: Source[]
+  confidence?: number
+  chart?: ChartData
+}
+
+/** Callbacks for the chat stream */
+export interface ChatStreamOptions {
+  onMessage?: (chunk: string) => void
+  onThought?: (thought: string) => void
+  onStep?: (step: AgentStep) => void
+  onDone?: () => void
+  onError?: (error: Error) => void
+}
+
+// ============================================================================
+// Strategy & Benchmark Types (Phase D)
+// ============================================================================
+
+/** A specific combination of LLM + Embedding + Search Engine */
+export interface StrategyConfig {
+  id: string
+  name: string
+  llm_provider: string
+  llm_model: string
+  embedding_provider: string
+  embedding_model: string
+  search_engine: string
+  hybrid_engines?: string[] | null
+  temperature: number
+}
+
+/** A test query for benchmarking */
+export interface BenchmarkQuery {
+  id: string
+  query: string
+  expected_topics: string[]
+  difficulty: string
+  category: string
+}
+
+/** Result of running a single strategy on a single query */
+export interface StrategyResult {
+  strategy_id: string
+  query_id: string
+  query_text: string
+  answer: string
+  sources_count: number
+  confidence: number
+  latency_ms: number
+  token_usage: Record<string, unknown>
+  coherence: number
+  relevancy: number
+  completeness: number
+  grounding: number
+  helpfulness: number
+  faithfulness: number
+  overall_score: number
+  error?: string | null
+  evaluated_at: string
+}
+
+/** Ranked strategy in the leaderboard */
+export interface LeaderboardEntry {
+  rank: number
+  strategy: StrategyConfig
+  overall_score: number
+  dimension_scores: Record<string, number>
+  avg_latency_ms: number
+  avg_confidence: number
+  query_count: number
+}
+
+/** Complete benchmark run */
+export interface BenchmarkRun {
+  id: string
+  status: string
+  strategies: StrategyConfig[]
+  queries: BenchmarkQuery[]
+  results: StrategyResult[]
+  leaderboard: LeaderboardEntry[]
+  total_combinations: number
+  completed_combinations: number
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+}
+
+/** Request to start a benchmark */
+export interface BenchmarkRequest {
+  strategies?: StrategyConfig[] | null
+  queries?: BenchmarkQuery[] | null
+  auto_select?: boolean
+  max_strategies?: number
+}
+
+/** Compare request */
+export interface CompareRequest {
+  query: string
+  strategy_ids?: string[]
+}
+
+// ============================================================================
+// M11: Response Assembly Types
+// ============================================================================
+
+/** Citation source */
+export interface Citation {
+  id: string
+  source: string
+  snippet: string
+  page?: number
+  url?: string
+  confidence: number
+}
+
+/** 4-dimensional confidence score */
+export interface ConfidenceScore {
+  overall: number       // 0-1 综合置信度
+  grounding: number    // 0-1 上下文支撑度
+  relevance: number    // 0-1 查询相关度
+  completeness: number  // 0-1 回答完整度
+}
+
+/** Search method */
+export type SearchMethod = 'hybrid' | 'semantic' | 'keyword'
+
+/** Query metadata */
+export interface QueryMetadata {
+  method: SearchMethod
+  llm_model: string
+  search_engine: string
+  embedding_model: string
+  reranker?: string
+  latency_ms: number
+}
+
+/** Evaluation dimension */
+export type EvaluationDimension = 
+  | 'coherence' 
+  | 'relevancy' 
+  | 'completeness' 
+  | 'grounding' 
+  | 'helpfulness' 
+  | 'faithfulness'
+
+/** Single dimension score */
+export interface DimensionScore {
+  dimension: EvaluationDimension
+  score: number        // 1-5
+  explanation: string
+}
+
+/** Evaluation scores (from EvaluationService) */
+export interface EvaluationScores {
+  id: string
+  overall_score: number // 1-5
+  scores: DimensionScore[]
+  alerts: string[]
+  evaluated_at: string
+}
+
+/** Response envelope - unified RAG response */
+export interface ResponseEnvelope {
+  answer: string
+  thinking?: string
+  charts: ChartData[]
+  citations: Citation[]
+  confidence: ConfidenceScore
+  query_info: QueryMetadata
+  evaluation?: EvaluationScores
+  created_at: string
 }

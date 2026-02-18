@@ -32,7 +32,7 @@ export function Footer() {
       links: [
         { label: t('nav.features', 'Features'), href: '#features' },
         { label: t('nav.howItWorks', 'How It Works'), href: '#how-it-works' },
-        { label: t('nav.chat', 'Chat'), href: '/chat' },
+        { label: t('nav.research', 'Research'), href: '/research' },
       ],
     },
     {

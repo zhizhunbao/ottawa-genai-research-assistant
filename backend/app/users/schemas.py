@@ -10,6 +10,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.core.rbac import Role
+
 
 class UserBase(BaseModel):
     """用户基础 Schema"""
@@ -36,6 +38,7 @@ class UserResponse(UserBase):
 
     id: str = Field(..., description="The unique identifier of the user")
     is_active: bool = Field(..., description="Whether the user account is active")
+    role: Role = Field(default=Role.VIEWER, description="User role for RBAC")
     created_at: datetime = Field(..., description="The creation timestamp")
 
     model_config = {"from_attributes": True}

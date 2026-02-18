@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Globe, LogIn, LogOut, Menu } from 'lucide-react'
+import { Globe, LogIn, LogOut, Menu, Settings } from 'lucide-react'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useAuthDialog } from '@/features/auth/hooks/use-auth-dialog'
 import {
@@ -37,9 +37,9 @@ export function Header() {
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
 
-  const navLinks: { href: string; label: string }[] = [
-    { href: '/chat', label: t('nav.chat') },
-    { href: '/documents', label: t('nav.documents') },
+  const navLinks: { href: string; label: string; icon?: React.ElementType }[] = [
+    { href: '/research', label: t('nav.research', 'Research') },
+    { href: '/admin', label: 'Admin', icon: Settings },
   ]
 
   const toggleLanguage = () => {
@@ -67,7 +67,7 @@ export function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map(({ href, label }) =>
+          {navLinks.map(({ href, label, icon: Icon }) =>
             href.startsWith('#') ? (
               <a
                 key={href}
@@ -80,12 +80,13 @@ export function Header() {
               <Link
                 key={href}
                 to={href}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  location.pathname === href
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
+                  location.pathname.startsWith(href) && href !== '/'
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
+                {Icon && <Icon size={14} />}
                 {label}
               </Link>
             )

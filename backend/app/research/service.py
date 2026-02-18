@@ -337,6 +337,40 @@ class ResearchService:
             self._ollama_service = OllamaService(base_url=settings.ollama_base_url)
         return self._ollama_service
 
+    @staticmethod
+    async def get_active_strategy(db) -> dict | None:
+        """Retrieve the top-ranked strategy from the most recent benchmark.
+
+        Returns the #1 leaderboard entry as a dict, or None if no
+        benchmark has been completed yet.
+        """
+        try:
+            from sqlalchemy import desc, select
+            from app.core.enums import DocumentType
+            from app.core.models import UniversalDocument
+
+            stmt = (
+                select(UniversalDocument)
+                .where(
+                    UniversalDocument.type == DocumentType.EVALUATION_RESULT,
+                    UniversalDocument.tags.contains(["benchmark"]),
+                )
+                .order_by(desc(UniversalDocument.created_at))
+                .limit(5)
+            )
+            result = await db.execute(stmt)
+            docs = result.scalars().all()
+
+            for doc in docs:
+                data = doc.data or {}
+                leaderboard = data.get("leaderboard", [])
+                if leaderboard:
+                    return leaderboard[0]  # #1 ranked entry
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get active strategy: {e}")
+            return None
+
     def preprocess_query(self, query: str) -> str:
         """查询预处理: 清理空白、截断过长查询"""
         cleaned = QUERY_CLEANUP_PATTERN.sub(" ", query).strip()

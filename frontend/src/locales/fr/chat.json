@@ -52,5 +52,46 @@
     "copy": "Copier",
     "copied": "Copié !",
     "close": "Fermer"
+  },
+  "confidenceDetails": {
+    "label": "Confiance",
+    "grounding": "Ancrage",
+    "relevance": "Pertinence",
+    "completeness": "Complétude"
+  },
+  "queryMetadata": {
+    "label": "Détails",
+    "llm": "LLM",
+    "search": "Recherche",
+    "embedding": "Embedding",
+    "reranker": "Reclassement",
+    "latency": "Latence"
+  },
+  "evaluation": {
+    "label": "Qualité",
+    "dimensions": {
+      "coherence": "Cohérence",
+      "relevancy": "Pertinence",
+      "completeness": "Complétude",
+      "grounding": "Ancrage",
+      "helpfulness": "Utilité",
+      "faithfulness": "Fidélité"
+    }
+  },
+  "feedback": {
+    "thumbsUp": "Utile",
+    "thumbsDown": "Pas utile",
+    "thanks": "Merci pour votre retour",
+    "whatsWrong": "Quel est le problème ?",
+    "submit": "Soumettre",
+    "commentPlaceholder": "Détails supplémentaires (optionnel)...",
+    "categories": {
+      "inaccurate": "Inexact",
+      "incomplete": "Incomplet",
+      "irrelevant": "Non pertinent",
+      "outdated": "Obsolète",
+      "hardToUnderstand": "Difficile à comprendre",
+      "missingCitations": "Citations manquantes"
+    }
   }
 }
