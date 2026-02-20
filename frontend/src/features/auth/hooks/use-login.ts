@@ -9,6 +9,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/use-auth'
+import { useAuthDialog } from '@/features/auth/hooks/use-auth-dialog'
 import { useAzureLogin } from '@/features/auth/components/msal-auth-provider'
 
 interface FormErrors {
@@ -20,6 +21,7 @@ export function useLogin() {
   const navigate = useNavigate()
   const { login, isLoading, error, clearError, isAuthenticated, setError, setLoading } = useAuth()
   const { login: azureLogin } = useAzureLogin()
+  const { closeAuthDialog } = useAuthDialog()
 
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
@@ -56,9 +58,10 @@ export function useLogin() {
 
     const result = await login({ email, password })
     if (result.success) {
+      closeAuthDialog()
       navigate('/chat')
     }
-  }, [validateForm, clearError, login, navigate])
+  }, [validateForm, clearError, login, navigate, closeAuthDialog])
 
   // ����仯ʱ�����Ӧ�ֶεĴ���
   const handleInputChange = useCallback((field: 'email' | 'password') => {

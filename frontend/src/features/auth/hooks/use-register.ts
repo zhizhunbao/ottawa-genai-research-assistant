@@ -9,6 +9,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/use-auth'
+import { useAuthDialog } from '@/features/auth/hooks/use-auth-dialog'
 
 interface FormErrors {
   displayName?: string
@@ -20,6 +21,7 @@ interface FormErrors {
 export function useRegister() {
   const navigate = useNavigate()
   const { register, isLoading, error, clearError, isAuthenticated } = useAuth()
+  const { closeAuthDialog } = useAuthDialog()
 
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
@@ -66,9 +68,10 @@ export function useRegister() {
 
     const result = await register({ displayName, email, password })
     if (result.success) {
+      closeAuthDialog()
       navigate('/chat')
     }
-  }, [validateForm, clearError, register, navigate])
+  }, [validateForm, clearError, register, navigate, closeAuthDialog])
 
   // ����仯ʱ�����Ӧ�ֶεĴ���
   const handleInputChange = useCallback((field: keyof FormErrors) => {

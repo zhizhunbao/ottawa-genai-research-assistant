@@ -52,16 +52,22 @@ interface MsalAuthProviderProps {
 
 /**
  * Authentication state sync component
+ *
+ * Syncs MSAL (Azure AD) auth state → Zustand auth store.
+ * Only updates the store when MSAL accounts are present.
+ * Does NOT clear local JWT auth when MSAL has no accounts.
  */
 function AuthStateSync({ children }: { children: ReactNode }) {
   const { accounts, inProgress } = useMsal()
   const isAuthenticated = useIsAuthenticated()
-  const { login, logout, setLoading } = useAuthStore()
+  const { login, setLoading } = useAuthStore()
 
   useEffect(() => {
     if (inProgress === InteractionStatus.None) {
       setLoading(false)
 
+      // Only sync MSAL → store when Azure AD accounts exist.
+      // Do NOT logout — the user may be authenticated via local JWT.
       if (isAuthenticated && accounts.length > 0) {
         const account = accounts[0]
         const now = new Date().toISOString()
@@ -76,13 +82,11 @@ function AuthStateSync({ children }: { children: ReactNode }) {
           },
           '' // Token will be acquired when needed
         )
-      } else {
-        logout()
       }
     } else {
       setLoading(true)
     }
-  }, [accounts, inProgress, isAuthenticated, login, logout, setLoading])
+  }, [accounts, inProgress, isAuthenticated, login, setLoading])
 
   return <>{children}</>
 }

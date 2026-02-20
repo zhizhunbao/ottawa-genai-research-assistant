@@ -67,18 +67,18 @@ export function AuthDialog({
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const email = (formData.get('email') as string).trim()
+    const password = (formData.get('password') as string).trim()
     handleLoginSubmit(email, password)
   }
 
   const handleRegister = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const displayName = formData.get('displayName') as string
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const confirmPassword = formData.get('confirmPassword') as string
+    const displayName = (formData.get('displayName') as string).trim()
+    const email = (formData.get('email') as string).trim()
+    const password = (formData.get('password') as string).trim()
+    const confirmPassword = (formData.get('confirmPassword') as string).trim()
     handleRegisterSubmit(displayName, email, password, confirmPassword)
   }
 
