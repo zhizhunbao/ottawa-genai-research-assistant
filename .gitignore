@@ -131,7 +131,6 @@ create_migration_package.py
 /CLAUDE.md
 /.vscode/
 /.github/references
-/render.yaml
 /scripts
 /docs/templates
 /docs/codemaps

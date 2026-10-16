@@ -1,0 +1,38 @@
+# Render Blueprint: New > Blueprint > pick this repo.
+# API runs as a Docker web service; the web app is a static site that
+# rewrites /api/* to the API, so the browser sees one origin (no CORS).
+services:
+  - type: web
+    name: ottawa-genai-research-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      # Optional, for live Q&A: AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY,
+      # AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_API_KEY (see backend/.env.example)
+
+  - type: web
+    name: ottawa-genai-research-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://ottawa-genai-research-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
