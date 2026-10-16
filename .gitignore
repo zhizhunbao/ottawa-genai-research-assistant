@@ -141,3 +141,4 @@ create_migration_package.py
 /docs/requirements/external
 /docs/architecture/external
 /.env.example
+/backend/_debug_folder.py
