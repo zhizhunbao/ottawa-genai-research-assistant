@@ -118,3 +118,12 @@ secrets.json
 !.github/references/ARCHITECTURE_ANALYSIS.md
 .cursorignore
 create_migration_package.py
+
+# Local dev leftovers
+/backups/
+/.agent/
+/.kiro/
+/.claude/
+/.dev-state.yaml
+*.db-shm
+*.db-wal

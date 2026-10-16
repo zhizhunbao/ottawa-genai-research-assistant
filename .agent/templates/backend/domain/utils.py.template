@@ -1,6 +1,0 @@
-def normalize_response(data: dict) -> dict:
-    """
-    A13. 工具函数.
-    出处: fastapi-best-practices
-    """
-    return data
