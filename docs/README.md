@@ -1,44 +1,22 @@
 # Documentation Index
 
-## Directory Structure
-
 ```
 docs/
-├── requirements/          Product requirements (PRDs)
+├── requirements/          Product requirements
+│   ├── project-brief.md   Consolidated brief from the City of Ottawa
 │   ├── master_prd.md      Overall vision, tech stack, KPIs
 │   ├── phases/            Phase-level PRDs (P1 infrastructure, P2 RAG, P3 advanced)
-│   ├── features/          Feature-level PRDs (file explorer, etc.)
-│   └── external/          Separate sub-project PRDs (template factory)
+│   └── features/          Feature-level PRDs
 │
-├── architecture/          System architecture documents
-│   ├── system-architecture.md   Main system architecture
-│   ├── architecture.pdf         Architecture diagram (PDF)
-│   └── external/                Sub-project architecture docs
-│
-├── plans/                 Implementation plans
-│   ├── MASTER-PLAN.md     Master execution plan with all phases
-│   ├── phases/            Per-user-story implementation plans (US-xxx)
-│   ├── features/          Feature-level plans (chat module, project completion)
-│   └── external/          Sub-project plans (template factory)
-│
-├── guides/                Developer guides
-│   ├── setup.md           Local development setup
-│   ├── api.md             API reference
-│   ├── deployment.md      Deployment guide
-│   └── LOCAL-TUNNEL.md    Public tunnel access guide
-│
-├── reports/               Status and test reports
-├── codemaps/              Auto-generated code maps
-├── sprints/               Sprint planning documents
-├── project/               Project meta (changelog, contributing)
-└── templates/             Template documentation
+├── architecture/          System architecture (Markdown, PDF and PNG diagram)
+├── guides/                Setup, API reference and deployment
+├── sprints/               Sprint plan
+└── project/               Changelog and contributing
 ```
 
-## Quick Links
-
-| Document                                                   | Description                                 |
-| ---------------------------------------------------------- | ------------------------------------------- |
-| [Master PRD](requirements/master_prd.md)                   | Product vision, tech stack, success metrics |
-| [Master Plan](plans/MASTER-PLAN.md)                        | Execution plan with phase status            |
-| [System Architecture](architecture/system-architecture.md) | Azure cloud-native architecture             |
-| [Setup Guide](guides/setup.md)                             | Local development environment               |
+| Document | Description |
+|---|---|
+| [Project Brief](requirements/project-brief.md) | Scope, users, data sources, targets |
+| [Master PRD](requirements/master_prd.md) | Product vision, tech stack, success metrics |
+| [System Architecture](architecture/system-architecture.md) | Azure architecture and RAG flow |
+| [Setup Guide](guides/setup.md) | Local development environment |

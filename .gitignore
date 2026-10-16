@@ -127,3 +127,17 @@ create_migration_package.py
 /.dev-state.yaml
 *.db-shm
 *.db-wal
+/AGENTS.md
+/CLAUDE.md
+/.vscode/
+/.github/references
+/render.yaml
+/scripts
+/docs/templates
+/docs/codemaps
+/docs/plans
+/docs/reports
+/docs/guides/LOCAL-TUNNEL.md
+/docs/requirements/external
+/docs/architecture/external
+/.env.example
