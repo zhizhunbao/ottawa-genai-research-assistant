@@ -7,18 +7,17 @@ Pydantic models for research queries, RAG responses, and chart data visualizatio
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from app.core.enums import ChatRole
 
-
 # ── Chart Schemas ─────────────────────────────────────────────────────
 
 
-class ChartType(str, Enum):
+class ChartType(StrEnum):
     """图表类型"""
 
     LINE = "line"

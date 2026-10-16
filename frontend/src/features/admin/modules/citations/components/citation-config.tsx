@@ -14,7 +14,7 @@ import {
   Info,
   Hash,
   ListOrdered,
-  Footnote,
+  Superscript,
 } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
@@ -42,7 +42,7 @@ const CITATION_FORMATS = [
     name: 'Footnotes',
     description: 'Citations as superscript with footnotes at bottom',
     example: 'The GDP grew by 5%¹. Employment increased².',
-    icon: Footnote,
+    icon: Superscript,
     active: false,
   },
   {

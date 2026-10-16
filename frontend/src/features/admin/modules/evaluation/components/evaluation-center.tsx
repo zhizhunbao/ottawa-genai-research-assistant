@@ -27,7 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card'
-import { Progress } from '@/shared/components/ui/progress'
 import { cn } from '@/lib/utils'
 
 import type { EvaluationSummary, EvaluationResult, EvaluationDimension } from '../types'

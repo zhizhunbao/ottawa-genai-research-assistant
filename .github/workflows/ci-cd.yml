@@ -36,7 +36,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
-        run: uv sync --frozen
+        run: uv sync --frozen --extra dev
 
       - name: Lint with ruff
         run: uv run ruff check app/ tests/
@@ -90,7 +90,8 @@ jobs:
   deploy-backend:
     name: Deploy Backend
     needs: [backend-test, frontend-test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Azure resources are not running; set the repo variable DEPLOY_ENABLED=true to deploy again
+    if: vars.DEPLOY_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
 
@@ -125,7 +126,8 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend
     needs: [backend-test, frontend-test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Azure resources are not running; set the repo variable DEPLOY_ENABLED=true to deploy again
+    if: vars.DEPLOY_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
 

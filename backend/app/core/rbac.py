@@ -14,7 +14,6 @@ from fastapi import Depends, HTTPException, status
 from app.core.exceptions import ForbiddenError
 from app.core.security import decode_access_token, security
 
-
 # ─── Role Definitions ─────────────────────────────────────────────────
 
 

@@ -26,7 +26,6 @@ from app.knowledge.schemas import (
     KBUpdate,
     PipelineRunRequest,
     PipelineStatusResponse,
-    SearchEngineStatusResponse,
 )
 from app.knowledge.service import KnowledgeBaseService
 

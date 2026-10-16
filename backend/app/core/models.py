@@ -1,7 +1,7 @@
 """
 Universal Document Storage Model
 
-Implements a single-table storage pattern for all data types using JSON fields for 
+Implements a single-table storage pattern for all data types using JSON fields for
 business-specific attributes (EAV pattern).
 
 @template A9 backend/domain/models.py — SQLAlchemy ORM Model

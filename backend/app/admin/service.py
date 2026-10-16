@@ -5,20 +5,22 @@ Aggregates statistics and health status from various system modules
 for the Admin Dashboard.
 """
 
-import asyncio
 import logging
 import time
-from typing import Any
 
-from sqlalchemy import select, func, text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.admin.schemas import DashboardStat, DashboardStatsResponse, ServiceHealth, DashboardHealthResponse
+from app.admin.schemas import (
+    DashboardHealthResponse,
+    DashboardStat,
+    DashboardStatsResponse,
+    ServiceHealth,
+)
 from app.core.config import settings
-from app.core.enums import DocumentType, DocumentStatus
-from app.models.schemas import ModelType
-from app.core.database import async_session_maker
+from app.core.enums import DocumentType
 from app.core.models import UniversalDocument
+from app.models.schemas import ModelType
 from app.models.service import ModelService
 from app.prompts.service import PromptService
 from app.search.engine import search_router
@@ -133,7 +135,7 @@ class AdminService:
     async def get_system_health(self) -> DashboardHealthResponse:
         """Check status of all critical external services."""
         services = []
-        
+
         # 1. Database
         db_start = time.perf_counter()
         try:
@@ -188,7 +190,7 @@ class AdminService:
         # Overall status calculation
         unhealthy = [s for s in services if s.status == "unavailable"]
         degraded = [s for s in services if s.status == "degraded"]
-        
+
         if unhealthy:
             overall = "critical"
         elif degraded:

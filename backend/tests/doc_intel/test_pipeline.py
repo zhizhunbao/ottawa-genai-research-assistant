@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock
 import fitz  # for creating test PDFs
 import pytest
 
-from app.doc_intel.pipeline import DocumentPipeline, PipelineResult
 from app.doc_intel.pdf_extractor import PdfExtractor
+from app.doc_intel.pipeline import DocumentPipeline, PipelineResult
 from app.doc_intel.text_chunker import TextChunker
 
 

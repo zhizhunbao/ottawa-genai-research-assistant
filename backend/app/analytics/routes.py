@@ -8,11 +8,11 @@ API endpoints for the analytics dashboard.
 
 from fastapi import APIRouter, Depends, Query
 
+from app.analytics.schemas import AnalyticsDashboard, UsageOverview
+from app.analytics.service import AnalyticsService
 from app.core.dependencies import DbSession
 from app.core.rbac import Permission, require_permission
 from app.core.schemas import ApiResponse
-from app.analytics.schemas import AnalyticsDashboard, UsageOverview
-from app.analytics.service import AnalyticsService
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 

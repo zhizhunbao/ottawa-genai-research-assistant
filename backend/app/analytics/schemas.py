@@ -8,7 +8,6 @@ Pydantic models for analytics dashboard data.
 
 from pydantic import BaseModel, Field
 
-
 # ─── Overview Stats ────────────────────────────────────────────────────
 
 

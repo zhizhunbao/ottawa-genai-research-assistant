@@ -15,10 +15,10 @@ from typing import Any
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.azure.prompts import EVALUATION_PROMPTS, EVALUATION_SYSTEM_PROMPT
 from app.core.enums import DocumentStatus, DocumentType
 from app.core.models import UniversalDocument
 from app.core.utils import generate_uuid
-from app.azure.prompts import EVALUATION_PROMPTS, EVALUATION_SYSTEM_PROMPT
 from app.evaluation.schemas import (
     DIMENSION_THRESHOLDS,
     DimensionScore,

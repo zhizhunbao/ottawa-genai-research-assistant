@@ -14,7 +14,6 @@ from fastapi.responses import StreamingResponse
 
 from app.core.schemas import ApiResponse
 from app.models.schemas import (
-    DeleteModelRequest,
     DiskUsageStats,
     HealthStatus,
     ModelDetail,

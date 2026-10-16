@@ -10,7 +10,6 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   FileText,
   RefreshCw,
-  Save,
   Play,
   History,
   Loader2,
@@ -26,7 +25,6 @@ import { Badge } from '@/shared/components/ui/badge'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card'

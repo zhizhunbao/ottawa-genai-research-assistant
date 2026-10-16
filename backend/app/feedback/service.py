@@ -9,7 +9,7 @@ Handles CRUD operations for user feedback on AI responses.
 import json
 from collections import Counter
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.feedback.models import Feedback

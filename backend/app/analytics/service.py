@@ -9,12 +9,10 @@ to compute analytics without requiring separate analytics tables.
 @template A10 backend/domain/service.py — Shared CRUD & Logic Layer
 """
 
-import json
 import logging
-from collections import Counter
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.schemas import (
@@ -58,7 +56,6 @@ class AnalyticsService:
 
         # Count chat sessions (they serve as query proxies)
         try:
-            from app.core.database import Base
             # Try to count from universal_documents (chat sessions)
             result = await self.db.execute(
                 text("SELECT COUNT(*) FROM universal_documents WHERE doc_type = 'chat_session'")

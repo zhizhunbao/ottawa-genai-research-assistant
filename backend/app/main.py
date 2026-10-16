@@ -20,9 +20,6 @@ from app.analysis.routes import router as analysis_router
 from app.analytics.routes import router as analytics_router
 from app.benchmark.routes import router as benchmark_router
 from app.chat.routes import router as chat_router
-from app.models.routes import router as models_router
-from app.prompts.routes import router as prompts_router
-from app.search.admin_routes import router as search_admin_router
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.exceptions import AppError
@@ -33,7 +30,10 @@ from app.evaluation.routes import router as evaluation_router
 from app.feedback.routes import router as feedback_router
 from app.health.routes import router as health_router
 from app.knowledge.routes import router as knowledge_router
+from app.models.routes import router as models_router
+from app.prompts.routes import router as prompts_router
 from app.research.routes import router as research_router
+from app.search.admin_routes import router as search_admin_router
 from app.users.routes import router as users_router
 
 
@@ -131,7 +131,6 @@ async def _seed_default_data() -> None:
     then upserts all registered entries into universal_documents.
     """
     import app.core.seeds  # noqa: F401 — trigger registration
-
     from app.core.database import async_session_maker
     from app.core.seed import SeedRegistry, seed_defaults
 

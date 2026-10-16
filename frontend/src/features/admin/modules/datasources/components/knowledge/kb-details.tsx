@@ -28,7 +28,7 @@ export function KBDetails({ kbId, onBack }: KBDetailsProps) {
   const [kb, setKb] = useState<KBResponse | null>(null)
   const [docs, setDocs] = useState<KBDocumentResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const loadData = useCallback(async () => {

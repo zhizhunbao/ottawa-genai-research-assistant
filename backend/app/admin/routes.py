@@ -7,7 +7,7 @@ API endpoints for the Admin Dashboard and configuration management.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.admin.schemas import DashboardStatsResponse, DashboardHealthResponse
+from app.admin.schemas import DashboardHealthResponse, DashboardStatsResponse
 from app.admin.service import AdminService
 from app.core.database import get_db
 from app.core.schemas import ApiResponse

@@ -4,17 +4,16 @@ Admin Console Schemas
 Data structures for admin dashboard stats and health checks.
 """
 
-from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class DashboardStat(BaseModel):
     """A single statistic item for the dashboard cards."""
     label: str
     value: str
-    description: Optional[str] = None
-    trend: Optional[str] = None  # e.g. "up", "down", "neutral"
-    unit: Optional[str] = None
+    description: str | None = None
+    trend: str | None = None  # e.g. "up", "down", "neutral"
+    unit: str | None = None
 
 
 class DashboardStatsResponse(BaseModel):
@@ -26,8 +25,8 @@ class ServiceHealth(BaseModel):
     """Status of a single system service."""
     service: str
     status: str  # "healthy", "degraded", "unavailable", "unknown"
-    message: Optional[str] = None
-    latency_ms: Optional[float] = None
+    message: str | None = None
+    latency_ms: float | None = None
 
 
 class DashboardHealthResponse(BaseModel):

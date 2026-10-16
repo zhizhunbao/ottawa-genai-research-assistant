@@ -6,25 +6,25 @@ Pydantic models for LLM model management API.
 @template A6 backend/domain/schemas.py — Pydantic Schemas
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class ModelProvider(str, Enum):
+class ModelProvider(StrEnum):
     """Model provider type."""
     AZURE = "azure"
     OLLAMA = "ollama"
 
 
-class ModelType(str, Enum):
+class ModelType(StrEnum):
     """Model type classification."""
     LLM = "llm"
     EMBEDDING = "embedding"
 
 
-class ModelStatus(str, Enum):
+class ModelStatus(StrEnum):
     """Model availability status."""
     AVAILABLE = "available"
     DOWNLOADING = "downloading"

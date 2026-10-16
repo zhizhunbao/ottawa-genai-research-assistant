@@ -12,7 +12,7 @@ from typing import Any
 
 from app.analysis.schemas import AnalysisRequest, ChartData, SpeakingNotes
 from app.core.document_store import DocumentStore
-from app.core.enums import AnalysisType, DocumentType
+from app.core.enums import DocumentType
 from app.research.service import ChartDataExtractor
 
 logger = logging.getLogger(__name__)

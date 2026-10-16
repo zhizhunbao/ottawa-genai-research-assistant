@@ -170,7 +170,9 @@ class PageIndexEngine(SearchEngine):
             if ref_path not in sys.path:
                 sys.path.insert(0, ref_path)
 
-            from pageindex.page_index import page_index as build_page_index
+            from pageindex.page_index import (
+                page_index as build_page_index,  # noqa: F401 (availability check)
+            )
 
             # Get stored pages to find the PDF path (if available)
             conn = await self._ensure_db()

@@ -7,7 +7,7 @@ Unit tests for chart generation, speaking notes, and fallback behavior.
 """
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 

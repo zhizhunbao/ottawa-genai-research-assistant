@@ -7,11 +7,10 @@ Defines the unified response envelope structure that combines RAG components.
 """
 
 from datetime import datetime
-from enum import StrEnum, Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ─── Citation Schemas ─────────────────────────────────────────────────
 
@@ -60,7 +59,7 @@ class QueryMetadata(BaseModel):
 # ─── Chart Data Schema (extended from research) ────────────────────────
 
 
-class ChartType(str, Enum):
+class ChartType(StrEnum):
     """图表类型"""
 
     LINE = "line"
@@ -114,35 +113,35 @@ class EvaluationScores(BaseModel):
 class ResponseEnvelope(BaseModel):
     """
     统一的响应组装结构
-    
+
     整合 RAG 各组件输出:
     - research 服务的 answer, sources
     - evaluation 服务的 6 维度评分
     - chart extraction 的图表数据
     - 计算 4 维度 confidence scores
     """
-    
+
     # 主要回答内容
     answer: str = Field(..., description="主要回答")
-    
+
     # 推理过程 (可选显示)
     thinking: str | None = Field(None, description="推理过程")
-    
+
     # 图表数据 (数组，支持多个图表)
     charts: list[ChartData] = Field(default_factory=list, description="提取的图表列表")
-    
+
     # 引用列表
     citations: list[Citation] = Field(default_factory=list, description="引用列表")
-    
+
     # 综合置信度 (4 维度)
     confidence: ConfidenceScore = Field(..., description="置信度评分")
-    
+
     # 查询元数据
     query_info: QueryMetadata = Field(..., description="查询元数据")
-    
+
     # 评估分数 (可选)
     evaluation: EvaluationScores | None = Field(None, description="6维度评估分数")
-    
+
     # 时间戳
     created_at: datetime = Field(default_factory=datetime.utcnow, description="创建时间")
 

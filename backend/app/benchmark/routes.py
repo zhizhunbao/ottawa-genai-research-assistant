@@ -19,11 +19,10 @@ from app.benchmark.schemas import (
     BenchmarkRequest,
     BenchmarkRun,
     CompareRequest,
-    LeaderboardEntry,
     StrategyConfig,
     StrategyResult,
 )
-from app.benchmark.service import BenchmarkOrchestrator, DEFAULT_TEST_QUERIES
+from app.benchmark.service import DEFAULT_TEST_QUERIES, BenchmarkOrchestrator
 from app.core.database import get_db
 from app.core.dependencies import OptionalCurrentUser, get_openai_service_optional
 from app.core.enums import DocumentType

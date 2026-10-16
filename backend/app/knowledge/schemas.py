@@ -7,11 +7,9 @@ Pydantic models for knowledge base CRUD, pipeline operations, and search engine 
 @reference rag-web-ui models/knowledge.py — KnowledgeBase + ProcessingTask
 """
 
-from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ── Knowledge Base ────────────────────────────────────────────
 

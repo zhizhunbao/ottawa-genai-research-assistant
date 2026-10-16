@@ -7,8 +7,7 @@ US-303: 测试 6 维度评估逻辑、结果存储和汇总统计。
 """
 
 import json
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

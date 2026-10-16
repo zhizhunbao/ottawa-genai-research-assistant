@@ -281,7 +281,7 @@ async def _ensure_folder_hierarchy(
     Returns a dict mapping year → folder_id.
     Idempotent: reuses existing folders if already created.
     """
-    ROOT_FOLDER_NAME = "Ottawa ED Updates"
+    ROOT_FOLDER_NAME = "Ottawa ED Updates"  # noqa: N806
 
     # Check if root folder already exists
     root_items = await folder_service.list_root()
@@ -455,7 +455,6 @@ async def sync_documents(
         year_folder_map = {}
 
     queued = 0
-    skipped = 0
     failed = 0
     details: list[dict] = []
 

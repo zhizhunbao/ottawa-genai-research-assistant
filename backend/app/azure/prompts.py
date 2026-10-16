@@ -12,7 +12,6 @@ chart extraction, and LLM-as-Judge evaluation.
 from dataclasses import dataclass
 
 
-
 @dataclass
 class PromptTemplate:
     """Prompt 模板"""
@@ -85,7 +84,7 @@ NO_RESULTS_PROMPT = PromptTemplate(
 CHART_EXTRACTION_PROMPT = PromptTemplate(
     name="chart_extraction",
     version="1.1",
-    template="""You are a data analyst specialized in economic reports. 
+    template="""You are a data analyst specialized in economic reports.
 Extract numeric data from the provided text to create a structured chart JSON that helps answer the user's query.
 
 User Query: {query}
@@ -93,7 +92,7 @@ Text Content: {content}
 
 Instructions:
 1. Identify if there's sufficient numeric data to form a trend, comparison, or distribution.
-2. Choose the best chart type: 
+2. Choose the best chart type:
    - 'line' for trends over time (quarters, years).
    - 'bar' for comparisons between categories.
    - 'pie' for parts of a whole (percentages).

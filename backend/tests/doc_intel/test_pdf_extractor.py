@@ -10,7 +10,12 @@ PDF 文本提取器测试
 import fitz  # PyMuPDF
 import pytest
 
-from app.doc_intel.pdf_extractor import ExtractionResult, PageContent, PdfExtractor, PdfExtractorError
+from app.doc_intel.pdf_extractor import (
+    ExtractionResult,
+    PageContent,
+    PdfExtractor,
+    PdfExtractorError,
+)
 
 
 def _create_test_pdf(pages: list[str]) -> bytes:

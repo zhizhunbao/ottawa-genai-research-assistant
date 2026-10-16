@@ -12,9 +12,9 @@ import re
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any, Optional
 
+from app.azure.prompts import CHART_EXTRACTION_PROMPT
 from app.core.enums import ChatRole
 from app.core.exceptions import ExternalServiceError
-from app.azure.prompts import CHART_EXTRACTION_PROMPT
 from app.research.schemas import (
     ChartData,
     ChartType,
@@ -346,6 +346,7 @@ class ResearchService:
         """
         try:
             from sqlalchemy import desc, select
+
             from app.core.enums import DocumentType
             from app.core.models import UniversalDocument
 
